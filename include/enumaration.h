@@ -1,1 +1,0 @@
-enum{PLUS, MINUS, MULTIPLY, DIVIDE};

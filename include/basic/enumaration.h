@@ -1,0 +1,5 @@
+#ifndef ENUMARATION_H
+#define ENUMARATION_H
+enum{PLUS, MINUS, MULTIPLY, DIVIDE};
+
+#endif
