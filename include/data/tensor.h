@@ -2,12 +2,15 @@
 #define TENSOR_H
 
 #include <data/rand_init.h>
+#include <data/thread_calcu.h>
 #include <basic/enumaration.h>
+#include <basic/timer.h>
 
 #include <vector>
 #include <algorithm>
 #include <numeric>
 #include <thread>
+#include <cstdlib>
 
 #include <iostream>
 #include <assert.h>
@@ -37,9 +40,12 @@ public:
     int product = std::reduce(shape.begin(), shape.end(), 1, std::multiplies{});
     // printf("product: %d\n", product);  
     this->m_data.assign(product, 0);
-    this->m_shape = std::move(shape);
+    this->m_shape = shape;
     rand_init(*this);
   }
+
+  Tensor(std::vector<int> &data, std::vector<int> &shape)
+  : m_data(data), m_shape(shape){ }
 
   // deep copy
   Tensor(const Tensor<T> &t){ 
@@ -74,6 +80,7 @@ public:
 
   Tensor<T> 
   operator+(Tensor<T> &t){
+    // puts("invoke +");
     return calculator(*this, t, PLUS);
   }
 
@@ -105,12 +112,76 @@ public:
 
   std::vector<int> m_shape; // [0]:row [1]:col [2]:channel
   
+  void shape(){
+    printf("shape:[");
+    for(int i = 0; i < this->m_shape.size(); i++) {
+      std::cout << this->m_shape[i];
+      if(i != this->m_shape.size() - 1) printf(", ");
+      else printf("]\n");
+    }
+  }
+
   std::vector<T> &
   get_data(){return this->m_data;}
 
 private:
   std::vector<T> m_data;
 };
+
+//################### Tensor::member functions' implementation ###################
+
+  template<typename T>
+  Tensor<T> 
+  Tensor<T>::calculator(Tensor<T> &a, Tensor<T> &b, int mode){
+    assert(a.m_shape[1] == b.m_shape[1]);
+
+    Tensor<T> result(a.m_shape);
+    int ncpu = std::thread::hardware_concurrency();
+#ifdef BENCH
+    Timer t;
+#endif
+    // if the tensor is big enough, boost it.
+    if(a.m_shape[0] >= ncpu * BOOST_THRD){ 
+      int row_num = a.m_shape[0] / ncpu, col = a.m_shape[1];
+
+      std::vector<std::thread> pool;
+      for(int i = 0; i < ncpu; i++){
+        int row_begin = i * row_num;
+        if(a.m_shape[0] != b.m_shape[0]){
+          if(b.m_shape[0] != 1) goto erro; 
+
+          // puts("ready create thread");
+          std::thread task(vec_single<T>, std::ref(a), std::ref(b), std::ref(result),
+                          row_begin, row_num, col, mode);
+          pool.push_back(std::move(task));
+        } else{
+          std::thread task(vec_full<T>, std::ref(a), std::ref(b), std::ref(result),
+                          row_begin, row_num, col, mode);
+          pool.push_back(std::move(task));
+        }
+      }
+      for(auto &task : pool) task.join();
+    } 
+    else{ // don't need to boost.
+      int row_num = a.m_shape[0], col = a.m_shape[1];
+      if(a.m_shape[0] != b.m_shape[0]){
+        if(b.m_shape[0] != 1) goto erro; 
+
+        vec_single<T>(a, b, result, 0, row_num, col, mode);
+      } else{
+        vec_full  <T>(a, b, result, 0, row_num, col, mode);
+      }
+    }
+
+    return result;
+
+  erro:
+    fprintf(stderr,
+    "The size of tensor a:(%d) must match the size of tensor b:(%d) \
+    at non-singleton dimension 0\n", a.m_shape[0], b.m_shape[0]);
+    exit(-1);
+  }
+
 
 
   template<typename U>
@@ -155,8 +226,6 @@ private:
     puts("");
     return os;
   }
-
-
 }
 
 
