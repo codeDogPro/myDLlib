@@ -16,12 +16,12 @@ namespace dl{
   template<typename T>
   void vec_single // the row number of a must >= b
   (Tensor<T> &a, Tensor<T> &b, Tensor<T> &result,
-    int row_begin, int row_num, int col, int mode){
+    int channel_offset, int row_begin, int row_num, int col, int mode){
 #ifdef DEBUG
     printf("row_num:%d col:%d\n", row_num, col);
 #endif
     for(int r = 0; r < row_num; r++){
-      int row_idx = (row_begin + r) * col;
+      int row_idx = channel_offset + (row_begin + r) * col;
       for(int c = 0; c < col; c++){
         int col_idx = row_idx + c;
         switch(mode){
@@ -45,9 +45,9 @@ namespace dl{
   template<typename T>
   void vec_full // a and b's shape must be the same
   (Tensor<T> &a, Tensor<T> &b, Tensor<T> &result,
-    int row_begin, int row_num, int col, int mode){
+    int channel_offset, int row_begin, int row_num, int col, int mode){
     for(int r = 0; r < row_num; r++){
-      int row_idx = (row_begin + r) * col;
+      int row_idx = channel_offset + (row_begin + r) * col;
       for(int c = 0; c < col; c++){
         int col_idx = row_idx + c;
         switch(mode){

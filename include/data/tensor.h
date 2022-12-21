@@ -17,6 +17,7 @@
 
 namespace dl{
 
+// #define BENCH
 
 template<typename T>
 class Tensor{
@@ -24,34 +25,31 @@ class Tensor{
 public:
   Tensor() = delete;
 
-  Tensor(int row, int col){
-    this->m_data.assign(row * col, 0);
-    this->m_shape.assign({row, col});
-    rand_init(*this);
-  }
+  Tensor(int row, int col, int channel, T val = 0){
+    // assert(row == col == channel == 0); // ??????
 
-  Tensor(int row, int col, int channel){
-    this->m_data.assign(row * col * channel, 0);
+    this->m_data.assign(row * col * channel, val);
     this->m_shape.assign({row, col, channel});
-    rand_init(*this);
+    if(val == 0){ rand_init(*this);}
   }
 
-  Tensor(const std::vector<int> &shape){
+  Tensor(const std::vector<int> &shape, T val = 0){
+    assert(shape.size() != 0);
+
     int product = std::reduce(shape.begin(), shape.end(), 1, std::multiplies{});
-    // printf("product: %d\n", product);  
-    this->m_data.assign(product, 0);
+    this->m_data.assign(product, val);
     this->m_shape = shape;
-    rand_init(*this);
+    if(val == 0){ rand_init(*this);}
   }
 
   Tensor(std::vector<int> &data, std::vector<int> &shape)
-  : m_data(data), m_shape(shape){ }
+  : m_data(data), m_shape(shape){}
 
   // deep copy
   Tensor(const Tensor<T> &t){ 
     this->m_data.assign(t.m_data.size(), 0);
     this->m_shape = t.m_shape;
-    rand_init(*this);
+    /*TODO: deep copy*/
   }
 
   // move copy
@@ -64,7 +62,6 @@ public:
   operator=(const Tensor<T> &t){
     this->m_data.assign(t.m_data.size(), 0);
     this->m_shape = t.m_shape;
-    rand_init(*this);
     return *this;
   }
 
@@ -79,39 +76,33 @@ public:
   calculator(Tensor<T> &a, Tensor<T> &b, int mode);
 
   Tensor<T> 
-  operator+(Tensor<T> &t){
-    // puts("invoke +");
-    return calculator(*this, t, PLUS);
-  }
+  operator+(Tensor<T> &t){ return calculator(*this, t, PLUS);}
+  Tensor<T> 
+  operator+(T x){ Tensor<T> t(this->m_shape, x); return calculator(*this, t, PLUS);}
 
   Tensor<T> 
-  operator-(Tensor<T> &t){
-    return calculator(*this, t, MINUS);
-  }
+  operator-(Tensor<T> &t){ return calculator(*this, t, MINUS);}
+  Tensor<T> 
+  operator-(T x){ Tensor<T> t(this->m_shape, x); return calculator(*this, t, MINUS);}
 
   Tensor<T> 
-  operator*(Tensor<T> &t){
-    return calculator(*this, t, MULTIPLY);
-  }
+  operator*(Tensor<T> &t){ return calculator(*this, t, MULTIPLY);}
+  Tensor<T> 
+  operator*(T x){ Tensor<T> t(this->m_shape, x); return calculator(*this, t, MULTIPLY);}
 
   Tensor<T> 
-  operator/(Tensor<T> &t){
-    return calculator(*this, t, DIVIDE);
-  }
+  operator/(Tensor<T> &t){ return calculator(*this, t, DIVIDE);}
+  Tensor<T> 
+  operator/(T x){ Tensor<T> t(this->m_shape, x); return calculator(*this, t, DIVIDE);}
 
   T&
-  operator[](int idx){
-    return this->m_data[idx];
-  }
+  operator[](int idx){ return this->m_data[idx];}
 
 
   template<typename U>
   friend std::ostream &
   operator<<(std::ostream &os, const Tensor<U> &t);
 
-
-  std::vector<int> m_shape; // [0]:row [1]:col [2]:channel
-  
   void shape(){
     printf("shape:[");
     for(int i = 0; i < this->m_shape.size(); i++) {
@@ -124,6 +115,9 @@ public:
   std::vector<T> &
   get_data(){return this->m_data;}
 
+
+  std::vector<int> m_shape; // [0]:row [1]:col [2]:channel
+
 private:
   std::vector<T> m_data;
 };
@@ -133,43 +127,49 @@ private:
   template<typename T>
   Tensor<T> 
   Tensor<T>::calculator(Tensor<T> &a, Tensor<T> &b, int mode){
-    assert(a.m_shape[1] == b.m_shape[1]);
+    // col and channel must be the same shape
+    assert(a.m_shape[1] == b.m_shape[1] && a.m_shape[2] == b.m_shape[2]);
 
     Tensor<T> result(a.m_shape);
     int ncpu = std::thread::hardware_concurrency();
+    int row = a.m_shape[0], col = a.m_shape[1], channel = a.m_shape[2];
 #ifdef BENCH
     Timer t;
 #endif
     // if the tensor is big enough, boost it.
     if(a.m_shape[0] >= ncpu * BOOST_THRD){ 
-      int row_num = a.m_shape[0] / ncpu, col = a.m_shape[1];
+      int row_num = a.m_shape[0] / ncpu;
 
-      std::vector<std::thread> pool;
-      for(int i = 0; i < ncpu; i++){
-        int row_begin = i * row_num;
-        if(a.m_shape[0] != b.m_shape[0]){
-          if(b.m_shape[0] != 1) goto erro; 
+      for(int c = 0; c < channel; c++){
+        std::vector<std::thread> pool;
+        for(int i = 0; i < ncpu; i++){
+          int row_begin = i * row_num;
+          if(a.m_shape[0] != b.m_shape[0]){
+            if(b.m_shape[0] != 1) goto erro; 
 
-          // puts("ready create thread");
-          std::thread task(vec_single<T>, std::ref(a), std::ref(b), std::ref(result),
-                          row_begin, row_num, col, mode);
-          pool.push_back(std::move(task));
-        } else{
-          std::thread task(vec_full<T>, std::ref(a), std::ref(b), std::ref(result),
-                          row_begin, row_num, col, mode);
-          pool.push_back(std::move(task));
+            // puts("ready create thread");
+            std::thread task(vec_single<T>, std::ref(a), std::ref(b), std::ref(result),
+                             c*row*col, row_begin, row_num, col, mode);
+            pool.push_back(std::move(task));
+          } else{
+            std::thread task(vec_full<T>, std::ref(a), std::ref(b), std::ref(result),
+                             c*row*col, row_begin, row_num, col, mode);
+            pool.push_back(std::move(task));
+          }
         }
+        for(auto &task : pool) task.join();
       }
-      for(auto &task : pool) task.join();
     } 
     else{ // don't need to boost.
-      int row_num = a.m_shape[0], col = a.m_shape[1];
+      int row_num = a.m_shape[0];
       if(a.m_shape[0] != b.m_shape[0]){
         if(b.m_shape[0] != 1) goto erro; 
 
-        vec_single<T>(a, b, result, 0, row_num, col, mode);
+        for(int c = 0; c < channel; c++)
+          vec_single<T>(a, b, result, c*row*col, 0, row_num, col, mode);
       } else{
-        vec_full  <T>(a, b, result, 0, row_num, col, mode);
+        for(int c = 0; c < channel; c++)
+          vec_full  <T>(a, b, result, c*row*col, 0, row_num, col, mode);
       }
     }
 
@@ -188,8 +188,15 @@ private:
   std::ostream &
   operator<<(std::ostream &os, const Tensor<U> &t){
     int height = t.m_shape[0], width = t.m_shape[1];
-    switch(t.m_shape.size()){
-    case 2:
+    if(t.m_shape[0] == 1){
+      printf("[");
+      for(int i = 0; i < t.m_data.size(); i++){
+        os << t.m_data[i];
+        if(i != t.m_data.size() - 1) os << ", ";
+      }
+      printf("]\n");
+    }
+    if(t.m_shape[0] > 1 && t.m_shape[2] == 1){
       printf("[");
       for(int h = 0; h < height; h++){
         int row_idx = h * width;
@@ -202,8 +209,9 @@ private:
         printf("]");
         if(h != height - 1) putchar('\n');
       }
-      printf("]\n"); break;
-    case 3:
+      printf("]\n");
+    }
+    if(t.m_shape[2] > 1){
       int channel = t.m_shape[2];
       printf("[");
       for(int c = 0; c < channel; c++){
@@ -216,12 +224,12 @@ private:
             if(w != width - 1) os << ", ";
           }
           printf("]");
-          if(h != height - 1) putchar('\n');
+          if(h != height - 1) printf("\n");
         }
         printf("]");
-        if(c != channel - 1) putchar('\n');
+        if(c != channel - 1) printf(",\n");
       }
-      printf("]\n"); break;
+      printf("]\n");
     }
     puts("");
     return os;
