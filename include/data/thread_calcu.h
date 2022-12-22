@@ -2,9 +2,8 @@
 #define THREAD_CALCU_H
 
 #include <basic/enumaration.h>
-#include <assert.h>
-
 #include <iostream>
+#include <assert.h>
 
 // #define DEBUG
 

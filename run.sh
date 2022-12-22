@@ -1,2 +1,1 @@
-cmake --build build
-./build/test
+cmake -B build && cmake --build build && ./build/test
