@@ -91,6 +91,10 @@ public:
   operator/(Tensor<T> &t){ return calculator(*this, t, DIVIDE);}
   Tensor<T> 
   operator/(T x){ Tensor<T> t(this->m_shape, x); return calculator(*this, t, DIVIDE);}
+  Tensor<T> 
+  operator%(Tensor<T> &t){ return calculator(*this, t, MOD);}
+  Tensor<T> 
+  operator%(T x){ Tensor<T> t(this->m_shape, x); return calculator(*this, t, MOD);}
 
   void
   operator+=(Tensor<T> &t){ *this = std::move(calculator(*this, t, PLUS));}
@@ -108,6 +112,10 @@ public:
   operator/=(Tensor<T> &t){ *this = std::move(calculator(*this, t, DIVIDE));}
   void
   operator/=(T x){ Tensor<T> t(this->m_shape, x); this->operator/=(t);}
+  void
+  operator%=(Tensor<T> &t){ *this = std::move(calculator(*this, t, MOD));}
+  void
+  operator%=(T x){ Tensor<T> t(this->m_shape, x); this->operator%=(t);}
 
   T&
   operator[](int idx){ return this->m_data[idx];}

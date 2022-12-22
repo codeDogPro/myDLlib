@@ -33,6 +33,8 @@ namespace dl{
           result[col_idx] = a[col_idx] * b[c]; break;
           case DIVIDE:
           result[col_idx] = a[col_idx] / b[c]; break;
+          case MOD:
+          result[col_idx] = a[col_idx] % b[c]; break;
           default: assert(0);
         }
 #ifdef DEBUG
@@ -59,6 +61,8 @@ namespace dl{
           result[col_idx] = a[col_idx] * b[col_idx]; break;
           case DIVIDE:
           result[col_idx] = a[col_idx] / b[col_idx]; break;
+          case MOD:
+          result[col_idx] = a[col_idx] % b[col_idx]; break;
           default: assert(0);
         }
 #ifdef DEBUG
@@ -81,6 +85,8 @@ namespace dl{
         result[i] = a[i] * b[i]; break;
         case DIVIDE:
         result[i] = a[i] / b[i]; break;
+        case MOD:
+        result[i] = a[i] % b[i]; break;
         default: assert(0);
       }
     }

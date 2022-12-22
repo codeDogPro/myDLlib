@@ -24,7 +24,8 @@ int main(){
   c += d; std::cout << c;
   c -= d; std::cout << c;
   c *= d; std::cout << c;
-  c /= d; std::cout << c;
+  // c /= d; std::cout << c;
+  c %= d; std::cout << c;
 
   // std::cout << c << c + 1 << c - 3 << c * 4 << c / 3;
 

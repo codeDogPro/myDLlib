@@ -2,7 +2,7 @@
 #define ENUMARATION_H
 
 namespace dl{
-  enum{PLUS, MINUS, MULTIPLY, DIVIDE};
+  enum{PLUS, MINUS, MULTIPLY, DIVIDE, MOD};
 
   const int BOOST_THRD = 100;
 }
