@@ -26,7 +26,7 @@ public:
   Tensor() = delete;
 
   Tensor(int row, int col, int channel, T val = 0){
-    // assert(row == col == channel == 0); // ??????
+    assert(row != 0 && col != 0 && channel != 0);
 
     this->m_data.assign(row * col * channel, val);
     this->m_shape.assign({row, col, channel});
@@ -79,21 +79,35 @@ public:
   operator+(Tensor<T> &t){ return calculator(*this, t, PLUS);}
   Tensor<T> 
   operator+(T x){ Tensor<T> t(this->m_shape, x); return calculator(*this, t, PLUS);}
-
   Tensor<T> 
   operator-(Tensor<T> &t){ return calculator(*this, t, MINUS);}
   Tensor<T> 
   operator-(T x){ Tensor<T> t(this->m_shape, x); return calculator(*this, t, MINUS);}
-
   Tensor<T> 
   operator*(Tensor<T> &t){ return calculator(*this, t, MULTIPLY);}
   Tensor<T> 
   operator*(T x){ Tensor<T> t(this->m_shape, x); return calculator(*this, t, MULTIPLY);}
-
   Tensor<T> 
   operator/(Tensor<T> &t){ return calculator(*this, t, DIVIDE);}
   Tensor<T> 
   operator/(T x){ Tensor<T> t(this->m_shape, x); return calculator(*this, t, DIVIDE);}
+
+  void
+  operator+=(Tensor<T> &t){ *this = std::move(calculator(*this, t, PLUS));}
+  void
+  operator+=(T x){ Tensor<T> t(this->m_shape, x); this->operator+=(t);}
+  void
+  operator-=(Tensor<T> &t){ *this = std::move(calculator(*this, t, MINUS));}
+  void
+  operator-=(T x){ Tensor<T> t(this->m_shape, x); this->operator-=(t);}
+  void
+  operator*=(Tensor<T> &t){ *this = std::move(calculator(*this, t, MULTIPLY));}
+  void
+  operator*=(T x){ Tensor<T> t(this->m_shape, x); this->operator*=(t);}
+  void
+  operator/=(Tensor<T> &t){ *this = std::move(calculator(*this, t, DIVIDE));}
+  void
+  operator/=(T x){ Tensor<T> t(this->m_shape, x); this->operator/=(t);}
 
   T&
   operator[](int idx){ return this->m_data[idx];}
@@ -147,7 +161,6 @@ private:
           if(a.m_shape[0] != b.m_shape[0]){
             if(b.m_shape[0] != 1) goto erro; 
 
-            // puts("ready create thread");
             std::thread task(vec_single<T>, std::ref(a), std::ref(b), std::ref(result),
                              c*row*col, row_begin, row_num, col, mode);
             pool.push_back(std::move(task));
@@ -169,7 +182,7 @@ private:
           vec_single<T>(a, b, result, c*row*col, 0, row_num, col, mode);
       } else{
         for(int c = 0; c < channel; c++)
-          vec_full  <T>(a, b, result, c*row*col, 0, row_num, col, mode);
+          vec_full_s<T>(a, b, result, mode);
       }
     }
 

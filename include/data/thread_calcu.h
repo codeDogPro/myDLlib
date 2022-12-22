@@ -68,6 +68,23 @@ namespace dl{
     }
   }
 
+  template<typename T>
+  void vec_full_s // just add a.m_data and b.m_data
+  (Tensor<T> &a, Tensor<T> &b, Tensor<T> &result, int mode){
+    for(int i = 0; i < a.get_data().size(); i++){
+      switch(mode){
+        case PLUS:
+        result[i] = a[i] + b[i]; break;
+        case MINUS:
+        result[i] = a[i] - b[i]; break;
+        case MULTIPLY:
+        result[i] = a[i] * b[i]; break;
+        case DIVIDE:
+        result[i] = a[i] / b[i]; break;
+        default: assert(0);
+      }
+    }
+  }
 }
 
 #endif
