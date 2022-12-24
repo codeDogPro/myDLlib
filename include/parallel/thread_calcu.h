@@ -1,5 +1,4 @@
-#ifndef THREAD_CALCU_H
-#define THREAD_CALCU_H
+#pragma once
 
 #include <basic/enumaration.h>
 #include <iostream>
@@ -91,5 +90,3 @@ namespace dl{
     }
   }
 }
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef NN_H
-#define NN_H
+#pragma once
 
 #include <data/tensor.h>
 #include <basic/function.h>
@@ -42,4 +41,3 @@ namespace dl{
   };
 
 }
-#endif

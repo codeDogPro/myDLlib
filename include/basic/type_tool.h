@@ -1,5 +1,4 @@
-#ifndef TYPE_TOOL_H
-#define TYPE_TOOL_H
+#pragma once
 
 #include <string>
 #include <cstdlib>
@@ -32,6 +31,3 @@ std::string type_name(){
 }
 
 }
-
-
-#endif

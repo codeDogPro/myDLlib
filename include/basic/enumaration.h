@@ -1,5 +1,4 @@
-#ifndef ENUMARATION_H
-#define ENUMARATION_H
+#pragma once
 
 namespace dl{
   enum{PLUS, MINUS, MULTIPLY, DIVIDE, MOD};
@@ -8,4 +7,3 @@ namespace dl{
 
   const int BOOST_THRD = 100;
 }
-#endif

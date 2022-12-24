@@ -1,5 +1,4 @@
-#ifndef FUNCTIONAL_H
-#define FUNCTIONAL_H
+#pragma once
 
 #include <data/tensor.h>
 
@@ -17,4 +16,3 @@ namespace dl{
  
 
 }
-#endif

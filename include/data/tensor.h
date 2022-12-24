@@ -1,11 +1,9 @@
-#ifndef TENSOR_H
-#define TENSOR_H
+#pragma once
 
 // #define BENCH
 
 #include <data/rand_init.h>
-#include <data/thread_calcu.h>
-#include <basic/enumaration.h>
+#include <parallel/parallel.h>
 #ifdef BENCH
 #include <basic/timer.h>
 #endif
@@ -161,7 +159,7 @@ private:
           int row_begin = i * row_num;
           if(a.m_shape[0] != b.m_shape[0]){
             if(b.m_shape[0] != 1) goto erro; 
-
+            // TODO: api<function, T>
             std::thread task(vec_single<T>, std::ref(a), std::ref(b), std::ref(result),
                              c*row*col, row_begin, row_num, col, mode);
             pool.push_back(std::move(task));
@@ -282,5 +280,3 @@ private:
   }
 }
 
-
-#endif

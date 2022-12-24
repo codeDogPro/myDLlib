@@ -1,6 +1,3 @@
-#ifndef DL_H
-#define DL_H
+#pragma once
 
 #include <model/nn.h>
-
-#endif
