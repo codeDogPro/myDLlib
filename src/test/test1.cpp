@@ -45,10 +45,14 @@ int main(){
   // Tensor<int> a(10000, 10000, 1, 3);
 
   // auto b = a + 4;
-
+  
+  std::vector<int> a;
+  
   std::vector<Function<int> *> model;
   model.push_back(new Linear<int>(3, 2));
   Tensor<int> input(1, 3, 1, 2);
+  std::cout << input;
   auto output = model[0]->forward(input);
+  std::cout << output;
   return 0;
 }

@@ -25,9 +25,7 @@ namespace dl{
     forward(Tensor<T> &input) override{
       if(auto_grad) grad = input;
 
-      std::cout << m_paremeter;
       Tensor<T> mat = m_paremeter * input;
-      std::cout << mat;
       return mat.sum(); 
     }
 
@@ -35,6 +33,7 @@ namespace dl{
     // backward() override{
     //   return 
     // }
+
 
   private:
     bool auto_grad;

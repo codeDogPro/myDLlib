@@ -23,7 +23,7 @@ template<typename T>
 class Tensor{
 
 public:
-  Tensor() = default;
+  Tensor() = delete;
 
   Tensor(int row, int col, int channel=1, T val=0){
     assert(row != 0 && col != 0 && channel != 0);
@@ -72,8 +72,7 @@ public:
     return *this;
   }
 
-  Tensor<T> 
-  calculator(Tensor<T> &a, Tensor<T> &b, int mode);
+  Tensor<T> calculator(Tensor<T> &a, Tensor<T> &b, int mode);
 
   Tensor<T> 
   operator+(Tensor<T> &t){ return calculator(*this, t, PLUS);}
@@ -110,11 +109,12 @@ public:
   T&   operator[](int idx){ return m_data[idx];}
 
   template<typename U>
-  friend std::ostream &
-  operator<<(std::ostream &os, const Tensor<U> &t);
+  friend std::ostream & operator<<(std::ostream &os, const Tensor<U> &t);
 
-  Tensor<T> sum();
-  Tensor<T> mean();
+  Tensor<T> sum(int axis=0, bool keepdim=false);
+  Tensor<T> mean(int axis=0, bool keepdim=false);
+  Tensor<T> max(int axis=0, bool keepdim=false);
+  Tensor<T> min(int axis=0, bool keepdim=false);
 
   void shape(){
     printf("shape:[");
@@ -207,7 +207,7 @@ private:
   */
   template<typename T>
   static Tensor<T>
-  sum_or_means(Tensor<T> &t, int mode){
+  sum_or_mean(Tensor<T> &t, int mode){
     int row = t.m_shape[0], col = t.m_shape[1], channel = t.m_shape[2];
     std::vector<T> data, shape{1, row, channel};
     for(int cnt = 0, sum = 0; T x : t.get_cdata()){
@@ -225,9 +225,15 @@ private:
   }
 
   template<typename T>
-  Tensor<T> Tensor<T>::sum(){return sum_or_means<T>(*this, SUM);}
+  Tensor<T> 
+  Tensor<T>::sum(int axis=0, bool keepdim=false){
+    return sum_or_means<T>(*this, SUM);
+  }
   template<typename T>
-  Tensor<T> Tensor<T>::mean(){return sum_or_means<T>(*this, MEAN);}
+  Tensor<T> 
+  Tensor<T>::mean(int axis=0, bool keepdim=false){
+    return sum_or_means<T>(*this, MEAN);
+  }
 
 
   template<typename U>
