@@ -159,14 +159,16 @@ private:
           int row_begin = i * row_num;
           if(a.m_shape[0] != b.m_shape[0]){
             if(b.m_shape[0] != 1) goto erro; 
-            // TODO: api<function, T>
-            std::thread task(vec_single<T>, std::ref(a), std::ref(b), std::ref(result),
-                             c*row*col, row_begin, row_num, col, mode);
-            pool.push_back(std::move(task));
-          } else{
-            std::thread task(vec_full<T>, std::ref(a), std::ref(b), std::ref(result),
-                             c*row*col, row_begin, row_num, col, mode);
-            pool.push_back(std::move(task));
+            // 尝试使用可变参数模板来抽象并行api
+          
+            // parallel()
+          //   std::thread task(vec_single<T>, std::ref(a), std::ref(b), std::ref(result),
+          //                    c*row*col, row_begin, row_num, col, mode);
+          //   pool.push_back(std::move(task));
+          // } else{
+          //   std::thread task(vec_full<T>, std::ref(a), std::ref(b), std::ref(result),
+          //                    c*row*col, row_begin, row_num, col, mode);
+          //   pool.push_back(std::move(task));
           }
         }
         for(auto &task : pool) task.join();
