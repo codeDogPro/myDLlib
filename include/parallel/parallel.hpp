@@ -1,7 +1,7 @@
 #pragma once
 
-#include <parallel/thread_pool.h>
-#include <parallel/thread_calcu.h>
+#include <parallel/thread_pool.hpp>
+#include <parallel/thread_calcu.hpp>
 
 const int pool_size = 100;
 

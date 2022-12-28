@@ -1,6 +1,6 @@
 #pragma once
 
-#include <basic/enumaration.h>
+#include <basic/enumaration.hpp>
 #include <iostream>
 #include <assert.h>
 

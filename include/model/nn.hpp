@@ -1,7 +1,7 @@
 #pragma once
 
-#include <data/tensor.h>
-#include <basic/function.h>
+#include <data/tensor.hpp>
+#include <basic/function.hpp>
 
 namespace dl{
 
