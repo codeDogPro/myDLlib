@@ -1,3 +1,3 @@
 #pragma once
 
-#include <model/nn.h>
+#include <model/nn.hpp>

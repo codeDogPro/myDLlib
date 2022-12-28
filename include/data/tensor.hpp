@@ -1,6 +1,6 @@
 #pragma once
 
-// #define BENCH
+#define BENCH
 
 #include <data/rand_init.hpp>
 #include <parallel/parallel.hpp>
@@ -137,6 +137,7 @@ private:
 
 //################### Tensor::member functions' implementation ###################
 
+
   template<typename T>
   Tensor<T> 
   Tensor<T>::calculator(Tensor<T> &a, Tensor<T> &b, int mode){
@@ -149,43 +150,60 @@ private:
 #ifdef BENCH
     Timer t;
 #endif
-    // if the tensor is big enough, boost it.
-    if(a.m_shape[0] >= ncpu * BOOST_THRD){ 
-      int row_num = a.m_shape[0] / ncpu;
-
-      for(int c = 0; c < channel; c++){
-        std::vector<std::thread> pool;
-        for(int i = 0; i < ncpu; i++){
-          int row_begin = i * row_num;
-          if(a.m_shape[0] != b.m_shape[0]){
-            if(b.m_shape[0] != 1) goto erro; 
-            // 尝试使用可变参数模板来抽象并行api
-          
-            // parallel()
-          //   std::thread task(vec_single<T>, std::ref(a), std::ref(b), std::ref(result),
-          //                    c*row*col, row_begin, row_num, col, mode);
-          //   pool.push_back(std::move(task));
-          // } else{
-          //   std::thread task(vec_full<T>, std::ref(a), std::ref(b), std::ref(result),
-          //                    c*row*col, row_begin, row_num, col, mode);
-          //   pool.push_back(std::move(task));
-          }
+    std::vector<std::thread> pool;
+    // When a and b are totally same shape.
+    if(a.m_shape[0] == b.m_shape[0]){
+      // The channel num is way much than row, so boost for channel calculation
+      if(channel >= ncpu * BOOST_CHANNEL){
+        int ch_num = NTHREAD_C(ncpu) / channel;
+        for(int i = 0; i < NTHREAD_C(ncpu); i++){
+          std::thread task(vec_channel_f<T>, std::ref(a), std::ref(b), std::ref(result),
+                           ch_num * i, ch_num, mode);
+          pool.push_back(std::move(task));
         }
-        for(auto &task : pool) task.join();
+      } else{
+      // The row num is way much than channel, so boost for row calculation
+        if(row >= ncpu * BOOST_ROW){
+          int row_num = NTHREAD_R(ncpu) / row;
+          for(int ch = 0; ch < channel; ch++)
+            for(int i = 0; i < NTHREAD_C(ncpu); i++){
+              std::thread task(vec_row_f<T>, std::ref(a), std::ref(b), std::ref(result),
+                              ch, row_num * i, row_num, mode);
+              pool.push_back(std::move(task));
+            }
+        } else{
+          for(int ch = 0; ch < channel; ch++)
+            vec_row_s(a, b, result, ch, 0, row, mode); 
+        }
       }
     } 
-    else{ // don't need to boost.
-      int row_num = a.m_shape[0];
-      if(a.m_shape[0] != b.m_shape[0]){
-        if(b.m_shape[0] != 1) goto erro; 
-
-        for(int c = 0; c < channel; c++)
-          vec_single<T>(a, b, result, c*row*col, 0, row_num, col, mode);
+    // When a is not same shape with b.
+    else{
+      if(b.m_shape[0] != 1) goto erro;
+      
+      if(channel >= ncpu * BOOST_CHANNEL){
+        int ch_num = NTHREAD_C(ncpu) / channel;
+        for(int i = 0; i < NTHREAD_C(ncpu); i++){
+          std::thread task(vec_channel_s<T>, std::ref(a), std::ref(b), std::ref(result),
+                           ch_num * i, ch_num, mode);
+          pool.push_back(std::move(task));
+        }
       } else{
-        for(int c = 0; c < channel; c++)
-          vec_full_s<T>(a, b, result, mode);
+        if(row > ncpu * BOOST_ROW){
+          int row_num = NTHREAD_R(ncpu) / row;
+          for(int ch = 0; ch < channel; ch++)
+            for(int i = 0; i < NTHREAD_C(ncpu); i++){
+              std::thread task(vec_row_s<T>, std::ref(a), std::ref(b), std::ref(result),
+                              ch, row_num * i, row_num, mode);
+              pool.push_back(std::move(task));
+            }
+        } else{
+          for(int ch = 0; ch < channel; ch++)
+            vec_row_s(a, b, result, ch, 0, row, mode); 
+        }
       }
     }
+    for(auto &task : pool) task.join();
 
     return result;
 
