@@ -1,5 +1,4 @@
-#ifndef TIMER_H
-#define TIMER_H
+#pragma once
 
 #include <iostream>
 #include <chrono>
@@ -32,4 +31,3 @@ public:
 private:
     std::chrono::time_point<std::chrono::high_resolution_clock> m_StartTimePoint, m_EndTimePoint;
 };
-#endif

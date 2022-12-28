@@ -1,4 +1,4 @@
-#include <dl.h>
+#include <dl.hpp>
 
 using namespace dl;
 
@@ -14,16 +14,16 @@ int main(){
 
   // a.shape();
 
-  // // Tensor<int> a(8,4);
-  // Tensor<int> c(2, 4, 1, 2);
-  // Tensor<int> d(2, 4, 1, 3);
+  // Tensor<int> a(8,4);
+  Tensor<int> c(20, 40, 512 * 8, 2);
+  Tensor<int> d(20, 40, 512 * 8, 4);
 
   // std::cout << c;
-  // c += d; std::cout << c;
-  // c -= d; std::cout << c;
-  // c *= d; std::cout << c;
-  // c /= d; std::cout << c;
-  // c %= d; std::cout << c;
+  c += d; //std::cout << c;
+  c -= d; //std::cout << c;
+  c *= d; //std::cout << c;
+  c /= d; //std::cout << c;
+  c %= d; //std::cout << c;
 
   // std::cout << c << c + 1 << c - 3 << c * 4 << c / 3;
 

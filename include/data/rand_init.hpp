@@ -1,7 +1,6 @@
-#ifndef RAND_INIT_H
-#define RAND_INIT_H
+#pragma once
 
-#include <basic/type_tool.h>
+#include <basic/type_tool.hpp>
 
 #include <random>
 #include <ctime>
@@ -26,5 +25,3 @@ namespace dl{
   }
 
 }
-
-#endif
