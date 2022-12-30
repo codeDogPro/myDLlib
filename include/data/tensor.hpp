@@ -21,8 +21,9 @@ template<typename T>
 class Tensor{
 
 public:
-  Tensor() = delete;
+  explicit Tensor() = default;
 
+  explicit
   Tensor(int row, int col, int channel=1, T val=0){
     assert(row != 0 && col != 0 && channel != 0);
 
@@ -31,6 +32,7 @@ public:
     if(val == 0){ rand_init(*this);}
   }
 
+  explicit
   Tensor(const std::vector<int> &shape, T val=0){
     assert(shape.size() != 0);
 
@@ -40,10 +42,12 @@ public:
     if(val == 0){ rand_init(*this);}
   }
 
+  explicit
   Tensor(std::vector<int> &data, std::vector<int> &shape)
   : m_data(data), m_shape(shape){}
 
   // deep copy
+  explicit
   Tensor(const Tensor<T> &t){ 
     m_data.assign(t.m_data.size(), 0);
     m_shape = t.m_shape;
@@ -110,7 +114,7 @@ public:
   friend std::ostream & operator<<(std::ostream &os, const Tensor<U> &t);
 
   Tensor<T> sum(int axis=0, bool keepdim=false);
-  Tensor<T> mean(int axis=0, bool keepdim=false);
+  Tensor<T> average(int axis=0, bool keepdim=false);
   Tensor<T> max(int axis=0, bool keepdim=false);
   Tensor<T> min(int axis=0, bool keepdim=false);
 
@@ -217,7 +221,7 @@ private:
   /*
     usage: Sum up each row, and create a new Tensor that contain the result.
     The result's shape must be [1 x out_dim x channel]
-
+                                   keepdim=true      =false
     exampl:                            [[6],        (result)
       [[1, 2, 3]  -----> sum()  ----->  [15]] -----> [6, 15]
        [4, 5, 6]] -----> mean() -----> [[2],  -----> [2, 5]                     
@@ -225,40 +229,80 @@ private:
   */
   template<typename T>
   static Tensor<T>
-  sum_or_mean(Tensor<T> &t, int mode){
+  sum_mean(Tensor<T> &t, int axis, int mode, bool keepdim){
+    int ncpu = std::thread::hardware_concurrency();
     int row = t.m_shape[0], col = t.m_shape[1], channel = t.m_shape[2];
-    std::vector<T> data, shape{1, row, channel};
-    for(int cnt = 0, sum = 0; T x : t.get_cdata()){
-      sum += x;
-      if(++cnt == col){
-        if(mode == SUM) 
-          data.push_back(sum);
-        if(mode == MEAN)
-          data.push_back(sum / col);
-        sum = cnt = 0;
-      }
-    }
-    assert(data.size() == row * channel);
-    return Tensor<T>(data, shape);
+    int square = row * col;
+    std::vector<std::thread> pool;
+    Tensor<T> res;
+#ifdef BENCH
+    Timer time;
+#endif
+    switch(axis){
+      case COL:
+        if(keepdim) res = Tensor<T>(row, 1, channel);
+        else        res = Tensor<T>(1, row, channel);
+        // The channel num is way much than row, so boost for channel calculation
+        if(channel >= ncpu * BOOST_CHANNEL){
+          int ch_num = channel / NTHREAD_C(ncpu);
+          for(int i = 0; i < NTHREAD_C(ncpu); i++){
+            int start = square * ch_num * i, end = start + square * ch_num;
+            int res_i = ch_num * i * row;
+            std::thread task(sum_mean_axis0<T>, std::ref(t), std::ref(res), 
+                             start, end, res_i, mode);
+            pool.push_back(std::move(task));
+          }
+          break;
+        }
+        // The row num is way much than channel, so boost for row calculation.
+        if(row >= ncpu * BOOST_ROW){
+          int row_num = row / NTHREAD_R(ncpu);
+          for(int ch = 0; ch < channel; ch++)
+            for(int i = 0; i < NTHREAD_R(ncpu); i++){
+              int start = square * ch + row_num * i * col;
+              int end = start + square * row_num;
+              int res_i = ch * row + row_num * i;
+              std::thread task(sum_mean_axis0<T>, std::ref(t), std::ref(res), 
+                              start, end, res_i, mode);
+              pool.push_back(std::move(task));
+            }
+          break;
+        }
+        // Not need to boost.
+        sum_mean_axis0(t, res, 0, t.get_data().size(), 0, mode); break; 
+      case ROW:
+        res = Tensor<T>(1, col, channel);
+        break;
+
+      case CHANNEL:
+        res = Tensor<T>(row, col, 1);
+        break;
+    } 
+    for(auto &task : pool) task.join();
+
+    return res;
   }
 
   template<typename T>
   Tensor<T> 
-  Tensor<T>::sum(int axis=0, bool keepdim=false){
-    return sum_or_means<T>(*this, SUM);
+  Tensor<T>::sum(int axis, bool keepdim){
+    std::cout << "axis:" << axis << std::endl;
+    return sum_mean(*this, axis, SUM, keepdim);
   }
   template<typename T>
   Tensor<T> 
-  Tensor<T>::mean(int axis=0, bool keepdim=false){
-    return sum_or_means<T>(*this, MEAN);
+  Tensor<T>::average(int axis, bool keepdim){
+    std::cout << "axis:" << axis << std::endl;
+    return sum_mean(*this, axis, MEAN, keepdim);
   }
 
 
   template<typename U>
   std::ostream &
   operator<<(std::ostream &os, const Tensor<U> &t){
-    int height = t.m_shape[0], width = t.m_shape[1];
-    if(t.m_shape[0] == 1){
+    int height = t.m_shape[0], width = t.m_shape[1], channel = t.m_shape[2];
+
+    if(height == 1 && channel == 1){
       printf("[");
       for(int i = 0; i < t.m_data.size(); i++){
         os << t.m_data[i];
@@ -266,7 +310,7 @@ private:
       }
       printf("]\n");
     }
-    if(t.m_shape[0] > 1 && t.m_shape[2] == 1){
+    if(height > 1 && channel == 1){
       printf("[");
       for(int h = 0; h < height; h++){
         int row_idx = h * width;
@@ -281,13 +325,14 @@ private:
       }
       printf("]\n");
     }
-    if(t.m_shape[2] > 1){
-      int channel = t.m_shape[2];
+    if(channel > 1){
       printf("[");
       for(int c = 0; c < channel; c++){
+        if(c != 0)            printf(" ");
         printf("[");
         for(int h = 0; h < height; h++){
           int row_idx = h * width;
+          if(h != 0)          printf("  ");
           printf("[");
           for(int w = 0; w < width; w++){
             os << t.m_data[row_idx + w];
@@ -297,7 +342,7 @@ private:
           if(h != height - 1) printf("\n");
         }
         printf("]");
-        if(c != channel - 1) printf(",\n");
+        if(c != channel - 1)  printf(",\n");
       }
       printf("]\n");
     }

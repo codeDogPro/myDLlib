@@ -15,15 +15,17 @@ int main(){
   // a.shape();
 
   // Tensor<int> a(8,4);
-  Tensor<int> c(20, 40, 512 * 8, 2);
-  Tensor<int> d(20, 40, 512 * 8, 4);
+  Tensor<int> c(30, 40, 512 * 8, 2);
+  // Tensor<int> d(20, 40, 512, 4);
 
+  c.sum();
   // std::cout << c;
-  c += d; //std::cout << c;
-  c -= d; //std::cout << c;
-  c *= d; //std::cout << c;
-  c /= d; //std::cout << c;
-  c %= d; //std::cout << c;
+  // std::cout << c.sum(0, false);
+  // c += d; //std::cout << c;
+  // c -= d; //std::cout << c;
+  // c *= d; //std::cout << c;
+  // c /= d; //std::cout << c;
+  // c %= d; //std::cout << c;
 
   // std::cout << c << c + 1 << c - 3 << c * 4 << c / 3;
 
@@ -46,13 +48,13 @@ int main(){
 
   // auto b = a + 4;
   
-  std::vector<int> a;
+  // std::vector<int> a;
   
-  std::vector<Function<int> *> model;
-  model.push_back(new Linear<int>(3, 2));
-  Tensor<int> input(1, 3, 1, 2);
-  std::cout << input;
-  auto output = model[0]->forward(input);
-  std::cout << output;
+  // std::vector<Function<int> *> model;
+  // model.push_back(new Linear<int>(3, 2));
+  // Tensor<int> input(1, 3, 1, 2);
+  // std::cout << input;
+  // auto output = model[0]->forward(input);
+  // std::cout << output;
   return 0;
 }
