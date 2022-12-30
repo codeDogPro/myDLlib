@@ -11,8 +11,8 @@ namespace dl{
 
   // enum{ARTHMATIC_F, ARTHMATIC_S, SUMUP, AVERAGE, GETMAX, GETMIN};
 
-  const int BOOST_ROW = 256;
-  const int BOOST_CHANNEL = 512;
+  const int BOOST_ROW = 1 << 7;
+  const int BOOST_CHANNEL = 1 << 0;
   #define NTHREAD_C(ncpu) (ncpu * 1)
   #define NTHREAD_R(ncpu) (ncpu * 1)
 }

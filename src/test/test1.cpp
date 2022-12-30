@@ -15,11 +15,13 @@ int main(){
   // a.shape();
 
   // Tensor<int> a(8,4);
-  Tensor<int> c(30, 40, 512 * 8, 2);
+  // Tensor<int> c(30, 40, 512 * 8, 2);
+  Tensor<int> c(2, 2,  5, 2);
   // Tensor<int> d(20, 40, 512, 4);
 
-  c.sum();
-  // std::cout << c;
+  // c.sum(1);
+  std::cout << c;
+  std::cout << c.sum(2);
   // std::cout << c.sum(0, false);
   // c += d; //std::cout << c;
   // c -= d; //std::cout << c;

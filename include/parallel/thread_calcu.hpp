@@ -137,16 +137,84 @@ namespace dl{
   }
 
   template<typename T>
-  void sum_mean_axis1
-  (Tensor<T> &t, Tensor<T> &res, 
-   int col_begin, int col_num, int res_i, int mode){
-    int col = t.m_shape[1];
+  void sum_mean_axis1_channel
+  (Tensor<T> &t, Tensor<T> &res, int start, int end, int res_i, int mode){
+    int col = t.m_shape[1], row = t.m_shape[0], square = row * col; 
     std::vector<T> sums(col, 0);
+    for(int i = start, cnt = 0; i < end; i++){
+      sums[i % col] += t[i];
+      if(++cnt == square){
+        for(auto &sum : sums){
+          if(mode == SUM)
+            res[res_i++] = sum;
+          if(mode == MEAN)
+            res[res_i++] = sum / row;
+          sum = 0;
+        }
+        cnt = 0;
+      } 
+    }
   }
 
   template<typename T>
-  void sum_mean_axis2
-  (Tensor<T> &t, Tensor<T> &res, int start, int end, int res_i, int mode){
+  void sum_mean_axis1_col
+  (Tensor<T> &t, Tensor<T> &res, int start, int col_num, int res_i, int mode){
+    int row = t.m_shape[0], col = t.m_shape[1], square = row * col_num;
+    std::vector<T> sums(col_num, 0);
+    for(int r = 0, i = start; r < row; r++, i += col)
+      for(int c = 0; c < col_num; c++, i++)
+        sums[c] += t[i];
+    for(auto &sum : sums){
+      if(mode == SUM)
+        res[res_i++] = sum;
+      if(mode == MEAN)
+        res[res_i++] = sum / row;
+    }
+  }
 
+  template<typename T>
+  void sum_mean_axis2_row
+  (Tensor<T> &t, Tensor<T> &res, int start, int end, int row_num, int res_i, int mode){
+    int row = t.m_shape[0], col = t.m_shape[1];
+    int zone = row_num * col, square = row * col;
+    std::vector<T> sums(zone, 0);
+    for(int i = start, cnt = 0; i < end; i++){
+      sums[cnt] += t[i];
+      if(++cnt == zone){
+        i += square - zone;
+        cnt = 0;
+      }
+    }
+    for(auto & sum : sums){
+      if(mode == SUM)
+        res[res_i++] = sum;
+      if(mode == MEAN)
+        res[res_i++] = sum / row;
+    }
+  }
+
+  template<typename T>
+  void sum_mean_axis2_col
+  (Tensor<T> &t, Tensor<T> &res, int start, int end, int col_num, int res_i, int mode){
+    int row = t.m_shape[0], col = t.m_shape[1], channel = t.m_shape[2];
+    int zone = col_num * row, square = row * col;
+    std::vector<T> sums(zone, 0);
+    for(int i = start, cnt = 0, sums_i = 0; i < end; i++){
+      sums[sums_i++] += t[i];
+      if(++cnt == col_num){
+        i += col - col_num;
+        cnt = 0;
+      }
+    }
+    for(int cnt = 0; auto & sum : sums){
+      if(mode == SUM)
+        res[res_i++] = sum;
+      if(mode == MEAN)
+        res[res_i++] = sum / channel; 
+      if(++cnt == col_num){
+        res_i += col - col_num;
+        cnt = 0;
+      }
+    }
   }
 }
