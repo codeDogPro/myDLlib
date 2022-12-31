@@ -120,100 +120,218 @@ namespace dl{
     }
   }
 
-  template<typename T>
-  void sum_mean_axis0
-  (Tensor<T> &t, Tensor<T> &res, int start, int end, int res_i, int mode){
-    int col = t.m_shape[1]; 
-    for(int i = start, cnt = 0, sum = 0; i < end; i++){
-      sum += t[i];
-      if(++cnt == col){
-        if(mode == SUM)
-          res[res_i++] = sum;
-        if(mode == MEAN)
-          res[res_i++] = sum / col;
-        sum = cnt = 0;
-      }
-    }
-  }
+  using std::max, std::min;
 
   template<typename T>
-  void sum_mean_axis1_channel
+  void operator_axis0
   (Tensor<T> &t, Tensor<T> &res, int start, int end, int res_i, int mode){
-    int col = t.m_shape[1], row = t.m_shape[0], square = row * col; 
-    std::vector<T> sums(col, 0);
-    for(int i = start, cnt = 0; i < end; i++){
-      sums[i % col] += t[i];
-      if(++cnt == square){
-        for(auto &sum : sums){
+    int col = t.m_shape[1], cnt = 0; 
+    if(mode == SUM)
+      for(int i = start, sum = 0; i < end; i++){
+        sum += t[i];
+        if(++cnt == col){
           if(mode == SUM)
             res[res_i++] = sum;
           if(mode == MEAN)
-            res[res_i++] = sum / row;
-          sum = 0;
+            res[res_i++] = sum / col;
+          sum = cnt = 0;
         }
-        cnt = 0;
-      } 
-    }
+      }
+    if(mode == MAX)
+      for(int i = start, max_ = 1e-8; i < end; i++){
+        max_ = max(max_, t[i]);
+        if(++cnt == col){
+          res[res_i++] = max_;
+          cnt = 0; max_ = 1e-8;
+        }
+      }
+    if(mode == MIN)
+      for(int i = start, min_ = 1e8; i < end; i++){
+        min_ = min(min_, t[i]);
+        if(++cnt == col){
+          res[res_i++] = min_;
+          cnt = 0; min_ = 1e8;
+        }
+      }
   }
 
   template<typename T>
-  void sum_mean_axis1_col
-  (Tensor<T> &t, Tensor<T> &res, int start, int col_num, int res_i, int mode){
-    int row = t.m_shape[0], col = t.m_shape[1], square = row * col_num;
-    std::vector<T> sums(col_num, 0);
-    for(int r = 0, i = start; r < row; r++, i += col)
-      for(int c = 0; c < col_num; c++, i++)
-        sums[c] += t[i];
-    for(auto &sum : sums){
-      if(mode == SUM)
-        res[res_i++] = sum;
-      if(mode == MEAN)
-        res[res_i++] = sum / row;
-    }
-  }
-
-  template<typename T>
-  void sum_mean_axis2_row
-  (Tensor<T> &t, Tensor<T> &res, int start, int end, int row_num, int res_i, int mode){
-    int row = t.m_shape[0], col = t.m_shape[1];
-    int zone = row_num * col, square = row * col;
-    std::vector<T> sums(zone, 0);
-    for(int i = start, cnt = 0; i < end; i++){
-      sums[cnt] += t[i];
-      if(++cnt == zone){
-        i += square - zone;
-        cnt = 0;
+  void operator_axis1_channel
+  (Tensor<T> &t, Tensor<T> &res, int start, int end, int res_i, int mode){
+    int col = t.m_shape[1], row = t.m_shape[0], square = row * col, cnt = 0; 
+    if(mode == SUM || mode == MEAN){
+      std::vector<T> sums(col, 0);
+      for(int i = start; i < end; i++){
+        sums[i % col] += t[i];
+        if(++cnt == square){
+          for(auto &sum : sums){
+            if(mode == SUM)
+              res[res_i++] = sum;
+            if(mode == MEAN)
+              res[res_i++] = sum / row;
+            sum = 0;
+          } cnt = 0;
+        } 
       }
     }
-    for(auto & sum : sums){
-      if(mode == SUM)
-        res[res_i++] = sum;
-      if(mode == MEAN)
-        res[res_i++] = sum / row;
+    if(mode == MAX){
+      std::vector<T> maxs(col, 1e-8);
+      for(int i = start; i < end; i++){
+        maxs[i % col] = max(maxs[i % col], t[i]);
+        if(++cnt == square){
+          for(auto &max_ : maxs){
+            res[res_i++] = max_; max_ = 1e-8;
+          } cnt = 0;
+        } 
+      }
+    }
+    if(mode == MIN){
+      std::vector<T> mins(col, 1e8);
+      for(int i = start; i < end; i++){
+        mins[i % col] = min(mins[i % col], t[i]);
+        if(++cnt == square){
+          for(auto &min_ : mins){
+            res[res_i++] = min_; min_ = 1e8;
+          } cnt = 0;
+        } 
+      }
     }
   }
 
   template<typename T>
-  void sum_mean_axis2_col
+  void operator_axis1_col
+  (Tensor<T> &t, Tensor<T> &res, int start, int col_num, int res_i, int mode){
+    int row = t.m_shape[0], col = t.m_shape[1], square = row * col_num;
+    if(mode == SUM || mode == MEAN){
+      std::vector<T> sums(col_num, 0);
+      for(int r = 0, i = start; r < row; r++, i += col)
+        for(int c = 0; c < col_num; c++, i++)
+          sums[c] += t[i];
+      for(auto sum : sums){
+        if(mode == SUM)
+          res[res_i++] = sum;
+        if(mode == MEAN)
+          res[res_i++] = sum / row;
+      }
+    }
+    if(mode == MAX){
+      std::vector<T> maxs(col_num, 1e-8);
+      for(int r = 0, i = start; r < row; r++, i += col)
+        for(int c = 0; c < col_num; c++, i++)
+          maxs[c] = max(maxs[c], t[i]);
+      for(auto max : maxs) res[res_i++] = max;
+    }
+    if(mode == MIN){
+      std::vector<T> mins(col_num, 1e8);
+      for(int r = 0, i = start; r < row; r++, i += col)
+        for(int c = 0; c < col_num; c++, i++)
+          mins[c] = min(mins[c], t[i]);
+      for(auto min : mins) res[res_i++] = min;
+    }
+  }
+
+  template<typename T>
+  void operator_axis2_row
+  (Tensor<T> &t, Tensor<T> &res, int start, int end, int row_num, int res_i, int mode){
+    int row = t.m_shape[0], col = t.m_shape[1];
+    int zone = row_num * col, square = row * col, cnt = 0;
+    if(mode == SUM || mode == MEAN){
+      std::vector<T> sums(zone, 0);
+      for(int i = start, cnt = 0; i < end; i++){
+        sums[cnt] += t[i];
+        if(++cnt == zone){
+          i += square - zone;
+          cnt = 0;
+        }
+      }
+      for(auto & sum : sums){
+        if(mode == SUM)
+          res[res_i++] = sum;
+        if(mode == MEAN)
+          res[res_i++] = sum / row;
+      }
+    }
+    if(mode == MAX){
+      std::vector<T> maxs(zone, 1e-8);
+      for(int i = start; i < end; i++){
+        maxs[cnt] = max(maxs[cnt], t[i]);
+        if(++cnt == zone){
+          i += square - zone;
+          cnt = 0;
+        }
+      }
+      for(auto max : maxs) res[res_i++] = max;
+    }
+    if(mode == MIN){
+      std::vector<T> mins(zone, 1e8);
+      for(int i = start; i < end; i++){
+        mins[cnt] = min(mins[cnt], t[i]);
+        if(++cnt == zone){
+          i += square - zone;
+          cnt = 0;
+        }
+      }
+      for(auto min : mins) res[res_i++] = min;
+    }
+  }
+
+  template<typename T>
+  void operator_axis2_col
   (Tensor<T> &t, Tensor<T> &res, int start, int end, int col_num, int res_i, int mode){
     int row = t.m_shape[0], col = t.m_shape[1], channel = t.m_shape[2];
     int zone = col_num * row, square = row * col;
-    std::vector<T> sums(zone, 0);
-    for(int i = start, cnt = 0, sums_i = 0; i < end; i++){
-      sums[sums_i++] += t[i];
-      if(++cnt == col_num){
-        i += col - col_num;
-        cnt = 0;
+    if(mode == SUM || mode == MEAN){
+      std::vector<T> sums(zone, 0);
+      for(int i = start, cnt = 0, sums_i = 0; i < end; i++){
+        sums[sums_i++] += t[i];
+        if(++cnt == col_num){
+          i += col - col_num;
+          cnt = 0;
+        }
+      }
+      for(int cnt = 0; auto sum : sums){
+        if(mode == SUM)
+          res[res_i++] = sum;
+        if(mode == MEAN)
+          res[res_i++] = sum / channel; 
+        if(++cnt == col_num){
+          res_i += col - col_num;
+          cnt = 0;
+        }
       }
     }
-    for(int cnt = 0; auto & sum : sums){
-      if(mode == SUM)
-        res[res_i++] = sum;
-      if(mode == MEAN)
-        res[res_i++] = sum / channel; 
-      if(++cnt == col_num){
-        res_i += col - col_num;
-        cnt = 0;
+    if(mode == MAX){
+      std::vector<T> maxs(zone, 1e-8);
+      for(int i = start, cnt = 0, maxs_i = 0; i < end; i++){
+        maxs[maxs_i++] = max(maxs[maxs_i++], t[i]);
+        if(++cnt == col_num){
+          i += col - col_num;
+          cnt = 0;
+        }
+      }
+      for(int cnt = 0; auto max : maxs){
+        res[res_i++] = max;
+        if(++cnt == col_num){
+          res_i += col - col_num;
+          cnt = 0;
+        }
+      }
+    }
+    if(mode == MIN){
+      std::vector<T> mins(zone, 1e-8);
+      for(int i = start, cnt = 0, min_i = 0; i < end; i++){
+        mins[min_i++] = min(mins[min_i++], t[i]);
+        if(++cnt == col_num){
+          i += col - col_num;
+          cnt = 0;
+        }
+      }
+      for(int cnt = 0; auto min : mins){
+        res[res_i++] = min;
+        if(++cnt == col_num){
+          res_i += col - col_num;
+          cnt = 0;
+        }
       }
     }
   }

@@ -1,6 +1,6 @@
 #pragma once
 
-#define BENCH
+// #define BENCH
 
 #include <data/rand_init.hpp>
 #include <parallel/parallel.hpp>
@@ -113,10 +113,14 @@ public:
   template<typename U>
   friend std::ostream & operator<<(std::ostream &os, const Tensor<U> &t);
 
-  Tensor<T> sum(int axis=0, bool keepdim=false);
-  Tensor<T> average(int axis=0, bool keepdim=false);
-  Tensor<T> max(int axis=0, bool keepdim=false);
-  Tensor<T> min(int axis=0, bool keepdim=false);
+  Tensor<T> sum(int axis=0, bool keepdim=false){ 
+    return tensor_operator(*this, axis, SUM, keepdim); }
+  Tensor<T> mean(int axis=0, bool keepdim=false){
+    return tensor_operator(*this, axis, MEAN, keepdim);}
+  Tensor<T> max(int axis=0, bool keepdim=false){
+    return tensor_operator(*this, axis, MAX, keepdim); }
+  Tensor<T> min(int axis=0, bool keepdim=false){ 
+    return tensor_operator(*this, axis, MIN, keepdim); }
 
   void shape(){
     printf("shape:[");
@@ -134,6 +138,9 @@ public:
   get_cdata(){ return m_data; }
 
   std::vector<int> m_shape; // [0]:row [1]:col [2]:channel
+
+protected:
+  Tensor<T> tensor_operator(Tensor<T> &t, int axis, int mode, bool keepdim);
 
 private:
   std::vector<T> m_data;
@@ -218,18 +225,21 @@ private:
     exit(-1);
   }
 
-  /*
-    usage: Sum up each row, and create a new Tensor that contain the result.
-    The result's shape must be [1 x out_dim x channel]
-                                   keepdim=true      =false
+  /* usage: operate this tensor and create a new Tensor that contain the result.
+    The result's shape depend on the parameter:'mode'.
+                      axis = 0:    keepdim=true      =false
     exampl:                            [[6],        (result)
       [[1, 2, 3]  -----> sum()  ----->  [15]] -----> [6, 15]
        [4, 5, 6]] -----> mean() -----> [[2],  -----> [2, 5]                     
-                                        [5]]
+                                        [5]] 
+                  -----> max()  -----> [[3],  -----> [3, 6]
+                                        [6]] 
+                  -----> min()  -----> [[1],  -----> [1, 4]
+                                        [4]] 
   */
   template<typename T>
-  static Tensor<T>
-  sum_mean(Tensor<T> &t, int axis, int mode, bool keepdim){
+  Tensor<T>
+  Tensor<T>::tensor_operator(Tensor<T> &t, int axis, int mode, bool keepdim){
     int ncpu = std::thread::hardware_concurrency();
     int row = t.m_shape[0], col = t.m_shape[1], channel = t.m_shape[2];
     int square = row * col;
@@ -247,7 +257,7 @@ private:
         for(int i = 0; i < NTHREAD_C(ncpu); i++){
           int start = square * ch_num * i, end = start + square * ch_num;
           int res_i = ch_num * i * row;
-          std::thread task(sum_mean_axis0<T>, std::ref(t), std::ref(res), 
+          std::thread task(operator_axis0<T>, std::ref(t), std::ref(res), 
                             start, end, res_i, mode);
           pool.push_back(std::move(task));
         }
@@ -261,13 +271,13 @@ private:
             int start = square * ch + row_num * i * col;
             int end = start + square * row_num;
             int res_i = ch * row + row_num * i;
-            std::thread task(sum_mean_axis0<T>, std::ref(t), std::ref(res), 
+            std::thread task(operator_axis0<T>, std::ref(t), std::ref(res), 
                             start, end, res_i, mode);
             pool.push_back(std::move(task));
           } goto join;
       }
       // Not need to boost.
-      sum_mean_axis0(t, res, 0, t.get_data().size(), 0, mode); goto join;
+      operator_axis0(t, res, 0, t.get_data().size(), 0, mode); goto join;
     }
     if(axis == ROW){
       res = Tensor<T>(1, col, channel);
@@ -277,7 +287,7 @@ private:
         for(int i = 0; i < NTHREAD_C(ncpu); i++){
           int start = square * ch_num * i, end = start + square * ch_num;
           int res_i = ch_num * i * col;
-          std::thread task(sum_mean_axis1_channel<T>, std::ref(t), std::ref(res), 
+          std::thread task(operator_axis1_channel<T>, std::ref(t), std::ref(res), 
                            start, end, res_i, mode);
           pool.push_back(std::move(task));
         }
@@ -290,14 +300,14 @@ private:
           for(int i = 0; i < NTHREAD_R(ncpu); i++){
             int start = square * ch + col_num * i * col;
             int res_i = ch * col + col_num * i;
-            std::thread task(sum_mean_axis1_col<T>, std::ref(t), std::ref(res), 
+            std::thread task(operator_axis1_col<T>, std::ref(t), std::ref(res), 
                             start, col_num, res_i, mode);
             pool.push_back(std::move(task));
           }
         goto join;
       }
       // Not need to boost.
-      sum_mean_axis1_channel(t, res, 0, t.get_data().size(), 0, mode); goto join;
+      operator_axis1_channel(t, res, 0, t.get_data().size(), 0, mode); goto join;
     }
     if(axis == CHANNEL){
       res = Tensor<T>(row, col, 1);
@@ -307,7 +317,7 @@ private:
         for(int i = 0; i < NTHREAD_R(ncpu); i++){
           int start = row_num * i * col;
           int end = start + (channel - 1) * square + row_num * col;
-          std::thread task(sum_mean_axis2_row<T>, std::ref(t), std::ref(res), 
+          std::thread task(operator_axis2_row<T>, std::ref(t), std::ref(res), 
                           start, end, row_num, start, mode);
           pool.push_back(std::move(task));
         }
@@ -319,14 +329,14 @@ private:
         for(int i = 0; i < NTHREAD_R(ncpu); i++){
           int start = col_num * i;
           int end = start + (channel - 1) * square + (row - 1) * col + col_num;
-          std::thread task(sum_mean_axis2_col<T>, std::ref(t), std::ref(res), 
+          std::thread task(operator_axis2_col<T>, std::ref(t), std::ref(res), 
                           start, end, col_num, start, mode);
           pool.push_back(std::move(task));
         }
         goto join;
       }
       // Not need to boost.
-      sum_mean_axis2_row(t, res, 0, t.get_data().size(), row, 0, mode); goto join;
+      operator_axis2_row(t, res, 0, t.get_data().size(), row, 0, mode); goto join;
     }
 
   join:
@@ -335,26 +345,14 @@ private:
     return res;
   }
 
-  template<typename T>
-  Tensor<T> 
-  Tensor<T>::sum(int axis, bool keepdim){
-    std::cout << "axis:" << axis << std::endl;
-    return sum_mean(*this, axis, SUM, keepdim);
-  }
-  template<typename T>
-  Tensor<T> 
-  Tensor<T>::average(int axis, bool keepdim){
-    std::cout << "axis:" << axis << std::endl;
-    return sum_mean(*this, axis, MEAN, keepdim);
-  }
-
 
   template<typename U>
   std::ostream &
   operator<<(std::ostream &os, const Tensor<U> &t){
-    int height = t.m_shape[0], width = t.m_shape[1], channel = t.m_shape[2];
+    int row = t.m_shape[0], col = t.m_shape[1], channel = t.m_shape[2];
+    int square = row * col;
 
-    if(height == 1 && channel == 1){
+    if(row == 1 && channel == 1){
       printf("[");
       for(int i = 0; i < t.m_data.size(); i++){
         os << t.m_data[i];
@@ -362,39 +360,40 @@ private:
       }
       printf("]\n");
     }
-    if(height > 1 && channel == 1){
+    if(row > 1 && channel == 1){
       printf("[");
-      for(int h = 0; h < height; h++){
-        int row_idx = h * width;
-        if(h != 0)          putchar(' ');
+      for(int r = 0; r < row; r++){
+        int row_idx = r * col;
+        if(r != 0)          putchar(' ');
         printf("[");
-        for(int w = 0; w < width; w++){
-          os << t.m_data[row_idx + w];
-          if(w != width - 1) os << ", ";
+        for(int c = 0; c < col; c++){
+          os << t.m_data[row_idx + c];
+          if(c != col - 1) os << ", ";
         }
         printf("]");
-        if(h != height - 1) putchar('\n');
+        if(r != row - 1)    putchar('\n');
       }
       printf("]\n");
     }
     if(channel > 1){
       printf("[");
-      for(int c = 0; c < channel; c++){
-        if(c != 0)            printf(" ");
+      for(int ch = 0; ch < channel; ch++){
+        int ch_offset = ch * square;
+        if(ch != 0)            printf(" ");
         printf("[");
-        for(int h = 0; h < height; h++){
-          int row_idx = h * width;
-          if(h != 0)          printf("  ");
+        for(int r = 0; r < row; r++){
+          int row_idx = ch_offset + col * r;
+          if(r != 0)           printf("  ");
           printf("[");
-          for(int w = 0; w < width; w++){
-            os << t.m_data[row_idx + w];
-            if(w != width - 1) os << ", ";
+          for(int c = 0; c < col; c++){
+            os << t.m_data[row_idx + c];
+            if(c != col - 1) os << ", ";
           }
           printf("]");
-          if(h != height - 1) printf("\n");
+          if(r != row - 1)     printf("\n");
         }
         printf("]");
-        if(c != channel - 1)  printf(",\n");
+        if(ch != channel - 1)  printf(",\n");
       }
       printf("]\n");
     }

@@ -3,7 +3,7 @@
 namespace dl{
   enum{PLUS, MINUS, MULTIPLY, DIVIDE, MOD};  // for calculator
 
-  enum{SUM, MEAN};                           // operate tensor
+  enum{SUM, MEAN, MAX, MIN};                 // operator for Tensor
 
   enum{NvsN, Nvs1};
 
