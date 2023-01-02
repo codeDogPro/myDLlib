@@ -16,15 +16,16 @@ int main(){
 
   // Tensor<int> a(8,4);
   // Tensor<int> c(30, 40, 512 * 8, 2);
-  Tensor<int> c(4, 2,  5, 0);
+  Tensor<int> c(2, 9, 2, 0);
   // Tensor<int> d(20, 40, 512, 4);
 
   // c.sum(1);
   std::cout << c;
-  std::cout << c.sum(0) << c.sum(1) << c.sum(2);
-  std::cout << c.mean(0) << c.mean(1) << c.mean(2);
-  std::cout << c.max(0) << c.max(1) << c.max(2);
-  std::cout << c.min(0) << c.min(1) << c.min(2);
+  std::cout << c.max(2);
+  // std::cout << c.sum(0) << c.sum(1) << c.sum(2);
+  // std::cout << c.mean(0) << c.mean(1) << c.mean(2);
+  // std::cout << c.max(0) << c.max(1) << c.max(2);
+  // std::cout << c.min(0) << c.min(1) << c.min(2);
   // std::cout << c.sum(0, false);
   // c += d; //std::cout << c;
   // c -= d; //std::cout << c;

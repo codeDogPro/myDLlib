@@ -1,6 +1,6 @@
 #pragma once
 
-#include <basic/enumaration.hpp>
+#include <basic/tensor_macro.hpp>
 #include <vector>
 #include <iostream>
 #include <assert.h>
@@ -204,7 +204,7 @@ namespace dl{
     int row = t.m_shape[0], col = t.m_shape[1], square = row * col_num;
     if(mode == SUM || mode == MEAN){
       std::vector<T> sums(col_num, 0);
-      for(int r = 0, i = start; r < row; r++, i += col)
+      for(int r = 0, i = start; r < row; r++, i += col - col_num)
         for(int c = 0; c < col_num; c++, i++)
           sums[c] += t[i];
       for(auto sum : sums){
@@ -216,14 +216,14 @@ namespace dl{
     }
     if(mode == MAX){
       std::vector<T> maxs(col_num, 1e-8);
-      for(int r = 0, i = start; r < row; r++, i += col)
+      for(int r = 0, i = start; r < row; r++, i += col - col_num)
         for(int c = 0; c < col_num; c++, i++)
           maxs[c] = max(maxs[c], t[i]);
       for(auto max : maxs) res[res_i++] = max;
     }
     if(mode == MIN){
       std::vector<T> mins(col_num, 1e8);
-      for(int r = 0, i = start; r < row; r++, i += col)
+      for(int r = 0, i = start; r < row; r++, i += col - col_num)
         for(int c = 0; c < col_num; c++, i++)
           mins[c] = min(mins[c], t[i]);
       for(auto min : mins) res[res_i++] = min;
@@ -282,8 +282,8 @@ namespace dl{
     int zone = col_num * row, square = row * col;
     if(mode == SUM || mode == MEAN){
       std::vector<T> sums(zone, 0);
-      for(int i = start, cnt = 0, sums_i = 0; i < end; i++){
-        sums[sums_i++] += t[i];
+      for(int i = start, cnt = 0, sums_i = 0; i < end; i++, sums_i++){
+        sums[sums_i % zone] += t[i];
         if(++cnt == col_num){
           i += col - col_num;
           cnt = 0;
@@ -302,8 +302,8 @@ namespace dl{
     }
     if(mode == MAX){
       std::vector<T> maxs(zone, 1e-8);
-      for(int i = start, cnt = 0, maxs_i = 0; i < end; i++){
-        maxs[maxs_i++] = max(maxs[maxs_i++], t[i]);
+      for(int i = start, cnt = 0, maxs_i = 0; i < end; i++, maxs_i++){
+        maxs[maxs_i % zone] = max(maxs[maxs_i % zone], t[i]);
         if(++cnt == col_num){
           i += col - col_num;
           cnt = 0;
@@ -319,8 +319,8 @@ namespace dl{
     }
     if(mode == MIN){
       std::vector<T> mins(zone, 1e-8);
-      for(int i = start, cnt = 0, min_i = 0; i < end; i++){
-        mins[min_i++] = min(mins[min_i++], t[i]);
+      for(int i = start, cnt = 0, mins_i = 0; i < end; i++, mins_i++){
+        mins[mins_i % zone] = min(mins[mins_i % zone], t[i]);
         if(++cnt == col_num){
           i += col - col_num;
           cnt = 0;

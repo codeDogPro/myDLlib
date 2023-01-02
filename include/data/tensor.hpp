@@ -253,28 +253,45 @@ private:
       else        res = Tensor<T>(1, row, channel);
       // The channel num is way much than row, so boost for channel calculation
       if(channel >= ncpu * BOOST_CHANNEL){
-        int ch_num = channel / NTHREAD_C(ncpu);
+        puts("CHANNEL");
+        int ch_num = channel / NTHREAD_C(ncpu), ch_mod = channel % NTHREAD_C(ncpu);
         for(int i = 0; i < NTHREAD_C(ncpu); i++){
           int start = square * ch_num * i, end = start + square * ch_num;
           int res_i = ch_num * i * row;
+          printf("st:%d en:%d idx:%d\n", start, end, res_i);
           std::thread task(operator_axis0<T>, std::ref(t), std::ref(res), 
-                            start, end, res_i, mode);
+                           start, end, res_i, mode);
           pool.push_back(std::move(task));
+        }
+        if(ch_mod){
+          int end = square * channel, start = end - ch_mod * square;
+          int res_i = row * (channel - ch_mod);
+          printf("FIX==> st:%d en:%d idx:%d\n", start, end, res_i);
+          operator_axis0(t, res, start, end, res_i, mode);
         }
         goto join;
       }
       // The row num is way much than channel, so boost for row calculation.
       if(row >= ncpu * BOOST_ROW){
-        int row_num = row / NTHREAD_R(ncpu);
-        for(int ch = 0; ch < channel; ch++)
+        puts("ROW");
+        int row_num = row / NTHREAD_R(ncpu), row_mod = row % NTHREAD_R(ncpu);
+        std::cout << "row_num:" << row_num << std::endl;
+        for(int ch = 0; ch < channel; ch++){
           for(int i = 0; i < NTHREAD_R(ncpu); i++){
-            int start = square * ch + row_num * i * col;
-            int end = start + square * row_num;
+            int start = square * ch + row_num * i * col, end = start + col * row_num;
             int res_i = ch * row + row_num * i;
+            printf("st:%d en:%d idx:%d\n", start, end, res_i);
             std::thread task(operator_axis0<T>, std::ref(t), std::ref(res), 
-                            start, end, res_i, mode);
+                             start, end, res_i, mode);
             pool.push_back(std::move(task));
-          } goto join;
+          }
+          if(row_mod){
+            int end = square * (ch + 1), start = end - row_mod * col;
+            int res_i = (ch + 1) * row - row_mod; 
+            printf("FIX==> st:%d en:%d idx:%d\n", start, end, res_i);
+            operator_axis0(t, res, start, end, res_i, mode);
+          }
+        } goto join;
       }
       // Not need to boost.
       operator_axis0(t, res, 0, t.get_data().size(), 0, mode); goto join;
@@ -283,28 +300,44 @@ private:
       res = Tensor<T>(1, col, channel);
       // The channel num is way much than row, so boost for channel calculation
       if(channel >= ncpu * BOOST_CHANNEL){
-        int ch_num = channel / NTHREAD_C(ncpu);
+        puts("CHANNEL");
+        int ch_num = channel / NTHREAD_C(ncpu), ch_mod = channel % NTHREAD_C(ncpu);
         for(int i = 0; i < NTHREAD_C(ncpu); i++){
           int start = square * ch_num * i, end = start + square * ch_num;
           int res_i = ch_num * i * col;
+          printf("st:%d en:%d idx:%d\n", start, end, res_i);
           std::thread task(operator_axis1_channel<T>, std::ref(t), std::ref(res), 
                            start, end, res_i, mode);
           pool.push_back(std::move(task));
+        }
+        if(ch_mod){
+          int end = square * channel, start = end - ch_mod * square;
+          int res_i = col * (channel - ch_mod);
+          printf("FIX==> st:%d en:%d idx:%d\n", start, end, res_i);
+          operator_axis1_channel(t, res, start, end, res_i, mode);
         }
         goto join;
       }
       // The col num is way much than row, so boost for col calculation.
       if(col >= ncpu * BOOST_ROW){
-        int col_num = col / NTHREAD_R(ncpu);
-        for(int ch = 0; ch < channel; ch++)
+        puts("ROW");
+        int col_num = col / NTHREAD_R(ncpu), col_mod = col % NTHREAD_R(ncpu);
+        for(int ch = 0; ch < channel; ch++){
           for(int i = 0; i < NTHREAD_R(ncpu); i++){
-            int start = square * ch + col_num * i * col;
+            int start = square * ch + col_num * i;
             int res_i = ch * col + col_num * i;
+            printf("st:%d idx:%d\n", start, res_i);
             std::thread task(operator_axis1_col<T>, std::ref(t), std::ref(res), 
-                            start, col_num, res_i, mode);
+                             start, col_num, res_i, mode);
             pool.push_back(std::move(task));
           }
-        goto join;
+          if(col_mod){
+            int start = square * ch + col - col_mod;
+            int res_i = ch * col + col - col_mod;
+            printf("FIX==> st:%d idx:%d\n", start, res_i);
+            operator_axis1_col(t, res, start, col_mod, res_i, mode);
+          }
+        } goto join;
       }
       // Not need to boost.
       operator_axis1_channel(t, res, 0, t.get_data().size(), 0, mode); goto join;
@@ -313,25 +346,37 @@ private:
       res = Tensor<T>(row, col, 1);
       // The row num is way much than col, so boost for row calculation.
       if(row >= ncpu * BOOST_ROW){
-        int row_num = row / NTHREAD_R(ncpu);
+        int row_num = row / NTHREAD_R(ncpu), row_mod = row % NTHREAD_R(ncpu);
         for(int i = 0; i < NTHREAD_R(ncpu); i++){
           int start = row_num * i * col;
           int end = start + (channel - 1) * square + row_num * col;
+          printf("st:%d en:%d idx:%d\n", start, end, start);
           std::thread task(operator_axis2_row<T>, std::ref(t), std::ref(res), 
-                          start, end, row_num, start, mode);
+                           start, end, row_num, start, mode);
           pool.push_back(std::move(task));
+        }
+        if(row_mod){
+          int start = (row - row_mod) * col, end = t.get_cdata().size();
+          printf("FIX==> st:%d en:%d idx:%d\n", start, end, start);
+          operator_axis2_row(t, res, start, end, row_mod, start, mode); 
         }
         goto join;
       }
       // The col num is way much than row, so boost for col calculation.
       if(col >= ncpu * BOOST_ROW){
-        int col_num = col / NTHREAD_R(ncpu);
+        int col_num = col / NTHREAD_R(ncpu), col_mod = col % NTHREAD_R(ncpu);
         for(int i = 0; i < NTHREAD_R(ncpu); i++){
           int start = col_num * i;
           int end = start + (channel - 1) * square + (row - 1) * col + col_num;
+          printf("st:%d en:%d idx:%d\n", start, end, start);
           std::thread task(operator_axis2_col<T>, std::ref(t), std::ref(res), 
-                          start, end, col_num, start, mode);
+                           start, end, col_num, start, mode);
           pool.push_back(std::move(task));
+        }
+        if(col_mod){
+          int start = col - col_mod, end = t.get_cdata().size();
+          printf("FIX==> st:%d en:%d idx:%d\n", start, end, start);
+          operator_axis2_col(t, res, start, end, col_mod, start, mode); 
         }
         goto join;
       }
