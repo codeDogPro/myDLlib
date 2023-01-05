@@ -2,10 +2,10 @@
 
 // #define BENCH
 
-#include <data/rand_init.hpp>
-#include <parallel/parallel.hpp>
+#include <data/rand_init.hh>
+#include <parallel/parallel.hh>
 #ifdef BENCH
-#include <basic/timer.hpp>
+#include <basic/timer.hh>
 #endif
 
 #include <vector>

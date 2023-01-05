@@ -4,6 +4,6 @@ set(CMAKE_CXX_STANDARD 20)
 
 project(tests LANGUAGES CXX)
 
-add_executable(test src/test/test1.cpp)
+add_executable(test src/test/test1.cc)
 
 target_include_directories(test PUBLIC include)
