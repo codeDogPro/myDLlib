@@ -16,8 +16,8 @@ int main(){
 
   // Tensor<int> a(8,4);
   // Tensor<int> c(30, 40, 512 * 8, 2);
-  Tensor<int> c(3, 2, 9, 3);
-  Tensor<int> d(3, 2, 9, 7);
+  // Tensor<int> c(3, 2, 2, 3);
+  // Tensor<int> d(3, 2, 2, 7);
 
   // c.sum(1);
   // std::cout << c;
@@ -27,12 +27,12 @@ int main(){
   // std::cout << c.max(0) << c.max(1) << c.max(2);
   // std::cout << c.min(0) << c.min(1) << c.min(2);
   // std::cout << c.sum(0, false);
-  std::cout << c << d;
-  c += d; std::cout << c;
-  c -= d; std::cout << c;
-  c *= d; std::cout << c;
-  c /= d; std::cout << c;
-  c %= d; std::cout << c;
+  // std::cout << c << d;
+  // c += d; std::cout << c;
+  // c -= d; std::cout << c;
+  // c *= d; std::cout << c;
+  // c /= d; std::cout << c;
+  // c %= d; std::cout << c;
 
   // std::cout << c << c + 1 << c - 3 << c * 4 << c / 3;
 
@@ -58,10 +58,18 @@ int main(){
   // std::vector<int> a;
   
   // std::vector<Function<int> *> model;
-  // model.push_back(new Linear<int>(3, 2));
-  // Tensor<int> input(1, 3, 1, 2);
+  // model.push_back(new Conv2D<int>(3, 1, 1, 2));
+  // Tensor<int> input(4, 3, 2, 1);
   // std::cout << input;
   // auto output = model[0]->forward(input);
   // std::cout << output;
+
+  Tensor<int> a(2,2,1, 3);
+  Tensor<int> b(a);
+  b.shape();
+  std::cout << a << b;
+  a[1] = 2, b[1] = 4;
+  std::cout << a << b;
+  
   return 0;
 }

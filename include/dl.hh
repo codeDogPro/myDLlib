@@ -1,3 +1,3 @@
 #pragma once
 
-#include <model/nn.hh>
+#include <model/nn/nn.hh>

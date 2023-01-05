@@ -4,7 +4,6 @@
 #include <basic/function.hh>
 
 namespace dl{
-
   /*
   example:
     >>> std::vector<Function<int> *> model;
@@ -22,7 +21,7 @@ namespace dl{
 
     virtual Tensor<T>
     forward(Tensor<T> &input) override{
-      if(auto_grad) grad = input;
+      if(m_auto_grad) grad = input;
 
       Tensor<T> mat = m_paremeter * input;
       return mat.sum(); 
@@ -37,38 +36,5 @@ namespace dl{
   private:
     bool m_auto_grad;
     Tensor<T> m_paremeter, grad;
-  };
-
-
-  template<typename T>
-  class Conv1D : public Function<T> {
-
-  };
-
-
-  template<typename T>
-  class Conv2D : public Function<T> {
-  public:
-    Conv2D(int size, int stride=1, bool paddle=false, bool auto_grad=false){
-      m_parameter = Tensor<T>(size, size, 1);
-      m_stride = stride;
-      m_paddle = paddle;
-      m_auto_grad = auto_grad;
-    }
-  
-    virtual Tensor<T>
-    forward(){
-
-    }
-
-
-    int stride() { return m_stride; }
-    bool paddle(){ return m_paddle; }
-
-  private:
-    bool m_auto_grad;
-    bool m_paddle;
-    int m_stride;
-    Tensor<T> m_parameter, grad;
   };
 }

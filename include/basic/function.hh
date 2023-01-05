@@ -1,6 +1,6 @@
 #pragma once
 
-#include <data/tensor.hpp>
+#include <data/tensor.hh>
 
 namespace dl{
   

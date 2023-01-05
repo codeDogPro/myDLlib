@@ -12,6 +12,7 @@
 #include <numeric>
 #include <thread>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <assert.h>
 
@@ -24,22 +25,22 @@ public:
   explicit Tensor() = default;
 
   explicit
-  Tensor(int row, int col, int channel=1, T val=0){
+  Tensor(int row, int col, int channel=1, T val=-1){
     assert(row != 0 && col != 0 && channel != 0);
 
     m_data.assign(row * col * channel, val);
     m_shape.assign({row, col, channel});
-    if(val == 0){ rand_init(*this);}
+    if(val == -1){ rand_init(*this);}
   }
 
   explicit
-  Tensor(const std::vector<int> &shape, T val=0){
+  Tensor(const std::vector<int> &shape, T val=-1){
     assert(shape.size() != 0);
 
     int product = std::reduce(shape.begin(), shape.end(), 1, std::multiplies{});
     m_data.assign(product, val);
     m_shape = shape;
-    if(val == 0){ rand_init(*this);}
+    if(val == -1){ rand_init(*this);}
   }
 
   explicit
@@ -48,34 +49,34 @@ public:
 
   // deep copy
   explicit
-  Tensor(const Tensor<T> &t){ 
-    m_data.assign(t.m_data.size(), 0);
-    m_shape = t.m_shape;
-    /*TODO: deep copy*/
+  Tensor(Tensor<T> &t){ 
+    m_shape.assign(3, 0); m_data.assign(t.size(), 0);
+    for(int i = 0; int x : t.get_shape()) m_shape[i++] = x;
+    for(int i = 0; int x : t.get_data()) m_data[i++] = x;
   }
 
-  // move copy
+  // move copy ctor
   Tensor(Tensor<T> &&t){ 
-    m_data  = std::move(t.m_data);
-    m_shape = std::move(t.m_shape);
+    m_data  = t.get_data();
+    m_shape = t.get_shape();
   }
 
   Tensor<T> &
-  operator=(const Tensor<T> &t){
-    m_data.assign(t.m_data.size(), 0);
-    m_shape = t.m_shape;
+  operator=(Tensor<T> &t){
+    m_shape.assign(3, 0); m_data.assign(t.size(), 0);
+    for(int i = 0; int x : t.get_shape()) m_shape[i++] = x;
+    for(int i = 0; int x : t.get_data()) m_data[i++] = x;
     return *this;
   }
 
   Tensor<T> &
   operator=(Tensor<T> &&t){
-    m_data  = std::move(t.m_data);
-    m_shape = std::move(t.m_shape);
+    m_data  = std::move(t.get_data());
+    m_shape = std::move(t.get_shape());
     return *this;
   }
 
   Tensor<T> calculator(Tensor<T> &a, Tensor<T> &b, int mode);
-
   Tensor<T> 
   operator+(Tensor<T> &t){ return calculator(*this, t, PLUS);}
   Tensor<T> 
@@ -133,37 +134,46 @@ public:
 
   std::vector<T> &
   get_data(){ return m_data; }
-
-  const std::vector<T> & 
+  std::vector<T> const& 
   get_cdata(){ return m_data; }
 
-  std::vector<int> m_shape; // [0]:row [1]:col [2]:channel
+  std::vector<int> &
+  get_shape(){ return m_shape; }
+  std::vector<int> const&
+  get_cshape(){ return m_shape; }
+
+  size_t size(){ return m_data.size(); }
+
+  int row(){ return m_shape[0]; }
+  int col(){ return m_shape[1]; }
+  int channel(){ return m_shape[2]; }  
 
 protected:
   Tensor<T> tensor_operator(Tensor<T> &t, int axis, int mode, bool keepdim);
 
 private:
+  std::vector<int> m_shape; // [0]:row [1]:col [2]:channel
   std::vector<T> m_data;
 };
 
-//################### Tensor::member functions' implementation ###################
 
+//################### Tensor::member functions' implementation ###################
 
   template<typename T>
   Tensor<T> 
   Tensor<T>::calculator(Tensor<T> &a, Tensor<T> &b, int mode){
     // col and channel must be the same shape
-    assert(a.m_shape[1] == b.m_shape[1] && a.m_shape[2] == b.m_shape[2]);
+    assert(a.row() == b.row() && a.channel() == b.channel());
 
-    Tensor<T> res(a.m_shape);
+    Tensor<T> res(a.get_cshape());
     int ncpu = std::thread::hardware_concurrency();
-    int row = a.m_shape[0], col = a.m_shape[1], channel = a.m_shape[2];
+    int row = a.row(), col = a.col(), channel = a.channel();
 #ifdef BENCH
     Timer t;
 #endif
     std::vector<std::thread> pool;
     // When a and b are totally same shape.
-    if(a.m_shape[0] == b.m_shape[0]){
+    if(a.row() == b.row()){
       // The channel num is way much than row, so boost for channel calculation
       if(channel >= ncpu * BOOST_CHANNEL){
         int ch_num = channel / NTHREAD_C(ncpu), ch_mod = channel % NTHREAD_R(ncpu);
@@ -192,7 +202,7 @@ private:
     } 
     // When a is not same shape with b.
     else{
-      if(b.m_shape[0] != 1) goto erro;
+      if(b.row() != 1) goto erro;
       
       if(channel >= ncpu * BOOST_CHANNEL){
         int ch_num = channel / NTHREAD_C(ncpu), ch_mod = channel % NTHREAD_R(ncpu);
@@ -226,9 +236,10 @@ private:
   erro:
     fprintf(stderr,
     "The size of tensor a:(%d) must match the size of tensor b:(%d) \
-    at non-singleton dimension 0\n", a.m_shape[0], b.m_shape[0]);
+    at non-singleton dimension 0\n", a.row(), b.row());
     exit(-1);
   }
+
 
   /* usage: operate this tensor and create a new Tensor that contain the result.
     The result's shape depend on the parameter:'mode'.
@@ -246,7 +257,7 @@ private:
   Tensor<T>
   Tensor<T>::tensor_operator(Tensor<T> &t, int axis, int mode, bool keepdim){
     int ncpu = std::thread::hardware_concurrency();
-    int row = t.m_shape[0], col = t.m_shape[1], channel = t.m_shape[2];
+    int row = t.row(), col = t.col(), channel = t.channel();
     int square = row * col;
     std::vector<std::thread> pool;
     Tensor<T> res;
@@ -381,15 +392,15 @@ private:
 
   template<typename U>
   std::ostream &
-  operator<<(std::ostream &os, const Tensor<U> &t){
-    int row = t.m_shape[0], col = t.m_shape[1], channel = t.m_shape[2];
+  operator<<(std::ostream &os, Tensor<U> &t){
+    int row = t.row(), col = t.col(), channel = t.channel();
     int square = row * col;
 
     if(row == 1 && channel == 1){
       printf("[");
-      for(int i = 0; i < t.m_data.size(); i++){
-        os << t.m_data[i];
-        if(i != t.m_data.size() - 1) os << ", ";
+      for(int i = 0; auto &x : t.get_data()){
+        os << x;
+        if(i != col - 1) os << ", ";
       }
       printf("]\n");
     }
@@ -400,7 +411,7 @@ private:
         if(r != 0)          putchar(' ');
         printf("[");
         for(int c = 0; c < col; c++){
-          os << t.m_data[row_idx + c];
+          os << t[row_idx + c];
           if(c != col - 1) os << ", ";
         }
         printf("]");
@@ -419,7 +430,7 @@ private:
           if(r != 0)           printf("  ");
           printf("[");
           for(int c = 0; c < col; c++){
-            os << t.m_data[row_idx + c];
+            os << t[row_idx + c];
             if(c != col - 1) os << ", ";
           }
           printf("]");
