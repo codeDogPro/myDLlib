@@ -176,7 +176,7 @@ private:
     if(a.row() == b.row()){
       // The channel num is way much than row, so boost for channel calculation
       if(channel >= ncpu * BOOST_CHANNEL){
-        int ch_num = channel / NTHREAD_C(ncpu), ch_mod = channel % NTHREAD_R(ncpu);
+        int ch_num = channel / NTHREAD_C(ncpu), ch_mod = channel % NTHREAD_C(ncpu);
         for(int i = 0; i < NTHREAD_C(ncpu); i++){
           std::thread task(vec_channel_f<T>, std::ref(a), std::ref(b), std::ref(res),
                            ch_num * i, ch_num, mode);
@@ -205,7 +205,7 @@ private:
       if(b.row() != 1) goto erro;
       
       if(channel >= ncpu * BOOST_CHANNEL){
-        int ch_num = channel / NTHREAD_C(ncpu), ch_mod = channel % NTHREAD_R(ncpu);
+        int ch_num = channel / NTHREAD_C(ncpu), ch_mod = channel % NTHREAD_C(ncpu);
         for(int i = 0; i < NTHREAD_C(ncpu); i++){
           std::thread task(vec_channel_s<T>, std::ref(a), std::ref(b), std::ref(res),
                            ch_num * i, ch_num, mode);
