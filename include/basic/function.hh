@@ -10,8 +10,9 @@ namespace dl{
   template<typename T>
   class Function{
   public:
-    virtual Tensor<T> forward(Tensor<T> &) = 0;
+    virtual Tensor<T> forward(const Tensor<T> &) = 0;
     // virtual Tensor<T> backward(); 
+    virtual ~Function(){}
   };
  
 

@@ -19,6 +19,8 @@ namespace dl{
       m_auto_grad = auto_grad;
     } 
 
+    virtual ~Linear(){ };
+
     virtual Tensor<T>
     forward(Tensor<T> &input) override{
       if(m_auto_grad) grad = input;

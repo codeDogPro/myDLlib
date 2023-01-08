@@ -16,31 +16,41 @@ namespace dl{
   template<typename T>
   class Conv2D : public Function<T> {
   public:
-    Conv2D(int size, int stride=1, int channel=1, int paddle=0, bool auto_grad=false)
-    {
-      m_parameter = Tensor<T>(size, size, channel);
-      std::cout << m_parameter;
+    explicit
+    Conv2D(int size, int stride=1, int channel=1, int paddle=0, bool auto_grad=false) {
+      m_parameter = Tensor<T>(size, size, channel, 1);
       m_stride = stride;
       m_paddle = paddle;
       mauto_grad = auto_grad;
+      //debug
+      std::cout << m_parameter;
     }
+
+    explicit
+    Conv2D(Tensor<T> &kernel, int stride=1, int channel=1, int paddle=0, bool auto_grad=false) {
+      m_parameter = kernel;
+      m_stride = stride;
+      m_paddle = paddle;
+      mauto_grad = auto_grad;
+      //debug
+      std::cout << m_parameter;
+    }
+
+    virtual ~Conv2D(){};
   
     virtual Tensor<T>
-    forward(Tensor<T> &input){
+    forward(const Tensor<T> &input){
       // if(mauto_grad) grad = input;
       int row = input.row(), col = input.col(), channel = input.channel();
-      Tensor<T> res(res_row(row), res_col(col), m_parameter.channel(), 0);
-      std::cout << res;
       if(m_paddle){
         Tensor<T> pad_input(row + 2 * m_paddle, col + 2 * m_paddle, channel, 0);
         paddle(input, pad_input, m_paddle);
-        conv_boost(pad_input, res);
-        puts("Finish pad_conv");
-        return res;
+        puts("In pad_conv");
+        std::cout << pad_input;
+        return conv_boost(pad_input, res_row(row), res_col(col));
       }
-      conv_boost(input, res);
-      puts("Finish conv");
-      return res;
+      puts("In conv");
+      return conv_boost(input, res_row(row), res_col(col));
     }
 
     int nstride() { return m_stride; }
@@ -50,29 +60,36 @@ namespace dl{
     int res_row(int row){return (row - m_parameter.row() + 2 * m_paddle)/m_stride + 1;}
     int res_col(int col){return (col - m_parameter.col() + 2 * m_paddle)/m_stride + 1;}
 
-    void 
-    conv_boost(Tensor<T> &input, Tensor<T> &res){
-      int channel = m_parameter.channel();
+    Tensor<T> 
+    conv_boost(const Tensor<T> &input, int r_row, int r_col){
+      int irow = input.row(), icol = input.col(), channel = m_parameter.channel();
+      printf("%d %d\n", r_row, r_col);
+      Tensor<T> res(r_row, r_col, channel, 0);
+      res.shape();
+
       int ncpu = std::thread::hardware_concurrency();
       std::vector<std::thread> pool;
       if(channel >= ncpu * BOOST_CONV){
         int nth = NTHREAD_C(ncpu), ch_num = channel / nth , ch_mod = channel % nth;
         for(int i = 0; i < nth; i++){
           int ch_begin = ch_num * i;
-          std::thread task(conv2d_channel<T>, std::ref(input), std::ref(m_parameter), 
+          std::thread task(conv2d_channel<T>, std::cref(input), std::cref(m_parameter), 
                            std::ref(res), ch_begin, ch_num, m_stride); 
           pool.push_back(std::move(task));
         }
         if(ch_mod){
+          puts("mod");
           int ch_begin = channel - ch_mod;
           conv2d_channel(input, m_parameter, res, ch_begin, ch_mod, m_stride);
         } goto join;
       }
-      conv2d_channel(input, m_parameter, res, 0, res.channel(), m_stride);
-      puts("In here");
+      puts("no boost");
+      conv2d_channel(input, m_parameter, res, 0, channel, m_stride);
 
     join:
       for(auto &task : pool) task.join();
+
+      return res;
     }
 
 

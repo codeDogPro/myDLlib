@@ -44,8 +44,8 @@ void plus_test(){
   auto c = a + b;
   auto d = a - b; 
   auto e = a * b; 
-  auto f = a / b; 
-  std::cout << c << d << e << f;
+  // auto f = a / b; 
+  std::cout << c << d << e;
 }
  
 // copy test
@@ -61,16 +61,17 @@ void copy_test(){
 // nn function test
 void nn_test(){
   std::vector<Function<int> *> model;
-  model.push_back(new Conv2D<int>(3, 1, 1, 0));
+  model.push_back(new Conv2D<int>(5, 2, 2, 1));
   // Tensor<int> input(4, 3, 2, 1);
-  Tensor<int> input(4, 3, 2);
+  Tensor<int> input(7, 7, 2, 4);
   std::cout << input;
   auto output = model[0]->forward(input);
-  std::cout << output;
+  // std::cout << output;
 }
 
   
 int main(){
+  // plus_test();
   nn_test();
   return 0;
 }

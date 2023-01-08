@@ -16,7 +16,7 @@ namespace dl{
     static std::default_random_engine engine(time(0));
     std::string name = type_name<T>();
     if(name.compare("int") == 0){
-      std::uniform_int_distribution<int> random(0, 1 << 15);
+      std::uniform_int_distribution<int> random(0, 1 << 6);
       for(auto &x : t.get_data()){ x = random(engine); 
       #ifdef DEBUG_INIT
         std::cout << x << ' ';

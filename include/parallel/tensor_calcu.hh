@@ -14,7 +14,9 @@ namespace dl{
 
   template<typename T>
   void vec_channel_s
-  (Tensor<T> &a, Tensor<T> &b, Tensor<T> &res, int ch_begin, int ch_num, int mode){
+  (const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &res,
+   int ch_begin, int ch_num, int mode)
+  {
     int arow = a.row(), brow = b.row(), col = a.col();
     int asquare = arow * col, bsquare = brow * col;
     for(int ch = ch_begin; ch < ch_begin + ch_num; ch++){
@@ -40,7 +42,9 @@ namespace dl{
 
   template<typename T>
   void vec_channel_f
-  (Tensor<T> &a, Tensor<T> &b, Tensor<T> &res, int ch_begin, int ch_num, int mode){
+  (const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &res,
+   int ch_begin, int ch_num, int mode)
+  {
     int square = a.row() * a.col();
     int start = ch_begin * square, end = (ch_begin + ch_num) * square;
     for(int i = start; i < end; i++){
@@ -63,8 +67,9 @@ namespace dl{
 
   template<typename T>
   void vec_row_s // the row number of a must >= b
-  (Tensor<T> &a, Tensor<T> &b, Tensor<T> &res,
-   int channel, int row_begin, int row_num, int mode){
+  (const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &res, 
+   int channel, int row_begin, int row_num, int mode)
+  {
 #ifdef DEBUG
     printf("row_num:%d col:%d\n", row_num, col);
 #endif
@@ -95,8 +100,9 @@ namespace dl{
   
   template<typename T>
   void vec_row_f // a and b's shape must be the same
-  (Tensor<T> &a, Tensor<T> &b, Tensor<T> &res,
-  int channel, int row_begin, int row_num, int mode){
+  (const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &res,
+   int channel, int row_begin, int row_num, int mode)
+  {
     int row = a.row(), col = a.col(), square = row * col;
     int start = channel * square + row_begin * col, end = start + row_num * col;
     for(int i = start; i < end; i++){
@@ -124,7 +130,7 @@ namespace dl{
 
   template<typename T>
   void operator_axis0
-  (Tensor<T> &t, Tensor<T> &res, int start, int end, int res_i, int mode){
+  (const Tensor<T> &t, Tensor<T> &res, int start, int end, int res_i, int mode){
     int col = t.col(), cnt = 0; 
     if(mode == SUM)
       for(int i = start, sum = 0; i < end; i++){
@@ -157,7 +163,7 @@ namespace dl{
 
   template<typename T>
   void operator_axis1_channel
-  (Tensor<T> &t, Tensor<T> &res, int start, int end, int res_i, int mode){
+  (const Tensor<T> &t, Tensor<T> &res, int start, int end, int res_i, int mode){
     int col = t.col(), row = t.row(), square = row * col, cnt = 0; 
     if(mode == SUM || mode == MEAN){
       std::vector<T> sums(col, 0);
@@ -200,7 +206,7 @@ namespace dl{
 
   template<typename T>
   void operator_axis1_col
-  (Tensor<T> &t, Tensor<T> &res, int start, int col_num, int res_i, int mode){
+  (const Tensor<T> &t, Tensor<T> &res, int start, int col_num, int res_i, int mode){
     int row = t.row(), col = t.col(), square = row * col_num;
     if(mode == SUM || mode == MEAN){
       std::vector<T> sums(col_num, 0);
@@ -232,7 +238,7 @@ namespace dl{
 
   template<typename T>
   void operator_axis2_row
-  (Tensor<T> &t, Tensor<T> &res, int start, int end, int row_num, int res_i, int mode){
+  (const Tensor<T> &t, Tensor<T> &res, int start, int end, int row_num, int res_i, int mode){
     int row = t.row(), col = t.col();
     int zone = row_num * col, square = row * col, cnt = 0;
     if(mode == SUM || mode == MEAN){
@@ -277,7 +283,7 @@ namespace dl{
 
   template<typename T>
   void operator_axis2_col
-  (Tensor<T> &t, Tensor<T> &res, int start, int end, int col_num, int res_i, int mode){
+  (const Tensor<T> &t, Tensor<T> &res, int start, int end, int col_num, int res_i, int mode){
     int row = t.row(), col = t.col(), channel = t.channel();
     int zone = col_num * row, square = row * col;
     if(mode == SUM || mode == MEAN){
@@ -335,8 +341,4 @@ namespace dl{
       }
     }
   }
-
-
-
-
 }

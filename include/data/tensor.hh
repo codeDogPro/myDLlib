@@ -49,10 +49,10 @@ public:
 
   // deep copy
   explicit
-  Tensor(Tensor<T> &t){ 
+  Tensor(const Tensor<T> &t){ 
     m_shape.assign(3, 0); m_data.assign(t.size(), 0);
-    for(int i = 0; int x : t.get_shape()) m_shape[i++] = x;
-    for(int i = 0; int x : t.get_data()) m_data[i++] = x;
+    for(int i = 0; int x : t.get_cshape()) m_shape[i++] = x;
+    for(int i = 0; int x : t.get_cdata()) m_data[i++] = x;
   }
 
   // move copy ctor
@@ -62,10 +62,10 @@ public:
   }
 
   Tensor<T> &
-  operator=(Tensor<T> &t){
+  operator=(const Tensor<T> &t){
     m_shape.assign(3, 0); m_data.assign(t.size(), 0);
-    for(int i = 0; int x : t.get_shape()) m_shape[i++] = x;
-    for(int i = 0; int x : t.get_data()) m_data[i++] = x;
+    for(int i = 0; int x : t.get_cshape()) m_shape[i++] = x;
+    for(int i = 0; int x : t.get_cdata()) m_data[i++] = x;
     return *this;
   }
 
@@ -76,40 +76,35 @@ public:
     return *this;
   }
 
-  Tensor<T> calculator(Tensor<T> &a, Tensor<T> &b, int mode);
   Tensor<T> 
-  operator+(Tensor<T> &t){ return calculator(*this, t, PLUS);}
+  operator+(T x){ Tensor<T> t(m_shape, x); return tensor_calculator(*this, t, PLUS);}
   Tensor<T> 
-  operator+(T x){ Tensor<T> t(m_shape, x); return calculator(*this, t, PLUS);}
+  operator-(T x){ Tensor<T> t(m_shape, x); return tensor_calculator(*this, t, MINUS);}
   Tensor<T> 
-  operator-(Tensor<T> &t){ return calculator(*this, t, MINUS);}
+  operator*(T x){ Tensor<T> t(m_shape, x); return tensor_calculator(*this, t, MULTIPLY);}
   Tensor<T> 
-  operator-(T x){ Tensor<T> t(m_shape, x); return calculator(*this, t, MINUS);}
+  operator/(T x){ Tensor<T> t(m_shape, x); return tensor_calculator(*this, t, DIVIDE);}
   Tensor<T> 
-  operator*(Tensor<T> &t){ return calculator(*this, t, MULTIPLY);}
-  Tensor<T> 
-  operator*(T x){ Tensor<T> t(m_shape, x); return calculator(*this, t, MULTIPLY);}
-  Tensor<T> 
-  operator/(Tensor<T> &t){ return calculator(*this, t, DIVIDE);}
-  Tensor<T> 
-  operator/(T x){ Tensor<T> t(m_shape, x); return calculator(*this, t, DIVIDE);}
-  Tensor<T> 
-  operator%(Tensor<T> &t){ return calculator(*this, t, MOD);}
-  Tensor<T> 
-  operator%(T x){ Tensor<T> t(m_shape, x); return calculator(*this, t, MOD);}
+  operator%(T x){ Tensor<T> t(m_shape, x); return tensor_calculator(*this, t, MOD);}
+  Tensor<T> operator+(const Tensor<T> &t){ return tensor_calculator(*this, t, PLUS);}
+  Tensor<T> operator-(const Tensor<T> &t){ return tensor_calculator(*this, t, MINUS);}
+  Tensor<T> operator*(const Tensor<T> &t){ return tensor_calculator(*this, t, MULTIPLY);}
+  Tensor<T> operator/(const Tensor<T> &t){ return tensor_calculator(*this, t, DIVIDE);}
+  Tensor<T> operator%(const Tensor<T> &t){ return tensor_calculator(*this, t, MOD);}
 
-  void operator+=(Tensor<T> &t){ *this = calculator(*this, t, PLUS);}
-  void operator-=(Tensor<T> &t){ *this = calculator(*this, t, MINUS);}
-  void operator*=(Tensor<T> &t){ *this = calculator(*this, t, MULTIPLY);}
-  void operator/=(Tensor<T> &t){ *this = calculator(*this, t, DIVIDE);}
-  void operator%=(Tensor<T> &t){ *this = calculator(*this, t, MOD);}
+  void operator+=(const Tensor<T> &t){ *this = tensor_calculator(*this, t, PLUS);}
+  void operator-=(const Tensor<T> &t){ *this = tensor_calculator(*this, t, MINUS);}
+  void operator*=(const Tensor<T> &t){ *this = tensor_calculator(*this, t, MULTIPLY);}
+  void operator/=(const Tensor<T> &t){ *this = tensor_calculator(*this, t, DIVIDE);}
+  void operator%=(const Tensor<T> &t){ *this = tensor_calculator(*this, t, MOD);}
   void operator+=(T x){ Tensor<T> t(m_shape, x); this->operator+=(t);}
   void operator-=(T x){ Tensor<T> t(m_shape, x); this->operator-=(t);}
   void operator*=(T x){ Tensor<T> t(m_shape, x); this->operator*=(t);}
   void operator/=(T x){ Tensor<T> t(m_shape, x); this->operator/=(t);}
   void operator%=(T x){ Tensor<T> t(m_shape, x); this->operator%=(t);}
 
-  T&   operator[](int idx){ return m_data[idx];}
+  T&       operator[](size_t idx)       { return m_data[idx];}
+  const T& operator[](size_t idx) const { return m_data[idx];}
 
   template<typename U>
   friend std::ostream & operator<<(std::ostream &os, const Tensor<U> &t);
@@ -123,6 +118,25 @@ public:
   Tensor<T> min(int axis=0, bool keepdim=false){ 
     return tensor_operator(*this, axis, MIN, keepdim); }
 
+  std::vector<T> &
+  get_data(){ return m_data; }
+  std::vector<T> const& 
+  get_cdata() const  { return m_data; }
+  std::vector<int> &
+  get_shape(){ return m_shape; }
+  std::vector<int> const&
+  get_cshape() const { return m_shape; }
+
+  size_t size(){ return m_data.size(); }
+  size_t size() const { return m_data.size(); }
+
+  int row(){ return m_shape[0]; }
+  int col(){ return m_shape[1]; }
+  int channel(){ return m_shape[2]; }  
+  int row() const { return m_shape[0]; }
+  int col() const { return m_shape[1]; }
+  int channel() const { return m_shape[2]; }  
+
   void shape(){
     printf("shape:[");
     for(int i = 0; i < m_shape.size(); i++) {
@@ -132,23 +146,8 @@ public:
     }
   }
 
-  std::vector<T> &
-  get_data(){ return m_data; }
-  std::vector<T> const& 
-  get_cdata(){ return m_data; }
-
-  std::vector<int> &
-  get_shape(){ return m_shape; }
-  std::vector<int> const&
-  get_cshape(){ return m_shape; }
-
-  size_t size(){ return m_data.size(); }
-
-  int row(){ return m_shape[0]; }
-  int col(){ return m_shape[1]; }
-  int channel(){ return m_shape[2]; }  
-
 protected:
+  Tensor<T> tensor_calculator(const Tensor<T> &a, const Tensor<T> &b, int mode);
   Tensor<T> tensor_operator(Tensor<T> &t, int axis, int mode, bool keepdim);
 
 private:
@@ -161,7 +160,7 @@ private:
 
   template<typename T>
   Tensor<T> 
-  Tensor<T>::calculator(Tensor<T> &a, Tensor<T> &b, int mode){
+  Tensor<T>::tensor_calculator(const Tensor<T> &a, const Tensor<T> &b, int mode){
     // col and channel must be the same shape
     assert(a.row() == b.row() && a.channel() == b.channel());
 
@@ -178,7 +177,7 @@ private:
       if(channel >= ncpu * BOOST_CHANNEL){
         int ch_num = channel / NTHREAD_C(ncpu), ch_mod = channel % NTHREAD_C(ncpu);
         for(int i = 0; i < NTHREAD_C(ncpu); i++){
-          std::thread task(vec_channel_f<T>, std::ref(a), std::ref(b), std::ref(res),
+          std::thread task(vec_channel_f<T>, std::cref(a), std::cref(b), std::ref(res),
                            ch_num * i, ch_num, mode);
           pool.push_back(std::move(task));
         }
@@ -190,7 +189,7 @@ private:
         int row_num = row / NTHREAD_R(ncpu), row_mod = row % NTHREAD_R(ncpu);
         for(int ch = 0; ch < channel; ch++){
           for(int i = 0; i < NTHREAD_C(ncpu); i++){
-            std::thread task(vec_row_f<T>, std::ref(a), std::ref(b), std::ref(res),
+            std::thread task(vec_row_f<T>, std::cref(a), std::cref(b), std::ref(res),
                             ch, row_num * i, row_num, mode);
             pool.push_back(std::move(task));
           }
@@ -207,7 +206,7 @@ private:
       if(channel >= ncpu * BOOST_CHANNEL){
         int ch_num = channel / NTHREAD_C(ncpu), ch_mod = channel % NTHREAD_C(ncpu);
         for(int i = 0; i < NTHREAD_C(ncpu); i++){
-          std::thread task(vec_channel_s<T>, std::ref(a), std::ref(b), std::ref(res),
+          std::thread task(vec_channel_s<T>, std::cref(a), std::cref(b), std::ref(res),
                            ch_num * i, ch_num, mode);
           pool.push_back(std::move(task));
         }
@@ -218,7 +217,7 @@ private:
         int row_num = row / NTHREAD_R(ncpu), row_mod = row % NTHREAD_R(ncpu);
         for(int ch = 0; ch < channel; ch++){
           for(int i = 0; i < NTHREAD_C(ncpu); i++){
-            std::thread task(vec_row_s<T>, std::ref(a), std::ref(b), std::ref(res),
+            std::thread task(vec_row_s<T>, std::cref(a), std::cref(b), std::ref(res),
                             ch, row_num * i, row_num, mode);
             pool.push_back(std::move(task));
           }
@@ -273,7 +272,7 @@ private:
         for(int i = 0; i < NTHREAD_C(ncpu); i++){
           int start = square * ch_num * i, end = start + square * ch_num;
           int res_i = ch_num * i * row;
-          std::thread task(operator_axis0<T>, std::ref(t), std::ref(res), 
+          std::thread task(operator_axis0<T>, std::cref(t), std::ref(res), 
                            start, end, res_i, mode);
           pool.push_back(std::move(task));
         }
@@ -291,7 +290,7 @@ private:
           for(int i = 0; i < NTHREAD_R(ncpu); i++){
             int start = square * ch + row_num * i * col, end = start + col * row_num;
             int res_i = ch * row + row_num * i;
-            std::thread task(operator_axis0<T>, std::ref(t), std::ref(res), 
+            std::thread task(operator_axis0<T>, std::cref(t), std::ref(res), 
                              start, end, res_i, mode);
             pool.push_back(std::move(task));
           }
@@ -303,7 +302,7 @@ private:
         } goto join;
       }
       // Not need to boost.
-      operator_axis0(t, res, 0, t.get_data().size(), 0, mode); goto join;
+      operator_axis0(t, res, 0, t.size(), 0, mode); goto join;
     }
     if(axis == ROW){
       res = Tensor<T>(1, col, channel);
@@ -313,7 +312,7 @@ private:
         for(int i = 0; i < NTHREAD_C(ncpu); i++){
           int start = square * ch_num * i, end = start + square * ch_num;
           int res_i = ch_num * i * col;
-          std::thread task(operator_axis1_channel<T>, std::ref(t), std::ref(res), 
+          std::thread task(operator_axis1_channel<T>, std::cref(t), std::ref(res), 
                            start, end, res_i, mode);
           pool.push_back(std::move(task));
         }
@@ -331,7 +330,7 @@ private:
           for(int i = 0; i < NTHREAD_R(ncpu); i++){
             int start = square * ch + col_num * i;
             int res_i = ch * col + col_num * i;
-            std::thread task(operator_axis1_col<T>, std::ref(t), std::ref(res), 
+            std::thread task(operator_axis1_col<T>, std::cref(t), std::ref(res), 
                              start, col_num, res_i, mode);
             pool.push_back(std::move(task));
           }
@@ -343,7 +342,7 @@ private:
         } goto join;
       }
       // Not need to boost.
-      operator_axis1_channel(t, res, 0, t.get_data().size(), 0, mode); goto join;
+      operator_axis1_channel(t, res, 0, t.size(), 0, mode); goto join;
     }
     if(axis == CHANNEL){
       res = Tensor<T>(row, col, 1);
@@ -353,12 +352,12 @@ private:
         for(int i = 0; i < NTHREAD_R(ncpu); i++){
           int start = row_num * i * col;
           int end = start + (channel - 1) * square + row_num * col;
-          std::thread task(operator_axis2_row<T>, std::ref(t), std::ref(res), 
+          std::thread task(operator_axis2_row<T>, std::cref(t), std::ref(res), 
                            start, end, row_num, start, mode);
           pool.push_back(std::move(task));
         }
         if(row_mod){
-          int start = (row - row_mod) * col, end = t.get_cdata().size();
+          int start = (row - row_mod) * col, end = t.size();
           operator_axis2_row(t, res, start, end, row_mod, start, mode); 
         }
         goto join;
@@ -369,18 +368,18 @@ private:
         for(int i = 0; i < NTHREAD_R(ncpu); i++){
           int start = col_num * i;
           int end = start + (channel - 1) * square + (row - 1) * col + col_num;
-          std::thread task(operator_axis2_col<T>, std::ref(t), std::ref(res), 
+          std::thread task(operator_axis2_col<T>, std::cref(t), std::ref(res), 
                            start, end, col_num, start, mode);
           pool.push_back(std::move(task));
         }
         if(col_mod){
-          int start = col - col_mod, end = t.get_cdata().size();
+          int start = col - col_mod, end = t.size();
           operator_axis2_col(t, res, start, end, col_mod, start, mode); 
         }
         goto join;
       }
       // Not need to boost.
-      operator_axis2_row(t, res, 0, t.get_data().size(), row, 0, mode); goto join;
+      operator_axis2_row(t, res, 0, t.size(), row, 0, mode); goto join;
     }
 
   join:
