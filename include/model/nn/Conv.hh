@@ -16,9 +16,11 @@ namespace dl{
   template<typename T>
   class Conv2D : public Function<T> {
   public:
-    explicit
-    Conv2D(int size, int stride=1, int channel=1, int paddle=0, bool auto_grad=false) {
-      m_parameter = Tensor<T>(size, size, channel, 1);
+    explicit Conv2D
+    (int size, int channel, int output_ch=1, 
+     int stride=1, int paddle=0, bool auto_grad=false) {
+      printf("ouput_ch:%d\n", output_ch);
+      m_parameter = Tensor<T>(size, size, channel, output_ch);
       m_stride = stride;
       m_paddle = paddle;
       mauto_grad = auto_grad;
@@ -26,8 +28,8 @@ namespace dl{
       std::cout << m_parameter;
     }
 
-    explicit
-    Conv2D(Tensor<T> &kernel, int stride=1, int channel=1, int paddle=0, bool auto_grad=false) {
+    explicit 
+    Conv2D(Tensor<T> &kernel, int stride=1, int paddle=0, bool auto_grad=false) {
       m_parameter = kernel;
       m_stride = stride;
       m_paddle = paddle;
@@ -40,10 +42,10 @@ namespace dl{
   
     virtual Tensor<T>
     forward(const Tensor<T> &input){
-      // if(mauto_grad) grad = input;
+      if(mauto_grad) grad = input;
       int row = input.row(), col = input.col(), channel = input.channel();
       if(m_paddle){
-        Tensor<T> pad_input(row + 2 * m_paddle, col + 2 * m_paddle, channel, 0);
+        Tensor<T> pad_input(row + 2 * m_paddle, col + 2 * m_paddle, channel, 1, 0);
         paddle(input, pad_input, m_paddle);
         puts("In pad_conv");
         std::cout << pad_input;
@@ -62,15 +64,16 @@ namespace dl{
 
     Tensor<T> 
     conv_boost(const Tensor<T> &input, int r_row, int r_col){
-      int irow = input.row(), icol = input.col(), channel = m_parameter.channel();
+      int irow = input.row(), icol = input.col(), channel = input.channel();
+      int output_ch = m_parameter.number();
       printf("%d %d\n", r_row, r_col);
-      Tensor<T> res(r_row, r_col, channel, 0);
+      Tensor<T> res(r_row, r_col, output_ch, 1, 0);
       res.shape();
 
       int ncpu = std::thread::hardware_concurrency();
       std::vector<std::thread> pool;
-      if(channel >= ncpu * BOOST_CONV){
-        int nth = NTHREAD_C(ncpu), ch_num = channel / nth , ch_mod = channel % nth;
+      if(output_ch >= ncpu * BOOST_CONV){
+        int nth = NTHREAD_C(ncpu), ch_num = output_ch / nth , ch_mod = output_ch % nth;
         for(int i = 0; i < nth; i++){
           int ch_begin = ch_num * i;
           std::thread task(conv2d_channel<T>, std::cref(input), std::cref(m_parameter), 

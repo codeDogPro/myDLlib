@@ -26,6 +26,7 @@ public:
 
   explicit
   Tensor(int row, int col, int channel=1, int number=1, T val=-1){
+    printf("number:%d\n", number);
     assert(row != 0 && col != 0 && channel != 0 && number != 0);
 
     m_data.assign(row * col * channel * number, val);
@@ -144,8 +145,8 @@ public:
     for(int i = 0; i < m_shape.size(); i++) {
       std::cout << m_shape[i];
       if(i != m_shape.size() - 1) printf(", ");
-      else printf("]\n");
     }
+    printf("]\n");
   }
 
 protected:
@@ -169,11 +170,11 @@ private:
     Tensor<T> res(a.get_cshape());
     int ncpu = std::thread::hardware_concurrency();
     int row = a.row(), col = a.col(), channel = a.channel(), number = a.number();
+    std::vector<std::thread> pool;
 #ifdef BENCH
     Timer t;
 #endif
     for(int n = 0; n < number; n++){
-      std::vector<std::thread> pool;
       int noffset = row * col * channel * n;
       // When a and b are totally same shape.
       if(a.row() == b.row()){
@@ -237,8 +238,8 @@ private:
             vec_row_s(a, b, res, noffset, ch, 0, row, mode); 
         }
       }
-      for(auto &task : pool) task.join();
     }
+    for(auto &task : pool) task.join();
 
     return res;
 
