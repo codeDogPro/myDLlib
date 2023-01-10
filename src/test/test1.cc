@@ -12,18 +12,16 @@ void initialization_test(){
 }
 
 // sum(), mean(), max(), min(). test
-// void smmm_test(){
-//   // Tensor<int> c(3, 2, 2, 3);
-//   Tensor<int> c(30, 40, 512 * 8, 2);
-//   Tensor<int> d(3, 2, 2, 7);
-//   std::cout << c;
-//   std::cout << c.max(2);
-//   std::cout << c.sum(0) << c.sum(1) << c.sum(2);
-//   std::cout << c.mean(0) << c.mean(1) << c.mean(2);
-//   std::cout << c.max(0) << c.max(1) << c.max(2);
-//   std::cout << c.min(0) << c.min(1) << c.min(2);
-//   std::cout << c.sum(0, false);
-// }
+void smmm_test(){
+  // Tensor<int> c(3, 2, 2, 3);
+  Tensor<int> c(3, 5, 8, 2, -1);
+  std::cout << c;
+  
+  std::cout << c.sum(0) << c.sum(1) << c.sum(2);
+  std::cout << c.mean(0) << c.mean(1) << c.mean(2);
+  std::cout << c.max(0) << c.max(1) << c.max(2);
+  std::cout << c.min(0) << c.min(1) << c.min(2);
+}
 
 // += -= *= /= test
 void plusequal_test(){
@@ -38,13 +36,13 @@ void plusequal_test(){
 
 // +-*/ test
 void plus_test(){
-  Tensor<int> a(8, 8);
-  Tensor<int> b(8, 8);
+  Tensor<int> a(4, 4, 8, 2, 3);
+  Tensor<int> b(4, 4, 8, 2, 1);
   std::cout << a << b;
   auto c = a + b;
   auto d = a - b; 
   auto e = a * b; 
-  // auto f = a / b; 
+  auto f = a / b; 
   std::cout << c << d << e;
 }
  
@@ -71,7 +69,8 @@ void nn_test(){
 
   
 int main(){
-  // plus_test();
-  nn_test();
+  plus_test();
+  // nn_test();
+  // smmm_test();
   return 0;
 }

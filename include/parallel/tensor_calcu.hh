@@ -15,12 +15,13 @@ namespace dl{
   template<typename T>
   void vec_channel_s
   (const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &res,
-   int ch_begin, int ch_num, int mode)
+   int noffset, int ch_begin, int ch_num, int mode)
   {
     int arow = a.row(), brow = b.row(), col = a.col();
     int asquare = arow * col, bsquare = brow * col;
     for(int ch = ch_begin; ch < ch_begin + ch_num; ch++){
-      int astart = ch * asquare, bstart = ch * bsquare, aend = astart + asquare;
+      int astart = noffset + ch * asquare, bstart = noffset + ch * bsquare;
+      int aend = astart + asquare;
       for(int i = astart; i < aend; i++){
         switch(mode){
           case PLUS:
@@ -43,10 +44,11 @@ namespace dl{
   template<typename T>
   void vec_channel_f
   (const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &res,
-   int ch_begin, int ch_num, int mode)
+   int noffset, int ch_begin, int ch_num, int mode)
   {
     int square = a.row() * a.col();
-    int start = ch_begin * square, end = (ch_begin + ch_num) * square;
+    int start = noffset + ch_begin * square;
+    int end   = noffset + start + ch_num * square;
     for(int i = start; i < end; i++){
       switch(mode){
         case PLUS:
@@ -68,15 +70,13 @@ namespace dl{
   template<typename T>
   void vec_row_s // the row number of a must >= b
   (const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &res, 
-   int channel, int row_begin, int row_num, int mode)
+   int noffset, int channel, int row_begin, int row_num, int mode)
   {
-#ifdef DEBUG
-    printf("row_num:%d col:%d\n", row_num, col);
-#endif
     int arow = a.row(), brow = b.row(), col = a.col();
     int asquare = arow * col, bsquare = brow * col;
-    int astart = channel * asquare + row_begin * col, aend = astart + row_num * col;
-    int bstart = channel * bsquare;
+    int astart = noffset + channel * asquare + row_begin * col;
+    int bstart = noffset + channel * bsquare;
+    int aend = astart + row_num * col;
     for(int i = astart; i < aend; i++){
       switch(mode){
         case PLUS:
@@ -93,18 +93,16 @@ namespace dl{
         default: assert(0);
       }
     }
-#ifdef DEBUG
-        printf("a:%d  b:%d  res:%d\n", a[col_idx], b[c], res[col_idx]);
-#endif
   }
   
   template<typename T>
   void vec_row_f // a and b's shape must be the same
   (const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &res,
-   int channel, int row_begin, int row_num, int mode)
+   int noffset, int channel, int row_begin, int row_num, int mode)
   {
     int row = a.row(), col = a.col(), square = row * col;
-    int start = channel * square + row_begin * col, end = start + row_num * col;
+    int start = noffset + channel * square + row_begin * col;
+    int end   = start + row_num * col;
     for(int i = start; i < end; i++){
       switch(mode){
         case PLUS:
@@ -120,9 +118,6 @@ namespace dl{
         res[i] = a[i] % b[i]; break;
         default: assert(0);
       }
-#ifdef DEBUG
-        printf("a:%d  b:%d  res:%d\n", a[col_idx], b[col_idx], res[col_idx]);
-#endif
     }
   }
 
@@ -132,7 +127,7 @@ namespace dl{
   void operator_axis0
   (const Tensor<T> &t, Tensor<T> &res, int start, int end, int res_i, int mode){
     int col = t.col(), cnt = 0; 
-    if(mode == SUM)
+    if(mode == SUM || mode == MEAN)
       for(int i = start, sum = 0; i < end; i++){
         sum += t[i];
         if(++cnt == col){
@@ -255,7 +250,7 @@ namespace dl{
           res[res_i++] = sum;
         if(mode == MEAN)
           res[res_i++] = sum / row;
-      }
+      } 
     }
     if(mode == MAX){
       std::vector<T> maxs(zone, 1e-8);
