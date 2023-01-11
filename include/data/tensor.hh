@@ -77,26 +77,26 @@ public:
   }
 
   Tensor<T> 
-  operator+(T x){ Tensor<T> t(m_shape, x); return tensor_calculator(*this, t, PLUS);}
+  operator+(T x){ Tensor<T> t(m_shape, x); return calculator_invoker(t, PLUS);}
   Tensor<T> 
-  operator-(T x){ Tensor<T> t(m_shape, x); return tensor_calculator(*this, t, MINUS);}
+  operator-(T x){ Tensor<T> t(m_shape, x); return calculator_invoker(t, MINUS);}
   Tensor<T> 
-  operator*(T x){ Tensor<T> t(m_shape, x); return tensor_calculator(*this, t, MULTIPLY);}
+  operator*(T x){ Tensor<T> t(m_shape, x); return calculator_invoker(t, MULTIPLY);}
   Tensor<T> 
-  operator/(T x){ Tensor<T> t(m_shape, x); return tensor_calculator(*this, t, DIVIDE);}
+  operator/(T x){ Tensor<T> t(m_shape, x); return calculator_invoker(t, DIVIDE);}
   Tensor<T> 
-  operator%(T x){ Tensor<T> t(m_shape, x); return tensor_calculator(*this, t, MOD);}
-  Tensor<T> operator+(const Tensor<T> &t){ return tensor_calculator(*this, t, PLUS);}
-  Tensor<T> operator-(const Tensor<T> &t){ return tensor_calculator(*this, t, MINUS);}
-  Tensor<T> operator*(const Tensor<T> &t){ return tensor_calculator(*this, t, MULTIPLY);}
-  Tensor<T> operator/(const Tensor<T> &t){ return tensor_calculator(*this, t, DIVIDE);}
-  Tensor<T> operator%(const Tensor<T> &t){ return tensor_calculator(*this, t, MOD);}
+  operator%(T x){ Tensor<T> t(m_shape, x); return calculator_invoker(t, MOD);}
+  Tensor<T> operator+(const Tensor<T> &t){ return calculator_invoker(t, PLUS);}
+  Tensor<T> operator-(const Tensor<T> &t){ return calculator_invoker(t, MINUS);}
+  Tensor<T> operator*(const Tensor<T> &t){ return calculator_invoker(t, MULTIPLY);}
+  Tensor<T> operator/(const Tensor<T> &t){ return calculator_invoker(t, DIVIDE);}
+  Tensor<T> operator%(const Tensor<T> &t){ return calculator_invoker(t, MOD);}
 
-  void operator+=(const Tensor<T> &t){ *this = tensor_calculator(*this, t, PLUS);}
-  void operator-=(const Tensor<T> &t){ *this = tensor_calculator(*this, t, MINUS);}
-  void operator*=(const Tensor<T> &t){ *this = tensor_calculator(*this, t, MULTIPLY);}
-  void operator/=(const Tensor<T> &t){ *this = tensor_calculator(*this, t, DIVIDE);}
-  void operator%=(const Tensor<T> &t){ *this = tensor_calculator(*this, t, MOD);}
+  void operator+=(const Tensor<T> &t){ *this = calculator_invoker(t, PLUS);}
+  void operator-=(const Tensor<T> &t){ *this = calculator_invoker(t, MINUS);}
+  void operator*=(const Tensor<T> &t){ *this = calculator_invoker(t, MULTIPLY);}
+  void operator/=(const Tensor<T> &t){ *this = calculator_invoker(t, DIVIDE);}
+  void operator%=(const Tensor<T> &t){ *this = calculator_invoker(t, MOD);}
   void operator+=(T x){ Tensor<T> t(m_shape, x); this->operator+=(t);}
   void operator-=(T x){ Tensor<T> t(m_shape, x); this->operator-=(t);}
   void operator*=(T x){ Tensor<T> t(m_shape, x); this->operator*=(t);}
@@ -149,7 +149,22 @@ public:
   }
 
 protected:
-  Tensor<T> tensor_calculator(const Tensor<T> &a, const Tensor<T> &b, int mode);
+  void tensor_calculator
+  (const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &res, int num_idx, int mode);
+
+  Tensor<T> 
+  calculator_invoker(const Tensor<T> &b, int mode){
+    assert(number() == b.number());
+    Tensor<T> res(this->get_cshape(), 0);
+    for(int i = 0; i < number(); i++){
+      printf("invoke time:%d\n", i + 1);
+      tensor_calculator(*this, b, res, i, mode); 
+      
+      std::cout << "res:\n" << res;
+    }
+    return res;
+  }
+
   Tensor<T> tensor_operator(Tensor<T> &t, int axis, int mode, bool keepdim);
 
 private:
@@ -161,90 +176,85 @@ private:
 //################### Tensor::member functions' implementation ###################
 
   template<typename T>
-  Tensor<T> 
-  Tensor<T>::tensor_calculator(const Tensor<T> &a, const Tensor<T> &b, int mode){
-    // col and channel and number must be the same.
-    assert(a.row()==b.row() && a.channel()==b.channel() && a.number()==b.number());
+  void Tensor<T>::tensor_calculator
+  (const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &res, int num_idx, int mode){
+    // col and channel must be the same.
+    assert(a.row() == b.row() && a.channel() == b.channel());
 
-    Tensor<T> res(a.get_cshape());
     int ncpu = std::thread::hardware_concurrency();
-    int row = a.row(), col = a.col(), channel = a.channel(), number = a.number();
-    std::vector<std::thread> pool(number * ncpu * 2);
-    int x = 1;
+    int row = a.row(), col = a.col(), channel = a.channel();
+    int noffset = row * col * channel * num_idx;
+    std::vector<std::thread> pool;
 #ifdef BENCH
     Timer t;
 #endif
-    std::cout << number << std::endl;
-    for(int n = 0; n < number; n++){
-      printf("LOOP. x=%d\n", x++);
-      int noffset = row * col * channel * n;
-      // When a and b are totally same shape.
-      if(a.row() == b.row()){
-        // The channel num is way much than row, so boost for channel calculation
-        if(channel >= ncpu * BOOST_CHANNEL){
-          puts("BOOST CHANNEL");
-          int ch_num = channel / NTHREAD_C(ncpu), ch_mod = channel % NTHREAD_C(ncpu);
+    // When a and b are totally same shape.
+    if(a.row() == b.row()){
+      // The channel num is way much than row, so boost for channel calculation
+      if(channel >= ncpu * BOOST_CHANNEL){
+        puts("BOOST CHANNEL");
+        int ch_num = channel / NTHREAD_C(ncpu), ch_mod = channel % NTHREAD_C(ncpu);
+        for(int i = 0; i < NTHREAD_C(ncpu); i++){
+          std::thread task(vec_channel_f<T>, std::cref(a), std::cref(b), std::ref(res),
+                            noffset, ch_num * i, ch_num, mode);
+          pool.push_back(std::move(task));
+        }
+        if(ch_mod) vec_channel_f(a, b, res, noffset, channel - ch_mod, ch_mod, mode);
+      }
+      // The row num is way much than channel, so boost for row calculation
+      else if(row >= ncpu * BOOST_ROW){
+        int row_num = row / NTHREAD_R(ncpu), row_mod = row % NTHREAD_R(ncpu);
+        for(int ch = 0; ch < channel; ch++){
           for(int i = 0; i < NTHREAD_C(ncpu); i++){
-            std::thread task(vec_channel_f<T>, std::cref(a), std::cref(b), std::ref(res),
-                             noffset, ch_num * i, ch_num, mode);
+            std::thread task(vec_row_f<T>, std::cref(a), std::cref(b), std::ref(res),
+                              noffset, ch, row_num * i, row_num, mode);
             pool.push_back(std::move(task));
           }
-          if(ch_mod) vec_channel_f(a, b, res, noffset, channel - ch_mod, ch_mod, mode);
-        }
-        // The row num is way much than channel, so boost for row calculation
-        else if(row >= ncpu * BOOST_ROW){
-          int row_num = row / NTHREAD_R(ncpu), row_mod = row % NTHREAD_R(ncpu);
-          for(int ch = 0; ch < channel; ch++){
-            for(int i = 0; i < NTHREAD_C(ncpu); i++){
-              std::thread task(vec_row_f<T>, std::cref(a), std::cref(b), std::ref(res),
-                               noffset, ch, row_num * i, row_num, mode);
-              pool.push_back(std::move(task));
-            }
-            if(row_mod) vec_row_f(a, b, res, noffset, ch, row - row_mod, row_mod, mode);
-          }
-        }
-        // No need to boost
-        else{
-          for(int ch = 0; ch < channel; ch++) 
-            vec_row_s(a, b, res, noffset, ch, 0, row, mode); 
-        }
-      } 
-      // When a is not same shape with b.
-      else{
-        if(b.row() != 1) goto erro;
-        
-        // The channel num is way much than row, so boost for channel calculation
-        if(channel >= ncpu * BOOST_CHANNEL){
-          int ch_num = channel / NTHREAD_C(ncpu), ch_mod = channel % NTHREAD_C(ncpu);
-          for(int i = 0; i < NTHREAD_C(ncpu); i++){
-            std::thread task(vec_channel_s<T>, std::cref(a), std::cref(b), std::ref(res),
-                             noffset, ch_num * i, ch_num, mode);
-            pool.push_back(std::move(task));
-          }
-          if(ch_mod) vec_channel_s(a, b, res, noffset, channel - ch_mod, ch_mod, mode);
-        } 
-        // The row num is way much than channel, so boost for row calculation
-        else if(row > ncpu * BOOST_ROW){
-          int row_num = row / NTHREAD_R(ncpu), row_mod = row % NTHREAD_R(ncpu);
-          for(int ch = 0; ch < channel; ch++){
-            for(int i = 0; i < NTHREAD_C(ncpu); i++){
-              std::thread task(vec_row_s<T>, std::cref(a), std::cref(b), std::ref(res),
-                               noffset, ch, row_num * i, row_num, mode);
-              pool.push_back(std::move(task));
-            }
-            if(row_mod) vec_row_s(a, b, res, noffset, ch, row - row_mod, row_mod, mode);
-          }
-        }
-        // No need to boost
-        else{
-          for(int ch = 0; ch < channel; ch++) 
-            vec_row_s(a, b, res, noffset, ch, 0, row, mode); 
+          if(row_mod) vec_row_f(a, b, res, noffset, ch, row - row_mod, row_mod, mode);
         }
       }
+      // No need to boost
+      else{
+        for(int ch = 0; ch < channel; ch++) 
+          vec_row_s(a, b, res, noffset, ch, 0, row, mode); 
+      }
+    } 
+    // When a is not same shape with b.
+    else{
+      if(b.row() != 1) goto erro;
+      
+      // The channel num is way much than row, so boost for channel calculation
+      if(channel >= ncpu * BOOST_CHANNEL){
+        int ch_num = channel / NTHREAD_C(ncpu), ch_mod = channel % NTHREAD_C(ncpu);
+        for(int i = 0; i < NTHREAD_C(ncpu); i++){
+          std::thread task(vec_channel_s<T>, std::cref(a), std::cref(b), std::ref(res),
+                            noffset, ch_num * i, ch_num, mode);
+          pool.push_back(std::move(task));
+        }
+        if(ch_mod) vec_channel_s(a, b, res, noffset, channel - ch_mod, ch_mod, mode);
+      } 
+      // The row num is way much than channel, so boost for row calculation
+      else if(row > ncpu * BOOST_ROW){
+        int row_num = row / NTHREAD_R(ncpu), row_mod = row % NTHREAD_R(ncpu);
+        for(int ch = 0; ch < channel; ch++){
+          for(int i = 0; i < NTHREAD_C(ncpu); i++){
+            std::thread task(vec_row_s<T>, std::cref(a), std::cref(b), std::ref(res),
+                              noffset, ch, row_num * i, row_num, mode);
+            pool.push_back(std::move(task));
+          }
+          if(row_mod) vec_row_s(a, b, res, noffset, ch, row - row_mod, row_mod, mode);
+        }
+      }
+      // No need to boost
+      else{
+        for(int ch = 0; ch < channel; ch++) 
+          vec_row_s(a, b, res, noffset, ch, 0, row, mode); 
+      }
     }
-    for(auto &task : pool) { task.join(); }
+    printf("pool size:%ld\n", pool.size());
+    for(auto &task : pool) task.join(); 
 
-    return res;
+    return;
 
   erro:
     fprintf(stderr,

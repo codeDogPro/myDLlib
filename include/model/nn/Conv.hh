@@ -66,9 +66,7 @@ namespace dl{
     conv_boost(const Tensor<T> &input, int r_row, int r_col){
       int irow = input.row(), icol = input.col(), channel = input.channel();
       int output_ch = m_parameter.number();
-      printf("%d %d\n", r_row, r_col);
       Tensor<T> res(r_row, r_col, output_ch, 1, 0);
-      res.shape();
 
       int ncpu = std::thread::hardware_concurrency();
       std::vector<std::thread> pool;
@@ -81,11 +79,11 @@ namespace dl{
           pool.push_back(std::move(task));
         }
         if(ch_mod){
-          puts("mod");
           int ch_begin = channel - ch_mod;
           conv2d_channel(input, m_parameter, res, ch_begin, ch_mod, m_stride);
         } goto join;
       }
+      else if()
       puts("no boost");
       conv2d_channel(input, m_parameter, res, 0, channel, m_stride);
 
