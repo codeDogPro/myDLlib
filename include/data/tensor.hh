@@ -26,7 +26,6 @@ public:
 
   explicit
   Tensor(int row, int col, int channel=1, int number=1, T val=-1){
-    printf("number:%d\n", number);
     assert(row != 0 && col != 0 && channel != 0 && number != 0);
 
     m_data.assign(row * col * channel * number, val);
@@ -131,10 +130,10 @@ public:
   size_t size(){ return m_data.size(); }
   size_t size() const { return m_data.size(); }
 
-  int row(){     return m_shape[0]; }
-  int col(){     return m_shape[1]; }
+  int row()    { return m_shape[0]; }
+  int col()    { return m_shape[1]; }
   int channel(){ return m_shape[2]; }  
-  int number(){  return m_shape[3]; }
+  int number() { return m_shape[3]; }
   int row()     const { return m_shape[0]; }
   int col()     const { return m_shape[1]; }
   int channel() const { return m_shape[2]; }  
@@ -164,22 +163,26 @@ private:
   template<typename T>
   Tensor<T> 
   Tensor<T>::tensor_calculator(const Tensor<T> &a, const Tensor<T> &b, int mode){
-    // col and channel must be the same shape
+    // col and channel and number must be the same.
     assert(a.row()==b.row() && a.channel()==b.channel() && a.number()==b.number());
 
     Tensor<T> res(a.get_cshape());
     int ncpu = std::thread::hardware_concurrency();
     int row = a.row(), col = a.col(), channel = a.channel(), number = a.number();
-    std::vector<std::thread> pool;
+    std::vector<std::thread> pool(number * ncpu * 2);
+    int x = 1;
 #ifdef BENCH
     Timer t;
 #endif
+    std::cout << number << std::endl;
     for(int n = 0; n < number; n++){
+      printf("LOOP. x=%d\n", x++);
       int noffset = row * col * channel * n;
       // When a and b are totally same shape.
       if(a.row() == b.row()){
         // The channel num is way much than row, so boost for channel calculation
         if(channel >= ncpu * BOOST_CHANNEL){
+          puts("BOOST CHANNEL");
           int ch_num = channel / NTHREAD_C(ncpu), ch_mod = channel % NTHREAD_C(ncpu);
           for(int i = 0; i < NTHREAD_C(ncpu); i++){
             std::thread task(vec_channel_f<T>, std::cref(a), std::cref(b), std::ref(res),
@@ -239,7 +242,7 @@ private:
         }
       }
     }
-    for(auto &task : pool) task.join();
+    for(auto &task : pool) { task.join(); }
 
     return res;
 

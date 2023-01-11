@@ -40,10 +40,10 @@ void plus_test(){
   Tensor<int> b(4, 4, 8, 2, 1);
   std::cout << a << b;
   auto c = a + b;
-  auto d = a - b; 
-  auto e = a * b; 
-  auto f = a / b; 
-  std::cout << c << d << e << f;
+  // auto d = a - b; 
+  // auto e = a * b; 
+  // auto f = a / b; 
+  // std::cout << c << d << e << f;
 }
  
 // copy test
@@ -68,8 +68,8 @@ void nn_test(){
 
   
 int main(){
-  // plus_test();
+  plus_test();
   // smmm_test();
-  nn_test();
+  // nn_test();
   return 0;
 }

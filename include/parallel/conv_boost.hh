@@ -46,7 +46,7 @@ namespace dl{
       int ker_offset = kvolume * n, inp_offset = 0, ch_offset = 0;
       int ker_i = kstart + ker_offset, res_i = rstart + rsquare * n; 
       for(int sum = 0, c_cnt = 0, r_cnt = 0, inp_i = 0; inp_i < iend;){
-        std::cout << inp_i << ' ';
+        // std::cout << inp_i << ' ';
         sum += kernel[ker_i++] * input[inp_i++];
         if(++c_cnt == kcol){          // cross a col
           inp_i += icol - kcol;
@@ -55,8 +55,7 @@ namespace dl{
             // plus to res
             // std::cout << "res_i:" << res_i << ' ';
             res[res_i++] += sum;
-            std::cout << '\n' << res;
-            // res.shape();
+            // std::cout << '\n' << res;
             r_cnt = sum = 0;
 
             // handle inp_i and ker_i
@@ -64,11 +63,11 @@ namespace dl{
             inp_i = inp_offset + conv_cnt;
             ker_i = ker_offset + ch_cnt * ksquare;
             if((conv_cnt / stride) % rcol == 0){ // switch to next line
-              printf("Switch to next line. conv_cnt=%d\n\n", conv_cnt);
+              // printf("Switch to next line. conv_cnt=%d\n\n", conv_cnt);
               inp_i = inp_offset = ch_cnt * ch_offset + (++line_cnt * stride * icol);
               conv_cnt = 0;
               if(line_cnt == rrow){          //  switch to next input channel
-                printf("Switch to next channel. line_cnt=%d\n\n", line_cnt);
+                // printf("Switch to next channel. line_cnt=%d\n\n", line_cnt);
                 inp_i = inp_offset = ch_offset = ++ch_cnt * isquare;
                 ker_i = ker_offset + ch_cnt * ksquare;
                 res_i = rsquare * n;
