@@ -19,7 +19,6 @@ namespace dl{
     explicit Conv2D
     (int size, int channel, int output_ch=1, 
      int stride=1, int paddle=0, bool auto_grad=false) {
-      printf("ouput_ch:%d\n", output_ch);
       m_parameter = Tensor<T>(size, size, channel, output_ch);
       m_stride = stride;
       m_paddle = paddle;
@@ -70,6 +69,7 @@ namespace dl{
 
       int ncpu = std::thread::hardware_concurrency();
       std::vector<std::thread> pool;
+      // output channel is big enough, so boost it.
       if(output_ch >= ncpu * BOOST_CONV){
         int nth = NTHREAD_C(ncpu), ch_num = output_ch / nth , ch_mod = output_ch % nth;
         for(int i = 0; i < nth; i++){
@@ -83,9 +83,15 @@ namespace dl{
           conv2d_channel(input, m_parameter, res, ch_begin, ch_mod, m_stride);
         } goto join;
       }
-      else if()
-      puts("no boost");
-      conv2d_channel(input, m_parameter, res, 0, channel, m_stride);
+      // input size is big enough, so boost it.
+      else if(irow >= ncpu * BOOST_CONV){
+
+      }
+      // no need to boost
+      else{
+        puts("no boost");
+        conv2d_channel(input, m_parameter, res, 0, channel, m_stride);
+      }
 
     join:
       for(auto &task : pool) task.join();
