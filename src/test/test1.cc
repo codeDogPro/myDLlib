@@ -1,4 +1,5 @@
 #include <dl.hh>
+#include <mylib.h>
 
 using namespace dl;
 
@@ -66,7 +67,6 @@ void nn_test(){
   std::cout << output;
 }
 
-  
 int main(){
   plus_test();
   // smmm_test();

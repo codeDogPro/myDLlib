@@ -13,9 +13,9 @@ namespace dl{
 //##################### Thread functions ########################
 
   template<typename T>
-  void vec_channel_s
-  (const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &res,
-   int noffset, int ch_begin, int ch_num, int mode)
+  int vec_channel_s
+  (int ch_begin, int ch_num, Tensor<T> &res,
+   const Tensor<T> &a, const Tensor<T> &b, int noffset, int mode) 
   {
     int arow = a.row(), brow = b.row(), col = a.col();
     int asquare = arow * col, bsquare = brow * col;
@@ -39,12 +39,13 @@ namespace dl{
         }
       }
     }
+    return ch_begin;
   }
 
   template<typename T>
-  void vec_channel_f
-  (const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &res,
-   int noffset, int ch_begin, int ch_num, int mode)
+  int vec_channel_f
+  (int ch_begin, int ch_num, Tensor<T> &res,
+   const Tensor<T> &a, const Tensor<T> &b, int noffset, int mode) 
   {
     int square = a.row() * a.col();
     int start = noffset + ch_begin * square;
@@ -65,12 +66,13 @@ namespace dl{
         default: assert(0);
       }
     }
+    return ch_begin;
   }
 
   template<typename T>
-  void vec_row_s // the row number of a must >= b
-  (const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &res, 
-   int noffset, int channel, int row_begin, int row_num, int mode)
+  int vec_row_s // the row number of a must >= b
+  (int row_begin, int row_num, int channel, Tensor<T> &res,
+   const Tensor<T> &a, const Tensor<T> &b, int noffset, int mode)
   {
     int arow = a.row(), brow = b.row(), col = a.col();
     int asquare = arow * col, bsquare = brow * col;
@@ -93,12 +95,13 @@ namespace dl{
         default: assert(0);
       }
     }
+    return row_begin;
   }
   
   template<typename T>
-  void vec_row_f // a and b's shape must be the same
-  (const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &res,
-   int noffset, int channel, int row_begin, int row_num, int mode)
+  int vec_row_f // a and b's shape must be the same
+  (int row_begin, int row_num, int channel, Tensor<T> &res,
+   const Tensor<T> &a, const Tensor<T> &b, int noffset, int mode)
   {
     int row = a.row(), col = a.col(), square = row * col;
     int start = noffset + channel * square + row_begin * col;
@@ -119,6 +122,7 @@ namespace dl{
         default: assert(0);
       }
     }
+    return row_begin;
   }
 
   using std::max, std::min;
@@ -336,4 +340,5 @@ namespace dl{
       }
     }
   }
-}
+
+} // namespace dl

@@ -1,16 +1,10 @@
 #pragma once
 
-// #define BENCH
-
 #include <data/rand_init.hh>
 #include <parallel/parallel.hh>
-#ifdef BENCH
-#include <basic/timer.hh>
-#endif
 
 #include <vector>
 #include <numeric>
-#include <thread>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
@@ -153,12 +147,13 @@ protected:
   (const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &res, int num_idx, int mode);
 
   Tensor<T> 
-  calculator_invoker(const Tensor<T> &b, int mode){
-    assert(number() == b.number());
+  calculator_invoker(const Tensor<T> &rhs, int mode){
+    assert(number() == rhs.number());
     Tensor<T> res(this->get_cshape(), 0);
+    std::cout << res;
     for(int i = 0; i < number(); i++){
       printf("invoke time:%d\n", i + 1);
-      tensor_calculator(*this, b, res, i, mode); 
+      tensor_calculator(*this, rhs, res, i, mode); 
       
       std::cout << "res:\n" << res;
     }
@@ -184,76 +179,51 @@ private:
     int ncpu = std::thread::hardware_concurrency();
     int row = a.row(), col = a.col(), channel = a.channel();
     int noffset = row * col * channel * num_idx;
-    std::vector<std::thread> pool;
-#ifdef BENCH
-    Timer t;
-#endif
+
     // When a and b are totally same shape.
     if(a.row() == b.row()){
-      // The channel num is way much than row, so boost for channel calculation
       if(channel >= ncpu * BOOST_CHANNEL){
-        puts("BOOST CHANNEL");
-        int ch_num = channel / NTHREAD_C(ncpu), ch_mod = channel % NTHREAD_C(ncpu);
-        for(int i = 0; i < NTHREAD_C(ncpu); i++){
-          std::thread task(vec_channel_f<T>, std::cref(a), std::cref(b), std::ref(res),
-                            noffset, ch_num * i, ch_num, mode);
-          pool.push_back(std::move(task));
-        }
-        if(ch_mod) vec_channel_f(a, b, res, noffset, channel - ch_mod, ch_mod, mode);
+      // boost for channel calculation
+        parallel_channel(vec_channel_f<T>, 
+        /*nthread, res */NTHREAD_C(ncpu), res,
+        /*const args   */a, b, noffset, mode);
       }
-      // The row num is way much than channel, so boost for row calculation
       else if(row >= ncpu * BOOST_ROW){
-        int row_num = row / NTHREAD_R(ncpu), row_mod = row % NTHREAD_R(ncpu);
-        for(int ch = 0; ch < channel; ch++){
-          for(int i = 0; i < NTHREAD_C(ncpu); i++){
-            std::thread task(vec_row_f<T>, std::cref(a), std::cref(b), std::ref(res),
-                              noffset, ch, row_num * i, row_num, mode);
-            pool.push_back(std::move(task));
-          }
-          if(row_mod) vec_row_f(a, b, res, noffset, ch, row - row_mod, row_mod, mode);
-        }
+      // boost for row calculation
+        parallel_row(    vec_row_f<T>, 
+        /*nthread, res */NTHREAD_R(ncpu), res,
+        /*const args   */a, b, noffset, mode);
       }
-      // No need to boost
       else{
+      // No need to boost
         for(int ch = 0; ch < channel; ch++) 
-          vec_row_s(a, b, res, noffset, ch, 0, row, mode); 
+          vec_row_f(0, row, ch, res, 
+                    a, b, noffset, mode); 
       }
     } 
     // When a is not same shape with b.
     else{
       if(b.row() != 1) goto erro;
       
-      // The channel num is way much than row, so boost for channel calculation
       if(channel >= ncpu * BOOST_CHANNEL){
-        int ch_num = channel / NTHREAD_C(ncpu), ch_mod = channel % NTHREAD_C(ncpu);
-        for(int i = 0; i < NTHREAD_C(ncpu); i++){
-          std::thread task(vec_channel_s<T>, std::cref(a), std::cref(b), std::ref(res),
-                            noffset, ch_num * i, ch_num, mode);
-          pool.push_back(std::move(task));
-        }
-        if(ch_mod) vec_channel_s(a, b, res, noffset, channel - ch_mod, ch_mod, mode);
+      // boost for channel calculation
+        parallel_channel(vec_channel_s<T>, 
+        /*nthread, res */NTHREAD_C(ncpu), res,
+        /*const args   */a, b, noffset, mode);
       } 
-      // The row num is way much than channel, so boost for row calculation
       else if(row > ncpu * BOOST_ROW){
-        int row_num = row / NTHREAD_R(ncpu), row_mod = row % NTHREAD_R(ncpu);
-        for(int ch = 0; ch < channel; ch++){
-          for(int i = 0; i < NTHREAD_C(ncpu); i++){
-            std::thread task(vec_row_s<T>, std::cref(a), std::cref(b), std::ref(res),
-                              noffset, ch, row_num * i, row_num, mode);
-            pool.push_back(std::move(task));
-          }
-          if(row_mod) vec_row_s(a, b, res, noffset, ch, row - row_mod, row_mod, mode);
-        }
+      // boost for row calculation
+        parallel_row(    vec_row_s<T>, 
+        /*nthread, res */NTHREAD_R(ncpu), res,
+        /*const args   */a, b, noffset, mode);
       }
-      // No need to boost
       else{
+      // No need to boost
         for(int ch = 0; ch < channel; ch++) 
-          vec_row_s(a, b, res, noffset, ch, 0, row, mode); 
+          vec_row_s(0, row, ch, res, 
+                    a, b, noffset, mode); 
       }
     }
-    printf("pool size:%ld\n", pool.size());
-    for(auto &task : pool) task.join(); 
-
     return;
 
   erro:
@@ -292,7 +262,7 @@ private:
       else        res = Tensor<T>(1, row, channel, number, 0);
       for(int n = 0; n < number; n++){
         int noffset = volume * n, roffset = row * channel * n;
-        // The channel num is way much than row, so boost for channel calculation
+        // boost for channel calculation
         if(channel >= ncpu * BOOST_CHANNEL){
           int ch_num = channel / NTHREAD_C(ncpu), ch_mod = channel % NTHREAD_C(ncpu);
           for(int i = 0; i < NTHREAD_C(ncpu); i++){
@@ -308,7 +278,7 @@ private:
             operator_axis0(t, res, start, end, res_i, mode);
           }
         }
-        // The row num is way much than channel, so boost for row calculation.
+        // boost for row calculation.
         else if(row >= ncpu * BOOST_ROW){
           int row_num = row / NTHREAD_R(ncpu), row_mod = row % NTHREAD_R(ncpu);
           for(int ch = 0; ch < channel; ch++){
@@ -339,7 +309,7 @@ private:
       res = Tensor<T>(1, col, channel, number, 0);
       for(int n = 0; n < number; n++){
         int noffset = volume * n, roffset = col * channel * n;
-        // The channel num is way much than row, so boost for channel calculation
+        // boost for channel calculation
         if(channel >= ncpu * BOOST_CHANNEL){
           int ch_num = channel / NTHREAD_C(ncpu), ch_mod = channel % NTHREAD_C(ncpu);
           for(int i = 0; i < NTHREAD_C(ncpu); i++){
@@ -355,7 +325,7 @@ private:
             operator_axis1_channel(t, res, start, end, res_i, mode);
           }
         }
-        // The col num is way much than row, so boost for col calculation.
+        // boost for col calculation.
         else if(col >= ncpu * BOOST_ROW){
           int col_num = col / NTHREAD_R(ncpu), col_mod = col % NTHREAD_R(ncpu);
           for(int ch = 0; ch < channel; ch++){
@@ -385,7 +355,7 @@ private:
       res = Tensor<T>(row, col, 1, number, 0);
       for(int n = 0; n < number; n++){
         int noffset = volume * n, roffset = row * col * n;
-        // The row num is way much than col, so boost for row calculation.
+        // boost for row calculation.
         if(row >= ncpu * BOOST_ROW){
           int row_num = row / NTHREAD_R(ncpu), row_mod = row % NTHREAD_R(ncpu);
           for(int i = 0; i < NTHREAD_R(ncpu); i++){
@@ -402,7 +372,7 @@ private:
             operator_axis2_row(t, res, start, end, row_mod, res_i, mode); 
           }
         }
-        // The col num is way much than row, so boost for col calculation.
+        // boost for col calculation.
         else if(col >= ncpu * BOOST_ROW){
           int col_num = col / NTHREAD_R(ncpu), col_mod = col % NTHREAD_R(ncpu);
           for(int i = 0; i < NTHREAD_R(ncpu); i++){
@@ -490,5 +460,6 @@ private:
     puts("");
     return os;
   }
-}
+
+} // namespace dl
 
