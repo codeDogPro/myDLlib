@@ -19,7 +19,7 @@ public:
   explicit Tensor() = default;
 
   explicit
-  Tensor(int row, int col, int channel=1, int number=1, T val=-1){
+  Tensor(int row, int col, int channel=1, T val=-1, int number=1){
     assert(row != 0 && col != 0 && channel != 0 && number != 0);
 
     m_data.assign(row * col * channel * number, val);
@@ -70,27 +70,22 @@ public:
     return *this;
   }
 
-  Tensor<T> 
-  operator+(T x){ Tensor<T> t(m_shape, x); return calculator_invoker(t, PLUS);}
-  Tensor<T> 
-  operator-(T x){ Tensor<T> t(m_shape, x); return calculator_invoker(t, MINUS);}
-  Tensor<T> 
-  operator*(T x){ Tensor<T> t(m_shape, x); return calculator_invoker(t, MULTIPLY);}
-  Tensor<T> 
-  operator/(T x){ Tensor<T> t(m_shape, x); return calculator_invoker(t, DIVIDE);}
-  Tensor<T> 
-  operator%(T x){ Tensor<T> t(m_shape, x); return calculator_invoker(t, MOD);}
-  Tensor<T> operator+(const Tensor<T> &t){ return calculator_invoker(t, PLUS);}
-  Tensor<T> operator-(const Tensor<T> &t){ return calculator_invoker(t, MINUS);}
-  Tensor<T> operator*(const Tensor<T> &t){ return calculator_invoker(t, MULTIPLY);}
-  Tensor<T> operator/(const Tensor<T> &t){ return calculator_invoker(t, DIVIDE);}
-  Tensor<T> operator%(const Tensor<T> &t){ return calculator_invoker(t, MOD);}
+  Tensor<T> operator+(T x){ Tensor<T> t(m_shape, x); return calculator_invoker(t, Calculator::PLUS);}
+  Tensor<T> operator-(T x){ Tensor<T> t(m_shape, x); return calculator_invoker(t, Calculator::MINUS);}
+  Tensor<T> operator*(T x){ Tensor<T> t(m_shape, x); return calculator_invoker(t, Calculator::MULTIPLY);}
+  Tensor<T> operator/(T x){ Tensor<T> t(m_shape, x); return calculator_invoker(t, Calculator::DIVIDE);}
+  Tensor<T> operator%(T x){ Tensor<T> t(m_shape, x); return calculator_invoker(t, Calculator::MOD);}
+  Tensor<T> operator+(const Tensor<T> &t){ return calculator_invoker(t, Calculator::PLUS);}
+  Tensor<T> operator-(const Tensor<T> &t){ return calculator_invoker(t, Calculator::MINUS);}
+  Tensor<T> operator*(const Tensor<T> &t){ return calculator_invoker(t, Calculator::MULTIPLY);}
+  Tensor<T> operator/(const Tensor<T> &t){ return calculator_invoker(t, Calculator::DIVIDE);}
+  Tensor<T> operator%(const Tensor<T> &t){ return calculator_invoker(t, Calculator::MOD);}
 
-  void operator+=(const Tensor<T> &t){ *this = calculator_invoker(t, PLUS);}
-  void operator-=(const Tensor<T> &t){ *this = calculator_invoker(t, MINUS);}
-  void operator*=(const Tensor<T> &t){ *this = calculator_invoker(t, MULTIPLY);}
-  void operator/=(const Tensor<T> &t){ *this = calculator_invoker(t, DIVIDE);}
-  void operator%=(const Tensor<T> &t){ *this = calculator_invoker(t, MOD);}
+  void operator+=(const Tensor<T> &t){ *this = calculator_invoker(t, Calculator::PLUS);}
+  void operator-=(const Tensor<T> &t){ *this = calculator_invoker(t, Calculator::MINUS);}
+  void operator*=(const Tensor<T> &t){ *this = calculator_invoker(t, Calculator::MULTIPLY);}
+  void operator/=(const Tensor<T> &t){ *this = calculator_invoker(t, Calculator::DIVIDE);}
+  void operator%=(const Tensor<T> &t){ *this = calculator_invoker(t, Calculator::MOD);}
   void operator+=(T x){ Tensor<T> t(m_shape, x); this->operator+=(t);}
   void operator-=(T x){ Tensor<T> t(m_shape, x); this->operator-=(t);}
   void operator*=(T x){ Tensor<T> t(m_shape, x); this->operator*=(t);}
@@ -104,13 +99,13 @@ public:
   friend std::ostream & operator<<(std::ostream &os, const Tensor<U> &t);
 
   Tensor<T> sum(int axis=0, bool keepdim=false){ 
-    return tensor_operator(*this, axis, SUM, keepdim); }
+    return tensor_operator(*this, Axis(axis), Operator::SUM, keepdim); }
   Tensor<T> mean(int axis=0, bool keepdim=false){
-    return tensor_operator(*this, axis, MEAN, keepdim);}
+    return tensor_operator(*this, Axis(axis), Operator::MEAN, keepdim);}
   Tensor<T> max(int axis=0, bool keepdim=false){
-    return tensor_operator(*this, axis, MAX, keepdim); }
+    return tensor_operator(*this, Axis(axis), Operator::MAX, keepdim); }
   Tensor<T> min(int axis=0, bool keepdim=false){ 
-    return tensor_operator(*this, axis, MIN, keepdim); }
+    return tensor_operator(*this, Axis(axis), Operator::MIN, keepdim); }
 
   std::vector<T> &
   get_data(){ return m_data; }
@@ -144,10 +139,10 @@ public:
 
 protected:
   void tensor_calculator
-  (const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &res, int num_idx, int mode);
+  (const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &res, int num_idx, Calculator mode);
 
   Tensor<T> 
-  calculator_invoker(const Tensor<T> &rhs, int mode){
+  calculator_invoker(const Tensor<T> &rhs, Calculator mode){
     assert(number() == rhs.number());
     Tensor<T> res(this->get_cshape(), 0);
     std::cout << res;
@@ -160,7 +155,7 @@ protected:
     return res;
   }
 
-  Tensor<T> tensor_operator(Tensor<T> &t, int axis, int mode, bool keepdim);
+  Tensor<T> tensor_operator(Tensor<T> &t, Axis axis, Operator mode, bool keepdim);
 
 private:
   std::vector<int> m_shape; // [0]:row [1]:col [2]:channel [3]:number
@@ -172,27 +167,28 @@ private:
 
   template<typename T>
   void Tensor<T>::tensor_calculator
-  (const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &res, int num_idx, int mode){
+  (const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &res, int num_idx, Calculator mode){
     // col and channel must be the same.
     assert(a.row() == b.row() && a.channel() == b.channel());
 
     int ncpu = std::thread::hardware_concurrency();
     int row = a.row(), col = a.col(), channel = a.channel();
     int noffset = row * col * channel * num_idx;
+    int number = 1;
 
     // When a and b are totally same shape.
     if(a.row() == b.row()){
       if(channel >= ncpu * BOOST_CHANNEL){
       // boost for channel calculation
         parallel_channel(vec_channel_f<T>, 
-        /*nthread, res */NTHREAD_C(ncpu), res,
-        /*const args   */a, b, noffset, mode);
+        /*nthread, res */NTHREAD_C(ncpu, number), res,
+        /*const args...*/a, b, noffset, mode);
       }
       else if(row >= ncpu * BOOST_ROW){
       // boost for row calculation
-        parallel_row(    vec_row_f<T>, 
-        /*nthread, res */NTHREAD_R(ncpu), res,
-        /*const args   */a, b, noffset, mode);
+        parallel_row    (vec_row_f<T>, 
+        /*nthread, res */NTHREAD_R(ncpu, number), res,
+        /*const args...*/a, b, noffset, mode);
       }
       else{
       // No need to boost
@@ -208,14 +204,14 @@ private:
       if(channel >= ncpu * BOOST_CHANNEL){
       // boost for channel calculation
         parallel_channel(vec_channel_s<T>, 
-        /*nthread, res */NTHREAD_C(ncpu), res,
-        /*const args   */a, b, noffset, mode);
+        /*nthread, res */NTHREAD_C(ncpu, number), res,
+        /*const args...*/a, b, noffset, mode);
       } 
       else if(row > ncpu * BOOST_ROW){
       // boost for row calculation
-        parallel_row(    vec_row_s<T>, 
-        /*nthread, res */NTHREAD_R(ncpu), res,
-        /*const args   */a, b, noffset, mode);
+        parallel_row    (vec_row_s<T>, 
+        /*nthread, res */NTHREAD_R(ncpu, number), res,
+        /*const args...*/a, b, noffset, mode);
       }
       else{
       // No need to boost
@@ -248,155 +244,83 @@ private:
   */
   template<typename T>
   Tensor<T>
-  Tensor<T>::tensor_operator(Tensor<T> &t, int axis, int mode, bool keepdim){
+  Tensor<T>::tensor_operator(Tensor<T> &t, Axis axis, Operator mode, bool keepdim){
     int ncpu = std::thread::hardware_concurrency();
     int row = t.row(), col = t.col(), channel = t.channel(), number = t.number();
     int square = row * col, volume = square * channel;
-    std::vector<std::thread> pool;
     Tensor<T> res;
-#ifdef BENCH
-    Timer time;
-#endif
-    if(axis == COL){
-      if(keepdim) res = Tensor<T>(row, 1, channel, number, 0);
-      else        res = Tensor<T>(1, row, channel, number, 0);
+
+    if(axis == Axis::COL){
+      if(keepdim) res = Tensor<T>(row, 1, channel, 0, number);
+      else        res = Tensor<T>(1, row, channel, 0, number);
       for(int n = 0; n < number; n++){
         int noffset = volume * n, roffset = row * channel * n;
+        if(channel >= ncpu * BOOST_CHANNEL / number){
         // boost for channel calculation
-        if(channel >= ncpu * BOOST_CHANNEL){
-          int ch_num = channel / NTHREAD_C(ncpu), ch_mod = channel % NTHREAD_C(ncpu);
-          for(int i = 0; i < NTHREAD_C(ncpu); i++){
-            int start = noffset + square * ch_num * i, end = start + square * ch_num;
-            int res_i = roffset + ch_num * i * row;
-            std::thread task(operator_axis0<T>, std::cref(t), std::ref(res), 
-                            start, end, res_i, mode);
-            pool.push_back(std::move(task));
-          }
-          if(ch_mod){
-            int end = noffset + square * channel, start = end - ch_mod * square;
-            int res_i = roffset + row * (channel - ch_mod);
-            operator_axis0(t, res, start, end, res_i, mode);
-          }
+          parallel_channel(operator_axis0_channel<T>,
+          /*nthread, res */NTHREAD_C(ncpu, number), res,
+          /*const args...*/t, noffset, roffset, mode);
         }
-        // boost for row calculation.
         else if(row >= ncpu * BOOST_ROW){
-          int row_num = row / NTHREAD_R(ncpu), row_mod = row % NTHREAD_R(ncpu);
-          for(int ch = 0; ch < channel; ch++){
-            for(int i = 0; i < NTHREAD_R(ncpu); i++){
-              int start = noffset + square * ch + row_num * i * col;
-              int end = start + col * row_num;
-              int res_i = roffset + ch * row + row_num * i;
-              std::thread task(operator_axis0<T>, std::cref(t), std::ref(res), 
-                              start, end, res_i, mode);
-              pool.push_back(std::move(task));
-            }
-            if(row_mod){
-              int end = noffset + square * (ch + 1), start = end - row_mod * col;
-              int res_i = roffset + (ch + 1) * row - row_mod; 
-              operator_axis0(t, res, start, end, res_i, mode);
-            }
-          }
+        // boost for row calculation.
+          parallel_row    (operator_axis0_row<T>, 
+          /*nthread, res */NTHREAD_R(ncpu, number), res,
+          /*const args...*/t, noffset, roffset, mode);
         }
-        // Not need to boost.
         else{
-          int start = noffset, end = start + volume;
-          operator_axis0(t, res, start, end, roffset, mode); 
+        // Not need to boost.
+          operator_axis0_channel(0, channel, res,
+                                 t, noffset, roffset, mode); 
         }
       }
-      for(auto &task : pool) task.join();
-    }
-    else if(axis == ROW){
-      res = Tensor<T>(1, col, channel, number, 0);
+    } // axix == col
+    else if(axis == Axis::ROW){
+      res = Tensor<T>(1, col, channel, 0, number);
       for(int n = 0; n < number; n++){
         int noffset = volume * n, roffset = col * channel * n;
-        // boost for channel calculation
         if(channel >= ncpu * BOOST_CHANNEL){
-          int ch_num = channel / NTHREAD_C(ncpu), ch_mod = channel % NTHREAD_C(ncpu);
-          for(int i = 0; i < NTHREAD_C(ncpu); i++){
-            int start = noffset + square * ch_num * i, end = start + square * ch_num;
-            int res_i = roffset + ch_num * i * col;
-            std::thread task(operator_axis1_channel<T>, std::cref(t), std::ref(res), 
-                            start, end, res_i, mode);
-            pool.push_back(std::move(task));
-          }
-          if(ch_mod){
-            int end = noffset + square * channel, start = end - ch_mod * square;
-            int res_i = roffset + col * (channel - ch_mod);
-            operator_axis1_channel(t, res, start, end, res_i, mode);
-          }
+        // boost for channel calculation
+          parallel_channel(operator_axis1_channel<T>, 
+          /*nthread, res */NTHREAD_C(ncpu, number), res,
+          /*const args...*/t, noffset, roffset, mode);
         }
+        else if(row >= ncpu * BOOST_ROW){
         // boost for col calculation.
-        else if(col >= ncpu * BOOST_ROW){
-          int col_num = col / NTHREAD_R(ncpu), col_mod = col % NTHREAD_R(ncpu);
-          for(int ch = 0; ch < channel; ch++){
-            for(int i = 0; i < NTHREAD_R(ncpu); i++){
-              int start = noffset + square * ch + col_num * i;
-              int res_i = roffset + ch * col + col_num * i;
-              std::thread task(operator_axis1_col<T>, std::cref(t), std::ref(res), 
-                              start, col_num, res_i, mode);
-              pool.push_back(std::move(task));
-            }
-            if(col_mod){
-              int start = noffset + square * ch + col - col_mod;
-              int res_i = roffset + ch * col + col - col_mod;
-              operator_axis1_col(t, res, start, col_mod, res_i, mode);
-            }
-          }
+          parallel_col    (operator_axis1_col<T>, 
+          /*nthread, res */NTHREAD_R(ncpu, number), res,
+          /*const args...*/t, noffset, roffset, mode);
         }
-        // Not need to boost.
         else{
+        // Not need to boost.
           int start = noffset, end = start + volume;
-          operator_axis1_channel(t, res, start, end, roffset, mode); 
+          operator_axis1_channel(0, channel, res,
+                                 t, noffset, roffset, mode); 
         }
       }
-      for(auto &task : pool) task.join();
-    }
-    else if(axis == CHANNEL){
-      res = Tensor<T>(row, col, 1, number, 0);
+    } // axix == row
+    else if(axis == Axis::CHANNEL){
+      res = Tensor<T>(row, col, 1, 0, number);
       for(int n = 0; n < number; n++){
         int noffset = volume * n, roffset = row * col * n;
-        // boost for row calculation.
         if(row >= ncpu * BOOST_ROW){
-          int row_num = row / NTHREAD_R(ncpu), row_mod = row % NTHREAD_R(ncpu);
-          for(int i = 0; i < NTHREAD_R(ncpu); i++){
-            int start = noffset + row_num * i * col;
-            int end = start + (channel - 1) * square + row_num * col;
-            int res_i = roffset + start;
-            std::thread task(operator_axis2_row<T>, std::cref(t), std::ref(res), 
-                            start, end, row_num, res_i, mode);
-            pool.push_back(std::move(task));
-          }
-          if(row_mod){
-            int start = (row - row_mod) * col, end = t.size();
-            int res_i = roffset + start;
-            operator_axis2_row(t, res, start, end, row_mod, res_i, mode); 
-          }
+        // boost for row calculation.
+          parallel_row    (operator_axis2_row<T>, 
+          /*nthread, res */NTHREAD_C(ncpu, number), res,
+          /*const args...*/t, noffset, roffset, mode);
         }
-        // boost for col calculation.
         else if(col >= ncpu * BOOST_ROW){
-          int col_num = col / NTHREAD_R(ncpu), col_mod = col % NTHREAD_R(ncpu);
-          for(int i = 0; i < NTHREAD_R(ncpu); i++){
-            int start = noffset + col_num * i;
-            int end = start + (channel - 1) * square + (row - 1) * col + col_num;
-            int res_i = roffset + start;
-            std::thread task(operator_axis2_col<T>, std::cref(t), std::ref(res), 
-                            start, end, col_num, res_i, mode);
-            pool.push_back(std::move(task));
-          }
-          if(col_mod){
-            int start = col - col_mod, end = t.size();
-            int res_i = roffset + start;
-            operator_axis2_col(t, res, start, end, col_mod, res_i, mode); 
-          }
+        // boost for col calculation.
+          parallel_col    (operator_axis2_col<T>, 
+          /*nthread, res */NTHREAD_R(ncpu, number), res,
+          /*const args...*/t, noffset, roffset, mode);
         }
-        // Not need to boost.
         else{
-          int start = noffset, end = start + volume;
-          operator_axis2_row(t, res, start, end, row, roffset, mode); 
+        // Not need to boost.
+          operator_axis2_row(0, row, channel, res,
+                             t, noffset, roffset, mode); 
         }
       }
-      for(auto &task : pool) task.join();
-    }
+    } // axis == channel
     return res;
   }
 

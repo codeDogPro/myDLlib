@@ -14,8 +14,7 @@ void initialization_test(){
 
 // sum(), mean(), max(), min(). test
 void smmm_test(){
-  // Tensor<int> c(3, 2, 2, 3);
-  Tensor<int> c(3, 5, 8, 2, -1);
+  Tensor<int> c(3, 5, 8, -1);
   std::cout << c;
   
   std::cout << c.sum(0) << c.sum(1) << c.sum(2);
@@ -37,8 +36,8 @@ void plusequal_test(){
 
 // +-*/ test
 void plus_test(){
-  Tensor<int> a(4, 4, 8, 2, 3);
-  Tensor<int> b(4, 4, 8, 2, 1);
+  Tensor<int> a(4, 4, 8, 3);
+  Tensor<int> b(4, 4, 8, 1);
   std::cout << a << b;
   auto c = a + b;
   // auto d = a - b; 
@@ -61,15 +60,15 @@ void copy_test(){
 void nn_test(){
   std::vector<Function<int> *> model;
   model.push_back(new Conv2D<int>(3, 2, 2, 2, 1));
-  Tensor<int> input(7, 7, 2, 1, 4);
+  Tensor<int> input(7, 7, 2, 4);
   std::cout << input;
   auto output = model[0]->forward(input);
   std::cout << output;
 }
 
 int main(){
-  plus_test();
+  // plus_test();
   // smmm_test();
-  // nn_test();
+  nn_test();
   return 0;
 }

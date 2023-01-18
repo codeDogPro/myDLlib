@@ -17,9 +17,9 @@ namespace dl{
   class Conv2D : public Function<T> {
   public:
     explicit Conv2D
-    (int size, int channel, int output_ch=1, 
+    (int size, int input_ch, int output_ch=1, 
      int stride=1, int paddle=0, bool auto_grad=false) {
-      m_parameter = Tensor<T>(size, size, channel, output_ch);
+      m_parameter = Tensor<T>(size, size, input_ch, -1, output_ch);
       m_stride = stride;
       m_paddle = paddle;
       mauto_grad = auto_grad;
@@ -44,7 +44,7 @@ namespace dl{
       if(mauto_grad) grad = input;
       int row = input.row(), col = input.col(), channel = input.channel();
       if(m_paddle){
-        Tensor<T> pad_input(row + 2 * m_paddle, col + 2 * m_paddle, channel, 1, 0);
+        Tensor<T> pad_input(row + 2 * m_paddle, col + 2 * m_paddle, channel, 0);
         paddle(input, pad_input, m_paddle);
         puts("In pad_conv");
         std::cout << pad_input;
@@ -65,37 +65,26 @@ namespace dl{
     conv_boost(const Tensor<T> &input, int r_row, int r_col){
       int irow = input.row(), icol = input.col(), channel = input.channel();
       int output_ch = m_parameter.number();
-      Tensor<T> res(r_row, r_col, output_ch, 1, 0);
+      std::cout << "output_ch:" << output_ch << std::endl;
+      Tensor<T> res(r_row, r_col, output_ch, 0);
 
       int ncpu = std::thread::hardware_concurrency();
-      std::vector<std::thread> pool;
+      if(output_ch >= ncpu * BOOST_CONV / 8){
       // output channel is big enough, so boost it.
-      if(output_ch >= ncpu * BOOST_CONV){
-        int nth = NTHREAD_C(ncpu), ch_num = output_ch / nth , ch_mod = output_ch % nth;
-        for(int i = 0; i < nth; i++){
-          int ch_begin = ch_num * i;
-          std::thread task(conv2d_channel<T>, std::cref(input), std::cref(m_parameter), 
-                           std::ref(res), ch_begin, ch_num, m_stride); 
-          pool.push_back(std::move(task));
-        }
-        if(ch_mod){
-          int ch_begin = channel - ch_mod;
-          conv2d_channel(input, m_parameter, res, ch_begin, ch_mod, m_stride);
-        } goto join;
+        parallel_channel(conv2d_channel<T>, 
+        /*nthread, res */NTHREAD_C(ncpu, output_ch), res,
+        /*const args...*/input, m_parameter, m_stride);
       }
-      // input size is big enough, so boost it.
       else if(irow >= ncpu * BOOST_CONV){
+      // input size is big enough, so boost it.
 
       }
-      // no need to boost
       else{
+      // no need to boost
         puts("no boost");
-        conv2d_channel(input, m_parameter, res, 0, channel, m_stride);
+        conv2d_channel(0, output_ch, res, 
+                       input, m_parameter, m_stride);
       }
-
-    join:
-      for(auto &task : pool) task.join();
-
       return res;
     }
 

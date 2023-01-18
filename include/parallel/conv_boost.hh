@@ -24,10 +24,9 @@ namespace dl{
   }
 
   template<typename T>
-  void conv2d_channel
-  (const Tensor<T> &input, const Tensor<T> &kernel, Tensor<T> &res,
-   int n_begin, int n_num, int stride)
-  {
+  int conv2d_channel
+  (int n_begin, int n_num, Tensor<T> &res,
+   const Tensor<T> &input, const Tensor<T> &kernel, int stride) {
     int irow = input.row(),  icol = input.col(),  isquare = irow * icol;
     int krow = kernel.row(), kcol = kernel.col(), ksquare = krow * kcol;
     int rrow = res.row(),    rcol = res.col(),    rsquare = rrow * rcol;
@@ -74,9 +73,10 @@ namespace dl{
                 line_cnt = 0;
               }
             }
-          }
-        }
-      }
-    }
+          }// krow if
+        } // kcol if
+      }  // for inside loop
+    }   // for n_num loop
+    return n_begin;
   }
 }
