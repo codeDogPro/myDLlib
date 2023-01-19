@@ -10,7 +10,7 @@ namespace dl{
     int irow = input.row(), icol = input.col(), ichannel = input.channel();
     int prow = pad_input.row(), pcol = pad_input.col();
     int pad_i = npaddle * (pcol + 1);
-    for(int c_cnt = 0, r_cnt = 0; auto x : input.get_cdata()){
+    for(int c_cnt = 0, r_cnt = 0; const auto& x : input.get_cdata()){
       pad_input[pad_i++] = x;
       if(++c_cnt == icol){
         pad_i += 2 * npaddle;

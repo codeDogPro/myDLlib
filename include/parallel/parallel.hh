@@ -5,14 +5,17 @@
 #include <basic/timer.hh>
 #endif
 
-#include <parallel/tensor_calcu.hh>
-
 #include <future>
 #include <vector>
 
 #include <iostream>
 
 namespace dl{
+
+inline static size_t 
+cpu_number() noexcept {
+  return std::thread::hardware_concurrency();
+}
 
 static void 
 clean_task(auto& pool){
