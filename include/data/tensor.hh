@@ -7,6 +7,7 @@
 #include <numeric>
 #include <cstdlib>
 #include <cstring>
+#include <iomanip>
 
 namespace dl{
 
@@ -20,6 +21,7 @@ public:
   Tensor(int row, int col, int channel=1, T val=-1, int number=1){
     assert(row != 0 && col != 0 && channel != 0 && number != 0);
 
+    // std::cout << "type:" << type_name<T>() << "   val:" << val << std::endl;
     m_data.assign(row * col * channel * number, val);
     m_shape.assign({row, col, channel, number});
     if(val == -1){ rand_init(*this);}
@@ -298,16 +300,19 @@ private:
 
   template<typename U>
   std::ostream &
-  operator<<(std::ostream &os, const Tensor<U> &t){
+  operator<<(std::ostream& os, const Tensor<U>& t){
     int row = t.row(), col = t.col(), channel = t.channel(), number = t.number();
     int square = row * col, volume = square * channel;
+
+    // os.setf(std::ios::scientific);  // 科学计数法
+    os.precision(PRINT_PRECISION);
 
     for(int n = 0; n < number; n++){
       int noffset = volume * n;
       if(row == 1 && channel == 1){
         printf("[");
         for(int i = 0; i < col; i++){
-          os << t[noffset + i]; if(i != col - 1) os << ", ";
+          os << std::setw(4) << t[noffset + i]; if(i != col - 1) os << ",";
         }
         printf("]\n");
       }
@@ -315,14 +320,13 @@ private:
         printf("[");
         for(int r = 0; r < row; r++){
           int row_idx = noffset + col * r;
-          if(r != 0)          putchar(' ');
+          if(r != 0)             printf(" ");
           printf("[");
           for(int c = 0; c < col; c++){
-            os << t[row_idx + c];
-            if(c != col - 1) os << ", ";
+            os << std::setw(4) << t[row_idx + c]; if(c != col - 1) os << ",";
           }
           printf("]");
-          if(r != row - 1)    putchar('\n');
+          if(r != row - 1)       printf("\n");
         }
         printf("]\n");
       }
@@ -337,8 +341,7 @@ private:
             if(r != 0)           printf("  ");
             printf("[");
             for(int c = 0; c < col; c++){
-              os << t[row_idx + c];
-              if(c != col - 1) os << ", ";
+              os << std::setw(4) << t[row_idx + c]; if(c != col - 1) os << ",";
             }
             printf("]");
             if(r != row - 1)     printf("\n");

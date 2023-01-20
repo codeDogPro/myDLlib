@@ -19,7 +19,7 @@ public:
     Tensor<T> res(input.get_cshape(), 0);
     if(M_auto_grad) M_grad = input;
 
-    activation_forward(relu_channel<T>, relu_row<T>, res, input);
+    activation_forward(relu_channel<T>, relu_col<T>, res, input);
 
     return res;
   }

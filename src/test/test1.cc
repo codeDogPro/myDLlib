@@ -60,20 +60,20 @@ void copy_test(){
 
 // nn function test
 void nn_test(){
-  std::vector<Function<int> *> model;
-  model.push_back(new Conv2D<int>(3, 2, 2, 2, 1));
-  model.push_back(new Relu<int>(true));
-  Tensor<int> input(7, 7, 2, 4);
-  std::cout << input;
+  std::vector<Function<float> *> model;
+  model.push_back(new Conv2D<float>(3, 2, 2, 2, 1));
+  model.push_back(new Relu<float>(true));
+  Tensor<float> input(7, 7, 2, 3.4);
+  std::cout << "input:\n" << input;
   auto output = model[0]->forward(input);
   auto output_relu = model[1]->forward(output);
-  std::cout << output << output_relu;
+  // std::cout << output << output_relu;
 }
 
 int main(){
-  // plus_test();
+  plus_test();
   // plusequal_test();
   // smmm_test();
-  nn_test();
+  // nn_test();
   return 0;
 }

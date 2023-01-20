@@ -7,9 +7,9 @@ namespace dl{
 
   template<typename T> class Tensor;
 
-  template<typename Fn_ch, typename Fn_row, typename T>
+  template<typename Fn_ch, typename Fn_col, typename T>
   static void 
-  activation_forward(Fn_ch&& f_ch, Fn_row&& f_row, Tensor<T>& res, const Tensor<T>& input){
+  activation_forward(Fn_ch&& f_ch, Fn_col&& f_col, Tensor<T>& res, const Tensor<T>& input){
     int row = input.row(), col = input.col(), channel = input.channel();
     int number = input.number(), volume = row * col * channel;
     int ncpu = cpu_number();
@@ -22,9 +22,9 @@ namespace dl{
         /*nthread, res */NTHREAD_C(ncpu, number), res,
         /*const args...*/input, noffset);
       }
-      else if(row >= ncpu * BOOST_ROW){
-        puts("In parallel row");
-        parallel_row    (std::forward<Fn_row>(f_row), 
+      else if(col >= ncpu * BOOST_COL){
+        puts("In parallel col");
+        parallel_col    (std::forward<Fn_col>(f_col), 
         /*nthread, res */NTHREAD_R(ncpu, number), res,
         /*const args...*/input, noffset);
       }
@@ -49,16 +49,16 @@ namespace dl{
 
   template<typename T>
   inline int 
-  relu_row
-  (int row_begin, int row_num, int channel, Tensor<T>& res,
+  relu_col
+  (int col_begin, int col_num, int channel, Tensor<T>& res,
    const Tensor<T>& input, int noffset){
     int row = input.row(), col = input.col(), square = row * col;
-    int start = noffset + square * channel + col * row_begin;
-    int end = start + col * row_num;
+    int start = noffset + square * channel + col * col_begin;
+    int end = start + col * col_num;
     for(int i = start; i < end; i++){
       res[i] = input[i] > 0 ? input[i] : 0;
     }
-    return row_begin;
+    return col_begin;
   }
 
   template<typename T>
@@ -75,15 +75,15 @@ namespace dl{
 
   template<typename T>
   inline int 
-  sigmoid_row
-  (int row_begin, int row_num, int channel, Tensor<T>& res,
+  sigmoid_col
+  (int col_begin, int col_num, int channel, Tensor<T>& res,
    const Tensor<T>& input, int noffset){
     int row = input.row(), col = input.col(), square = row * col;
-    int start = noffset + square * channel + col * row_begin;
-    int end = start + col * row_num;
+    int start = noffset + square * channel + col * col_begin;
+    int end = start + col * col_num;
     for(int i = start; i < end; i++){
       res[i] = input[i] > 0 ? input[i] : 0;
     }
-    return row_begin;
+    return col_begin;
   }
 }
