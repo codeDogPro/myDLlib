@@ -58,6 +58,15 @@ void copy_test(){
   std::cout << a << b;
 }
 
+void reshape_test(){
+  std::vector shape{3, 2, 4};
+  Tensor<float> a(2, 3, 5, 4);
+  std::cout << a;
+  // a.reshape(3, 2, 4);
+  a.reshape(shape);
+  std::cout << a;
+}
+
 // nn function test
 void nn_test(){
   std::vector<Function<float> *> model;
@@ -71,9 +80,10 @@ void nn_test(){
 }
 
 int main(){
-  plus_test();
+  // plus_test();
   // plusequal_test();
   // smmm_test();
   // nn_test();
+  reshape_test();
   return 0;
 }

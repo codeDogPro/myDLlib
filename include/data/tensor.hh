@@ -31,8 +31,8 @@ public:
   Tensor(const std::vector<int>& shape, T val=-1){
     assert(shape.size() != 0);
 
-    int product = std::reduce(shape.begin(), shape.end(), 1, std::multiplies{});
-    m_data.assign(product, val);
+    int size = std::reduce(shape.begin(), shape.end(), 1, std::multiplies{});
+    m_data.assign(size, val);
     m_shape = shape;
     if(val == -1){ rand_init(*this);}
   }
@@ -56,17 +56,21 @@ public:
   }
 
   Tensor<T> &
-  operator=(const Tensor<T>& t){
-    m_shape.assign(4, 0); m_data.assign(t.size(), 0);
-    for(int i = 0; int x : t.get_cshape()) m_shape[i++] = x;
-    for(int i = 0; int x : t.get_cdata()) m_data[i++] = x;
+  operator=(const Tensor<T>& rhs){
+    if(this == &rhs) return *this;
+
+    m_shape.assign(4, 0); m_data.assign(rhs.size(), 0);
+    for(int i = 0; int x : rhs.get_cshape()) m_shape[i++] = x;
+    for(int i = 0; int x : rhs.get_cdata()) m_data[i++] = x;
     return *this;
   }
 
   Tensor<T> &
-  operator=(Tensor<T>&& t){
-    m_data  = std::move(t.get_data());
-    m_shape = std::move(t.get_shape());
+  operator=(Tensor<T>&& rhs){
+    if(this == &rhs) return *this;
+
+    m_data  = std::move(rhs.get_data());
+    m_shape = std::move(rhs.get_shape());
     return *this;
   }
 
@@ -107,10 +111,26 @@ public:
   Tensor<T> min(int axis=0, bool keepdim=false){ 
     return tensor_operator(Axis(axis), Operator::MIN, keepdim); }
 
-  std::vector<T>   &      get_data()         { return m_data; }
-  std::vector<int> &      get_shape()        { return m_shape;}
-  std::vector<T>   const& get_cdata()  const { return m_data; }
+  std::vector<T>   &      get_data  ()       { return m_data; }
+  std::vector<int> &      get_shape ()       { return m_shape;}
+  std::vector<T>   const& get_cdata () const { return m_data; }
   std::vector<int> const& get_cshape() const { return m_shape;}
+
+  bool reshape(const std::vector<int>& shape) { 
+    m_shape = shape;
+    size_t size = std::reduce(shape.begin(), shape.end(), 1, std::multiplies{});
+    m_data.resize(size);
+    if(m_data.size() == size) return true;
+    return false; 
+  } 
+  bool reshape(int row, int col, int channel, int number=1){
+    m_shape[0] = row, m_shape[1] = col, m_shape[2] = channel, m_shape[3] = number;
+    size_t size = row * col * channel * number;
+    m_data.resize(size);
+    if(m_data.size() == size) return true;
+    return false; 
+  } 
+
 
   size_t size()       { return m_data.size(); }
   size_t size() const { return m_data.size(); }
