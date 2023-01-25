@@ -71,7 +71,8 @@ void reshape_test(){
 void nn_test(){
   std::vector<Function<float> *> model;
   model.push_back(new Conv2D<float>(3, 2, 2, 2, 1));
-  model.push_back(new Relu<float>(true));
+  // model.push_back(new Relu<float>(true));
+  model.push_back(new Sigmoid<float>(true));
   Tensor<float> input(7, 7, 2, 3.4);
   std::cout << "input:\n" << input;
   auto output = model[0]->forward(input);

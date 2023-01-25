@@ -63,18 +63,6 @@ namespace dl{
 
   template<typename T>
   inline int 
-  sigmoid_channel
-  (int ch_begin, int ch_num, Tensor<T>& res, const Tensor<T>& input, int noffset){
-    int square = input.row() * input.col();
-    int start = noffset + square * ch_begin, end = start + square * ch_num;
-    for(int i = start; i < end; i++){
-      res[i] = input[i] > 0 ? input[i] : 0;
-    }
-    return ch_begin;
-  }
-
-  template<typename T>
-  inline int 
   sigmoid_col
   (int col_begin, int col_num, int channel, Tensor<T>& res,
    const Tensor<T>& input, int noffset){
@@ -82,7 +70,7 @@ namespace dl{
     int start = noffset + square * channel + col * col_begin;
     int end = start + col * col_num;
     for(int i = start; i < end; i++){
-      res[i] = input[i] > 0 ? input[i] : 0;
+      res[i] = 1 / (1 + std::exp(-input[i])) + eps;
     }
     return col_begin;
   }

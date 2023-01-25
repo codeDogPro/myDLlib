@@ -10,8 +10,9 @@ template<typename T>
 class Relu : public Function<T> {
 public:
   explicit
-  Relu() = default;
+  Relu() = delete;
 
+  explicit
   Relu(bool auto_grad=false) : M_auto_grad(auto_grad) {}
 
   virtual Tensor<T> 
