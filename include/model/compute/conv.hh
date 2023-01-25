@@ -66,7 +66,7 @@ protected:
   conv_boost(const Tensor<T> &input, int r_row, int r_col){
     int irow = input.row(), icol = input.col(), channel = input.channel();
     int output_ch = M_parameter.number();
-    std::cout << "output_ch:" << output_ch << std::endl;
+    // std::cout << "output_ch:" << output_ch << std::endl;
     Tensor<T> res(r_row, r_col, output_ch, 0);
 
     int ncpu = cpu_number();
@@ -82,8 +82,8 @@ protected:
     }
     else{
     // no need to boost
-      puts("no boost");
-      conv2d_channel(0, output_ch, res, 
+      puts("No need to boost");
+      conv2d_channel(0, output_ch, 0, res, 
                      input, M_parameter, M_stride);
     }
     return res;

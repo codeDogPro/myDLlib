@@ -41,11 +41,11 @@ parallel_channel(Fn&& f, int nthread, Tensor<Tp>& res, Ts&&... cargs) {
   for(int i = 0; i < nthread; i++){
     auto fut = std::async(std::launch::async, 
     /*thread function   */std::forward<Fn>(f),
-    /*ch_begin, ch_num  */ch_num * i, ch_num,
+    /*ch_begin, ch_num  */ch_num * i, ch_num, 0,
     /*res, const args...*/std::ref(res), std::cref(cargs)...);
     _M_pool.push_back(std::move(fut));
-  }      //       ch_begin,      ch_num, res, args...
-  if(ch_mod) f(channel - ch_mod, ch_mod, res, cargs...);
+  }      //       ch_begin,    ch_num, pad, res, args...
+  if(ch_mod) f(channel - ch_mod, ch_mod, 0, res, cargs...);
 
   clean_task();
 }

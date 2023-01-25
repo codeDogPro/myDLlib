@@ -29,7 +29,8 @@ namespace dl{
         /*const args...*/input, noffset);
       }
       else{ // No need to boost
-        f_ch(0, channel, res, 
+        puts("No need to boost");
+        f_ch(0, channel, 0, res, 
              input, noffset); 
       }
     }
@@ -38,7 +39,8 @@ namespace dl{
   template<typename T>
   inline int 
   relu_channel
-  (int ch_begin, int ch_num, Tensor<T>& res, const Tensor<T>& input, int noffset){
+  (int ch_begin, int ch_num, int pad, Tensor<T>& res, 
+   const Tensor<T>& input, int noffset){
     int square = input.row() * input.col();
     int start = noffset + square * ch_begin, end = start + square * ch_num;
     for(int i = start; i < end; i++){

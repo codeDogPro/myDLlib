@@ -1,8 +1,43 @@
 #pragma once
 
+#include <basic/tensor_macro.hh>
+
 namespace dl{
 
   template<typename T> class Tensor;
+
+  template<typename Fn_ch, typename Fn_col, typename T>
+  static void 
+  conv_forward
+  (Fn_ch&& f_ch, Fn_col&& f_col, Tensor<T>& res, 
+   const Tensor<T>& kernel, const Tensor<T>& input){
+    int row = input.row(), col = input.col(), channel = input.channel();
+    int number = input.number(), volume = row * col * channel;
+    int ncpu = cpu_number();
+
+    for(int i = 0; i < number; i++){
+      int noffset = volume * i;
+      if(channel >= ncpu * BOOST_CHANNEL){
+        puts("In parallel channel");
+        parallel_channel(std::forward<Fn_ch>(f_ch), 
+        /*nthread, res */NTHREAD_C(ncpu, number), res,
+        /*const args...*/input, noffset);
+      }
+      else if(col >= ncpu * BOOST_COL){
+        puts("In parallel col");
+        parallel_col    (std::forward<Fn_col>(f_col), 
+        /*nthread, res */NTHREAD_R(ncpu, number), res,
+        /*const args...*/input, noffset);
+      }
+      else{ // No need to boost
+        puts("No need to boost");
+        f_ch(0, channel, 0, res, 
+             input, noffset); 
+      }
+    }
+  }
+
+
 
   template<typename T>
   void
@@ -25,7 +60,7 @@ namespace dl{
 
   template<typename T>
   int conv2d_channel
-  (int n_begin, int n_num, Tensor<T> &res,
+  (int n_begin, int n_num, int pad, Tensor<T> &res,
    const Tensor<T> &input, const Tensor<T> &kernel, int stride) {
     int irow = input.row(),  icol = input.col(),  isquare = irow * icol;
     int krow = kernel.row(), kcol = kernel.col(), ksquare = krow * kcol;
@@ -44,7 +79,7 @@ namespace dl{
       int conv_cnt = 0, line_cnt = 0, ch_cnt = 0;
       int ker_offset = kvolume * n, inp_offset = 0, ch_offset = 0;
       int ker_i = kstart + ker_offset, res_i = rstart + rsquare * n; 
-      for(int sum = 0, c_cnt = 0, r_cnt = 0, inp_i = 0; inp_i < iend;){
+      for(T sum = 0, c_cnt = 0, r_cnt = 0, inp_i = 0; inp_i < iend;){
         // std::cout << inp_i << ' ';
         sum += kernel[ker_i++] * input[inp_i++];
         if(++c_cnt == kcol){          // cross a col

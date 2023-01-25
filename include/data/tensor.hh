@@ -241,8 +241,7 @@ private:
                   -----> max()  -----> [[3],  -----> [3, 6]
                                         [6]] 
                   -----> min()  -----> [[1],  -----> [1, 4]
-                                        [4]] 
-  */
+                                        [4]] */
   template<typename T>
   Tensor<T>
   Tensor<T>::tensor_operator(Axis axis, Operator mode, bool keepdim){
@@ -268,7 +267,7 @@ private:
           /*const args...*/*this, noffset, roffset, mode);
         }
         else{ // Not need to boost.
-          operator_axis0_channel(0, channel, res,
+          operator_axis0_channel(0, channel, 0, res,
                                  *this, noffset, roffset, mode); 
         }
       }
@@ -289,7 +288,7 @@ private:
         }
         else{ // Not need to boost.
           int start = noffset, end = start + volume;
-          operator_axis1_channel(0, channel, res,
+          operator_axis1_channel(0, channel, 0, res,
                                  *this, noffset, roffset, mode); 
         }
       }

@@ -36,7 +36,7 @@ namespace dl{
   template<typename T>
   static int 
   pool_channel
-  (int ch_begin, int ch_num, Tensor<T>& res,
+  (int ch_begin, int ch_num, int pad, Tensor<T>& res,
    const Tensor<T>& input, int noffset, Pool mode){
     int start = 0;
     if(mode == Pool::MAX){

@@ -76,15 +76,15 @@ void nn_test(){
   Tensor<float> input(7, 7, 2, 3.4);
   std::cout << "input:\n" << input;
   auto output = model[0]->forward(input);
-  auto output_relu = model[1]->forward(output);
-  // std::cout << output << output_relu;
+  auto output_act = model[1]->forward(output);
+  std::cout << output << output_act;
 }
 
 int main(){
   // plus_test();
   // plusequal_test();
   // smmm_test();
-  // nn_test();
-  reshape_test();
+  // reshape_test();
+  nn_test();
   return 0;
 }
