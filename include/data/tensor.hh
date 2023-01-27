@@ -116,14 +116,14 @@ public:
   std::vector<T>   const& get_cdata () const { return m_data; }
   std::vector<int> const& get_cshape() const { return m_shape;}
 
-  bool reshape(const std::vector<int>& shape) { 
+  bool reshape(const std::vector<int>& shape) const { 
     m_shape = shape;
     size_t size = std::reduce(shape.begin(), shape.end(), 1, std::multiplies{});
     m_data.resize(size);
     if(m_data.size() == size) return true;
     return false; 
   } 
-  bool reshape(int row, int col, int channel, int number=1){
+  bool reshape(int row, int col, int channel, int number=1) const {
     m_shape[0] = row, m_shape[1] = col, m_shape[2] = channel, m_shape[3] = number;
     size_t size = row * col * channel * number;
     m_data.resize(size);
