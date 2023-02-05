@@ -81,10 +81,10 @@ void nn_test(){
 }
 
 int main(){
-  // plus_test();
+  plus_test();
   // plusequal_test();
   // smmm_test();
   // reshape_test();
-  nn_test();
+  // nn_test();
   return 0;
 }

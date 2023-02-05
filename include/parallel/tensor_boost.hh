@@ -14,7 +14,7 @@ namespace dl{
   template<typename T>
   int vec_channel_s
   (int ch_begin, int ch_num, int pad, Tensor<T>& res,
-   const Tensor<T>& a, const Tensor<T>& b, int noffset, Calculator mode) {
+   const Tensor<T>& a, const Tensor<T>& b, int noffset, const Calculator mode) {
     int arow = a.row(), brow = b.row(), col = a.col();
     int asquare = arow * col, bsquare = brow * col;
     for(int ch = ch_begin; ch < ch_begin + ch_num; ch++){
@@ -43,7 +43,7 @@ namespace dl{
   template<typename T>
   int vec_channel_f
   (int ch_begin, int ch_num, int pad, Tensor<T>& res,
-   const Tensor<T>& a, const Tensor<T>& b, int noffset, Calculator mode) {
+   const Tensor<T>& a, const Tensor<T>& b, int noffset, const Calculator mode) {
     int square = a.row() * a.col();
     int start = noffset + ch_begin * square;
     int end   = noffset + start + ch_num * square;
@@ -69,7 +69,7 @@ namespace dl{
   template<typename T>
   int vec_row_s // the row number of a must >= b
   (int row_begin, int row_num, int channel, Tensor<T>& res,
-   const Tensor<T>& a, const Tensor<T>& b, int noffset, Calculator mode) {
+   const Tensor<T>& a, const Tensor<T>& b, int noffset, const Calculator mode) {
     int arow = a.row(), brow = b.row(), col = a.col();
     int asquare = arow * col, bsquare = brow * col;
     int astart = noffset + channel * asquare + row_begin * col;
@@ -97,7 +97,7 @@ namespace dl{
   template<typename T>
   int vec_row_f // a and b's shape must be the same
   (int row_begin, int row_num, int channel, Tensor<T>& res,
-   const Tensor<T>& a, const Tensor<T>& b, int noffset, Calculator mode) {
+   const Tensor<T>& a, const Tensor<T>& b, int noffset, const Calculator mode) {
     int row = a.row(), col = a.col(), square = row * col;
     int start = noffset + channel * square + row_begin * col;
     int end   = start + row_num * col;
@@ -125,7 +125,7 @@ namespace dl{
   template<typename T>
   int operator_axis0_channel
   (int ch_begin, int ch_num, int pad, Tensor<T>& res, 
-   const Tensor<T>& t, int noffset, int roffset, Operator mode) {
+   const Tensor<T>& t, int noffset, int roffset, const Operator mode) {
     int row = t.row(), col = t.col(), square = row * col, cnt = 0; 
     int start = noffset + square * ch_num * ch_begin, end = start + square * ch_num;
     int res_i = roffset + ch_num * ch_begin * row;
@@ -163,7 +163,7 @@ namespace dl{
   template<typename T>
   int operator_axis0_row
   (int row_begin, int row_num, int channel, Tensor<T>& res, 
-   const Tensor<T>& t, int noffset, int roffset, Operator mode) {
+   const Tensor<T>& t, int noffset, int roffset, const Operator mode) {
     int row = t.row(), col = t.col(), square = row * col, cnt = 0; 
     int start = noffset + square * channel + row_num * row_begin * col;
     int end = start + col * row_num;
@@ -203,7 +203,7 @@ namespace dl{
   int operator_axis1_channel
   // (const Tensor<T> &t, Tensor<T> &res, int start, int end, int res_i, auto mode){
   (int ch_begin, int ch_num, int pad, Tensor<T>& res, 
-   const Tensor<T>& t, int noffset, int roffset, Operator mode) {
+   const Tensor<T>& t, int noffset, int roffset, const Operator mode) {
     int row = t.row(), col = t.col(), square = row * col, cnt = 0; 
     int start = noffset + square * ch_num * ch_begin, end = start + square * ch_num;
     int res_i = roffset + ch_num * ch_begin * col;
@@ -251,7 +251,7 @@ namespace dl{
   template<typename T>
   int operator_axis1_col
   (int col_begin, int col_num, int channel, Tensor<T>& res, 
-   const Tensor<T>& t, int noffset, int roffset, Operator mode){
+   const Tensor<T>& t, int noffset, int roffset, const Operator mode){
     int row = t.row(), col = t.col(), square = row * col_num;
     int start = noffset + square * channel + col_num * col_begin;
     int res_i = roffset + channel * col + col_num * col_begin;
@@ -288,7 +288,7 @@ namespace dl{
   template<typename T>
   int operator_axis2_row
   (int row_begin, int row_num, int nouse, Tensor<T>& res, 
-   const Tensor<T>& t, int noffset, int roffset, Operator mode){
+   const Tensor<T>& t, int noffset, int roffset, const Operator mode){
     int row = t.row(), col = t.col(), channel = t.channel();
     int zone = row_num * col, square = row * col, cnt = 0;
     int start = noffset + row_num * row_begin * col;
@@ -339,7 +339,7 @@ namespace dl{
   template<typename T>
   int operator_axis2_col
   (int col_begin, int col_num, int pad, Tensor<T>& res, 
-   const Tensor<T>& t, int noffset, int roffset, Operator mode){
+   const Tensor<T>& t, int noffset, int roffset, const Operator mode){
     int row = t.row(), col = t.col(), channel = t.channel();
     int zone = col_num * row, square = row * col;
     int start = noffset + col_num * col_begin;

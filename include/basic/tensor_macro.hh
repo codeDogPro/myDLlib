@@ -9,6 +9,10 @@ namespace dl{
 
   enum class Pool{MAX, AVG};
 
+  using f32 = float;
+  using f64 = double;
+  using i32 = int;
+  using i64 = long long;
 
   const int BOOST_ROW = 1 << 0;
   const int BOOST_COL = 1 << 0;
