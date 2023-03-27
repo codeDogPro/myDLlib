@@ -55,7 +55,7 @@ parallel_channel(Fn&& f, int nthread, Tensor<Tp>& res, Ts&&... cargs) {
   printf("ch_mod:%d\n", ch_mod);
   for(int i = 0; i < nthread; i++){
     try{
-      auto fut = std::async(std::launch::deferred, 
+      auto fut = std::async( 
       /*thread function   */std::forward<Fn>(f),
       /*ch_begin, ch_num  */ch_num * i, ch_num, 0,
       /*res, const args...*/std::ref(res), std::cref(cargs)...);

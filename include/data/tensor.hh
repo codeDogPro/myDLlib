@@ -117,16 +117,25 @@ public:
   std::vector<int> const& get_cshape() const { return m_shape;}
 
   bool reshape(const std::vector<int>& shape){ 
-    m_shape = shape;
     size_t size = std::reduce(shape.begin(), shape.end(), 1, std::multiplies{});
-    m_data.resize(size);
+    if(size != m_data.size()){
+      fprintf(stderr, "New size:%ld isn't equal to the data size:%ld\n",
+      size, m_data.size());
+      exit(-1);
+    }
+    m_shape = shape;
     if(m_data.size() == size) return true;
     return false; 
   } 
   bool reshape(int row, int col, int channel, int number=1){
     m_shape[0] = row, m_shape[1] = col, m_shape[2] = channel, m_shape[3] = number;
     size_t size = row * col * channel * number;
-    m_data.resize(size);
+    if(size != m_data.size()){
+      fprintf(stderr, "New size:%ld isn't equal to the data size:%ld\n",
+      size, m_data.size());
+      exit(-1);
+    }
+    m_shape = shape;
     if(m_data.size() == size) return true;
     return false; 
   } 
