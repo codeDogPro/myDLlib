@@ -3,7 +3,6 @@
 #include <data/tensor.hh>
 
 namespace dl{
-
   /*
   Flatten make tensor shape: 1x1x2048 --> 1x2048x1,
   which to match the Linear layer.
