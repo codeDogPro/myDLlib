@@ -62,29 +62,30 @@ void reshape_test(){
   std::vector shape{3, 2, 4};
   Tensor<float> a(2, 3, 5, 4);
   std::cout << a;
-  // a.reshape(3, 2, 4);
-  a.reshape(shape);
-  std::cout << a;
+  // a.reshape(3, 2, 4); a.reshape(shape); std::cout << a; }
+
 }
 
-// nn function test
+
 void nn_test(){
-  std::vector<Function<float> *> model;
-  model.push_back(new Conv2D<float>(3, 2, 2, 2, 1));
+  thread_pool_init();
   // model.push_back(new Relu<float>(true));
-  model.push_back(new Sigmoid<float>(true));
-  Tensor<float> input(7, 7, 2, 3.4);
-  std::cout << "input:\n" << input;
-  auto output = model[0]->forward(input);
-  auto output_act = model[1]->forward(output);
-  std::cout << output << output_act;
+  // model.push_back(new Sigmoid<float>(true));
+  auto input = std::make_shared<Tensor<f32>>(7, 7, 3, 3.4);
+  std::cout << "input:\n" << *input;
+  Conv2D<float> conv2d(3, 3, 2, 1, 1);
+  auto output = conv2d.forward(input);
+  std::cout << "output:\n" << *output << std::endl;
+  // auto output = model[0]->forward(input);
+  // auto output_act = model[1]->forward(output);
+  // std::cout << output << output_act;
 }
 
 int main(){
-  plus_test();
+  // plus_test();
   // plusequal_test();
   // smmm_test();
   // reshape_test();
-  // nn_test();
+  nn_test();
   return 0;
 }

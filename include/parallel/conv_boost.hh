@@ -1,52 +1,20 @@
 #pragma once
 
+#include <data/tensor.hh>
 #include <basic/tensor_macro.hh>
 
 namespace dl{
 
-  template<typename T> class Tensor;
-
-  template<typename Fn_ch, typename Fn_col, typename T>
-  static void 
-  conv_forward
-  (Fn_ch&& f_ch, Fn_col&& f_col, Tensor<T>& res, 
-   const Tensor<T>& kernel, const Tensor<T>& input){
-    int row = input.row(), col = input.col(), channel = input.channel();
-    int number = input.number(), volume = row * col * channel;
-    int ncpu = cpu_number();
-
-    for(int i = 0; i < number; i++){
-      int noffset = volume * i;
-      if(channel >= ncpu * BOOST_CHANNEL){
-        puts("In parallel channel");
-        parallel_channel(std::forward<Fn_ch>(f_ch), 
-        /*nthread, res */NTHREAD_C(ncpu, number), res,
-        /*const args...*/input, noffset);
-      }
-      else if(col >= ncpu * BOOST_COL){
-        puts("In parallel col");
-        parallel_col    (std::forward<Fn_col>(f_col), 
-        /*nthread, res */NTHREAD_R(ncpu, number), res,
-        /*const args...*/input, noffset);
-      }
-      else{ // No need to boost
-        puts("No need to boost");
-        f_ch(0, channel, 0, res, 
-             input, noffset); 
-      }
-    }
-  }
-
-
-
   template<typename T>
-  void
-  paddle(const Tensor<T> &input, Tensor<T> &pad_input, int npaddle){
-    int irow = input.row(), icol = input.col(), ichannel = input.channel();
-    int prow = pad_input.row(), pcol = pad_input.col();
+  void paddle(const std::shared_ptr<Tensor<T>> input,
+  std::shared_ptr<Tensor<T>> pad_input, int npaddle){
+    int irow = input->row(), icol = input->col(), ichannel = input->channel();
+    int prow = pad_input->row(), pcol = pad_input->col();
     int pad_i = npaddle * (pcol + 1);
-    for(int c_cnt = 0, r_cnt = 0; const auto& x : input.get_cdata()){
-      pad_input[pad_i++] = x;
+    auto pad_input_data = pad_input->get_data();
+    //TODO:need to change
+    for(int c_cnt = 0, r_cnt = 0; const auto& x : input->get_cdata()){
+      pad_input_data[pad_i++] = x;
       if(++c_cnt == icol){
         pad_i += 2 * npaddle;
         c_cnt = 0;
@@ -58,18 +26,22 @@ namespace dl{
     }
   }
 
-  template<typename T>
-  int conv2d_channel
-  (int n_begin, int n_num, int pad, Tensor<T> &res,
-   const Tensor<T> &input, const Tensor<T> &kernel, int stride) {
-    int irow = input.row(),  icol = input.col(),  isquare = irow * icol;
-    int krow = kernel.row(), kcol = kernel.col(), ksquare = krow * kcol;
-    int rrow = res.row(),    rcol = res.col(),    rsquare = rrow * rcol;
-    int kvolume = ksquare * kernel.channel();
-    int kstart = kvolume * n_begin, kend = kstart + kvolume * n_num;
-    int rstart = rsquare * n_begin, rend = rstart + rsquare * n_num;
-    int iend = input.size();
+  template<typename T=f32>
+  bool conv2d_channel
+  (int n_begin, int n_num, std::shared_ptr<Tensor<T>> output,
+   const std::shared_ptr<Tensor<T>> input, const Tensor<T> &weight,
+   const Tensor<T> &bias, int stride) {
+    size_t irow = input->row(),  icol = input->col(),  isquare = irow * icol;
+    size_t krow = weight.row(), kcol = weight.col(), ksquare = krow * kcol;
+    size_t rrow = output->row(), rcol = output->col(), rsquare = rrow * rcol;
+    size_t kvolume = ksquare * weight.channel();
+    size_t kstart = kvolume * n_begin, kend = kstart + kvolume * n_num;
+    size_t rstart = rsquare * n_begin, rend = rstart + rsquare * n_num;
+    size_t iend = input->size();
+    auto input_data = input->get_cdata();
+    auto output_data = input->get_data();
 
+    //TODO:need to change
     for(int n = 0; n < n_num; n++){
       // conv_cnt: record convolution times.
       // line_cnt: record line num that already convoluted.
@@ -81,14 +53,14 @@ namespace dl{
       int ker_i = kstart + ker_offset, res_i = rstart + rsquare * n; 
       for(T sum = 0, c_cnt = 0, r_cnt = 0, inp_i = 0; inp_i < iend;){
         // std::cout << inp_i << ' ';
-        sum += kernel[ker_i++] * input[inp_i++];
+        sum += weight[ker_i++] * input_data[inp_i++];
         if(++c_cnt == kcol){          // cross a col
           inp_i += icol - kcol;
           c_cnt = 0;
           if(++r_cnt == krow){        // finish a conv
             // plus to res
             // std::cout << "res_i:" << res_i << ' ';
-            res[res_i++] += sum;
+            output_data[res_i++] += sum;
             // std::cout << '\n' << res;
             r_cnt = sum = 0;
 
@@ -112,6 +84,6 @@ namespace dl{
         } // kcol if
       }  // for inside loop
     }   // for n_num loop
-    return n_begin;
+    return true;
   }
 }

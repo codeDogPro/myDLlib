@@ -11,10 +11,13 @@
 
 namespace dl{
 
-template<typename T>
+template<typename T=f32>
 class Tensor{
 
 public:
+  // ~Tensor() {
+  //   puts("Tensor destroyed!");
+  // }
   explicit Tensor() = default;
 
   explicit
@@ -111,6 +114,8 @@ public:
   Tensor<T> min(int axis=0, bool keepdim=false){ 
     return tensor_operator(Axis(axis), Operator::MIN, keepdim); }
 
+  T * const               data()       const {return m_data.data();} 
+  T * const               data()             {return m_data.data();} 
   std::vector<T>   &      get_data  ()       { return m_data; }
   std::vector<int> &      get_shape ()       { return m_shape;}
   std::vector<T>   const& get_cdata () const { return m_data; }
@@ -144,14 +149,14 @@ public:
   size_t size()       { return m_data.size(); }
   size_t size() const { return m_data.size(); }
 
-  int row()           { return m_shape[0]; }
-  int col()           { return m_shape[1]; }
-  int channel()       { return m_shape[2]; }  
-  int number()        { return m_shape[3]; }
-  int row()     const { return m_shape[0]; }
-  int col()     const { return m_shape[1]; }
-  int channel() const { return m_shape[2]; }  
-  int number()  const { return m_shape[3]; }
+  size_t row()           { return m_shape[0]; }
+  size_t col()           { return m_shape[1]; }
+  size_t channel()       { return m_shape[2]; }  
+  size_t number()        { return m_shape[3]; }
+  size_t row()     const { return m_shape[0]; }
+  size_t col()     const { return m_shape[1]; }
+  size_t channel() const { return m_shape[2]; }  
+  size_t number()  const { return m_shape[3]; }
 
   void shape(){
     printf("shape:[");
@@ -189,52 +194,52 @@ private:
     int ncpu = cpu_number();
 
     Tensor<T> res(lhs.get_cshape(), 0);
-    for(int i = 0; i < number; i++){
-      int noffset = volume * i;
-      // When lhs and rhs are totally same shape.
-      if(lhs.row() == rhs.row()){
-        if(channel >= ncpu * BOOST_CHANNEL){
-          parallel_channel(vec_channel_f<T>, 
-          /*nthread, res */NTHREAD_C(ncpu, number), res,
-          /*const args...*/lhs, rhs, noffset, mode);
-        }
-        else if(row >= ncpu * BOOST_ROW){
-          parallel_row    (vec_row_f<T>, 
-          /*nthread, res */NTHREAD_R(ncpu, number), res,
-          /*const args...*/lhs, rhs, noffset, mode);
-        }
-        else{ // No need to boost
-          for(int ch = 0; ch < channel; ch++) 
-            vec_row_f(0, row, ch, res, 
-                      lhs, rhs, noffset, mode); 
-        }
-      } 
-      // When lhs is not same shape with rhs.
-      else{
-        if(rhs.row() != 1) goto erro;
+    // for(int i = 0; i < number; i++){
+    //   int noffset = volume * i;
+    //   // When lhs and rhs are totally same shape.
+    //   if(lhs.row() == rhs.row()){
+    //     if(channel >= ncpu * BOOST_CHANNEL){
+    //       parallel_channel(vec_channel_f<T>, 
+    //       /*nthread, res */NTHREAD_C(ncpu, number), res,
+    //       /*const args...*/lhs, rhs, noffset, mode);
+    //     }
+    //     else if(row >= ncpu * BOOST_ROW){
+    //       parallel_row    (vec_row_f<T>, 
+    //       /*nthread, res */NTHREAD_R(ncpu, number), res,
+    //       /*const args...*/lhs, rhs, noffset, mode);
+    //     }
+    //     else{ // No need to boost
+    //       for(int ch = 0; ch < channel; ch++) 
+    //         vec_row_f(0, row, ch, res, 
+    //                   lhs, rhs, noffset, mode); 
+    //     }
+    //   } 
+    //   // When lhs is not same shape with rhs.
+    //   else{
+    //     if(rhs.row() != 1) goto erro;
         
-        if(channel >= ncpu * BOOST_CHANNEL){
-          parallel_channel(vec_channel_s<T>, 
-          /*nthread, res */NTHREAD_C(ncpu, number), res,
-          /*const args...*/lhs, rhs, noffset, mode);
-        } 
-        else if(row > ncpu * BOOST_ROW){
-          parallel_row    (vec_row_s<T>, 
-          /*nthread, res */NTHREAD_R(ncpu, number), res,
-          /*const args...*/lhs, rhs, noffset, mode);
-        }
-        else{ // No need to boost
-          for(int ch = 0; ch < channel; ch++) 
-            vec_row_s(0, row, ch, res, 
-                      lhs, rhs, noffset, mode); 
-        }
-      }
-    }
+    //     if(channel >= ncpu * BOOST_CHANNEL){
+    //       parallel_channel(vec_channel_s<T>, 
+    //       /*nthread, res */NTHREAD_C(ncpu, number), res,
+    //       /*const args...*/lhs, rhs, noffset, mode);
+    //     } 
+    //     else if(row > ncpu * BOOST_ROW){
+    //       parallel_row    (vec_row_s<T>, 
+    //       /*nthread, res */NTHREAD_R(ncpu, number), res,
+    //       /*const args...*/lhs, rhs, noffset, mode);
+    //     }
+    //     else{ // No need to boost
+    //       for(int ch = 0; ch < channel; ch++) 
+    //         vec_row_s(0, row, ch, res, 
+    //                   lhs, rhs, noffset, mode); 
+    //     }
+    //   }
+    // }
     return res;
 
   erro:
     fprintf(stderr,
-    "The size of tensor lhs:(%d) must match the size of tensor rhs:(%d) \
+    "The size of tensor lhs:(%ld) must match the size of tensor rhs:(%ld) \
     at non-singleton dimension 0\n", lhs.row(), rhs.row());
     exit(-1);
   }
@@ -260,68 +265,68 @@ private:
     int square = row * col, volume = square * channel;
     Tensor<T> res;
 
-    if(axis == Axis::COL){
-      if(keepdim) res = Tensor<T>(row, 1, channel, 0, number);
-      else        res = Tensor<T>(1, row, channel, 0, number);
-      for(int n = 0; n < number; n++){
-        int noffset = volume * n, roffset = row * channel * n;
-        if(channel >= ncpu * BOOST_CHANNEL / number){
-          parallel_channel(operator_axis0_channel<T>,
-          /*nthread, res */NTHREAD_C(ncpu, number), res,
-          /*const args...*/*this, noffset, roffset, mode);
-        }
-        else if(row >= ncpu * BOOST_ROW){
-          parallel_row    (operator_axis0_row<T>, 
-          /*nthread, res */NTHREAD_R(ncpu, number), res,
-          /*const args...*/*this, noffset, roffset, mode);
-        }
-        else{ // Not need to boost.
-          operator_axis0_channel(0, channel, 0, res,
-                                 *this, noffset, roffset, mode); 
-        }
-      }
-    } // axix == col
-    else if(axis == Axis::ROW){
-      res = Tensor<T>(1, col, channel, 0, number);
-      for(int n = 0; n < number; n++){
-        int noffset = volume * n, roffset = col * channel * n;
-        if(channel >= ncpu * BOOST_CHANNEL){
-          parallel_channel(operator_axis1_channel<T>, 
-          /*nthread, res */NTHREAD_C(ncpu, number), res,
-          /*const args...*/*this, noffset, roffset, mode);
-        }
-        else if(row >= ncpu * BOOST_ROW){
-          parallel_col    (operator_axis1_col<T>, 
-          /*nthread, res */NTHREAD_R(ncpu, number), res,
-          /*const args...*/*this, noffset, roffset, mode);
-        }
-        else{ // Not need to boost.
-          int start = noffset, end = start + volume;
-          operator_axis1_channel(0, channel, 0, res,
-                                 *this, noffset, roffset, mode); 
-        }
-      }
-    } // axix == row
-    else if(axis == Axis::CHANNEL){
-      res = Tensor<T>(row, col, 1, 0, number);
-      for(int n = 0; n < number; n++){
-        int noffset = volume * n, roffset = row * col * n;
-        if(row >= ncpu * BOOST_ROW){
-          parallel_row    (operator_axis2_row<T>, 
-          /*nthread, res */NTHREAD_C(ncpu, number), res,
-          /*const args...*/*this, noffset, roffset, mode);
-        }
-        else if(col >= ncpu * BOOST_ROW){
-          parallel_col    (operator_axis2_col<T>, 
-          /*nthread, res */NTHREAD_R(ncpu, number), res,
-          /*const args...*/*this, noffset, roffset, mode);
-        }
-        else{ // Not need to boost.
-          operator_axis2_row(0, row, channel, res,
-                             *this, noffset, roffset, mode); 
-        }
-      }
-    } // axis == channel
+    // if(axis == Axis::COL){
+    //   if(keepdim) res = Tensor<T>(row, 1, channel, 0, number);
+    //   else        res = Tensor<T>(1, row, channel, 0, number);
+    //   for(int n = 0; n < number; n++){
+    //     int noffset = volume * n, roffset = row * channel * n;
+    //     if(channel >= ncpu * BOOST_CHANNEL / number){
+    //       parallel_channel(operator_axis0_channel<T>,
+    //       /*nthread, res */NTHREAD_C(ncpu, number), res,
+    //       /*const args...*/*this, noffset, roffset, mode);
+    //     }
+    //     else if(row >= ncpu * BOOST_ROW){
+    //       parallel_row    (operator_axis0_row<T>, 
+    //       /*nthread, res */NTHREAD_R(ncpu, number), res,
+    //       /*const args...*/*this, noffset, roffset, mode);
+    //     }
+    //     else{ // Not need to boost.
+    //       operator_axis0_channel(0, channel, 0, res,
+    //                              *this, noffset, roffset, mode); 
+    //     }
+    //   }
+    // } // axix == col
+    // else if(axis == Axis::ROW){
+    //   res = Tensor<T>(1, col, channel, 0, number);
+    //   for(int n = 0; n < number; n++){
+    //     int noffset = volume * n, roffset = col * channel * n;
+    //     if(channel >= ncpu * BOOST_CHANNEL){
+    //       parallel_channel(operator_axis1_channel<T>, 
+    //       /*nthread, res */NTHREAD_C(ncpu, number), res,
+    //       /*const args...*/*this, noffset, roffset, mode);
+    //     }
+    //     else if(row >= ncpu * BOOST_ROW){
+    //       parallel_col    (operator_axis1_col<T>, 
+    //       /*nthread, res */NTHREAD_R(ncpu, number), res,
+    //       /*const args...*/*this, noffset, roffset, mode);
+    //     }
+    //     else{ // Not need to boost.
+    //       int start = noffset, end = start + volume;
+    //       operator_axis1_channel(0, channel, 0, res,
+    //                              *this, noffset, roffset, mode); 
+    //     }
+    //   }
+    // } // axix == row
+    // else if(axis == Axis::CHANNEL){
+    //   res = Tensor<T>(row, col, 1, 0, number);
+    //   for(int n = 0; n < number; n++){
+    //     int noffset = volume * n, roffset = row * col * n;
+    //     if(row >= ncpu * BOOST_ROW){
+    //       parallel_row    (operator_axis2_row<T>, 
+    //       /*nthread, res */NTHREAD_C(ncpu, number), res,
+    //       /*const args...*/*this, noffset, roffset, mode);
+    //     }
+    //     else if(col >= ncpu * BOOST_ROW){
+    //       parallel_col    (operator_axis2_col<T>, 
+    //       /*nthread, res */NTHREAD_R(ncpu, number), res,
+    //       /*const args...*/*this, noffset, roffset, mode);
+    //     }
+    //     else{ // Not need to boost.
+    //       operator_axis2_row(0, row, channel, res,
+    //                          *this, noffset, roffset, mode); 
+    //     }
+    //   }
+    // } // axis == channel
     return res;
   }
 

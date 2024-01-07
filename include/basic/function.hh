@@ -7,10 +7,11 @@ namespace dl{
   /*
     Every model function must inherit this class and override its apis
   */
-  template<typename T>
+  template<typename T=f32>
   class Function{
   public:
-    virtual Tensor<T> forward(const Tensor<T> &) = 0;
+    virtual std::shared_ptr<Tensor<T>> const
+    forward(const std::shared_ptr<Tensor<T>>) = 0;
     // virtual Tensor<T> backward(); 
     virtual ~Function(){}
   };

@@ -24,5 +24,7 @@ namespace dl{
   const int PRINT_PRECISION = 4;
 
   const float eps = 1e-8;
+
+  #define POOL_SIZE  128
 }
 
