@@ -2,7 +2,7 @@
 
 #include <data/rand_init.hh>
 #include <parallel/parallel.hh>
-#include <parallel/tensor_boost.hh>
+#include <parallel/tensor_parallel.hh>
 
 #include <numeric>
 #include <cstdlib>
@@ -149,14 +149,14 @@ public:
   size_t size()       { return m_data.size(); }
   size_t size() const { return m_data.size(); }
 
-  size_t row()           { return m_shape[0]; }
-  size_t col()           { return m_shape[1]; }
-  size_t channel()       { return m_shape[2]; }  
-  size_t number()        { return m_shape[3]; }
-  size_t row()     const { return m_shape[0]; }
-  size_t col()     const { return m_shape[1]; }
-  size_t channel() const { return m_shape[2]; }  
-  size_t number()  const { return m_shape[3]; }
+  int row()           { return m_shape[0]; }
+  int col()           { return m_shape[1]; }
+  int channel()       { return m_shape[2]; }  
+  int number()        { return m_shape[3]; }
+  int row()     const { return m_shape[0]; }
+  int col()     const { return m_shape[1]; }
+  int channel() const { return m_shape[2]; }  
+  int number()  const { return m_shape[3]; }
 
   void shape(){
     printf("shape:[");
@@ -239,7 +239,7 @@ private:
 
   erro:
     fprintf(stderr,
-    "The size of tensor lhs:(%ld) must match the size of tensor rhs:(%ld) \
+    "The size of tensor lhs:(%d) must match the size of tensor rhs:(%d) \
     at non-singleton dimension 0\n", lhs.row(), rhs.row());
     exit(-1);
   }

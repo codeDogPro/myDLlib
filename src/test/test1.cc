@@ -68,14 +68,14 @@ void reshape_test(){
 
 
 void nn_test(){
-  thread_pool_init();
   // model.push_back(new Relu<float>(true));
   // model.push_back(new Sigmoid<float>(true));
-  auto input = std::make_shared<Tensor<f32>>(7, 7, 3, 3.4);
+  auto input = std::make_shared<Tensor<f32>>(7, 7, 3, 1);
   std::cout << "input:\n" << *input;
   Conv2D<float> conv2d(3, 3, 2, 1, 1);
   auto output = conv2d.forward(input);
   std::cout << "output:\n" << *output << std::endl;
+  // std::cout << output.use_count() << std::endl;
   // auto output = model[0]->forward(input);
   // auto output_act = model[1]->forward(output);
   // std::cout << output << output_act;

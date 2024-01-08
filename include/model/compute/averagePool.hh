@@ -2,7 +2,7 @@
 
 #include <basic/function.hh>
 #include <data/tensor.hh>
-#include <parallel/pooling_boost.hh>
+#include <parallel/pooling_parallel.hh>
 
 namespace dl{
 

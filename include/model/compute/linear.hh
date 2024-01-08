@@ -14,20 +14,19 @@ example:
 template<typename T>
 class Linear : public Function<T> {
 public:
-  Linear(int input_dim, int output_dim, bool auto_grad=true){
-    M_paremeter = Tensor<T>(output_dim, input_dim, 1);
-    M_auto_grad = auto_grad;
+  Linear(int input_dim, int output_dim){
+    M_weight = Tensor<T>(output_dim, input_dim, 1);
+    M_bias = Tensor<T>(output_dim, 1);
   } 
 
   virtual ~Linear(){ };
 
   virtual Tensor<T>
   forward(const Tensor<T>& input) override{
-    if(M_auto_grad) grad = input;
 
     if(input.row() != 1) input.reshape(1, input.col(), input.channel());
-    Tensor<T> mat = M_paremeter * input;
-    return mat.sum(); 
+    Tensor<T> mat = M_weight * input;
+    return mat.sum() + M_bias; 
   }
 
   // virtual Tensor<T>
@@ -38,6 +37,6 @@ public:
 
 private:
   bool M_auto_grad;
-  Tensor<T> M_paremeter, grad;
+  Tensor<T> M_weight, M_bias;
 };
 }

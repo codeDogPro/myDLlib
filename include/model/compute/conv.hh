@@ -1,7 +1,7 @@
 #pragma once
 
 #include <basic/function.hh>
-#include <parallel/conv_boost.hh>
+#include <parallel/conv_parallel.hh>
 
 
 namespace dl{
@@ -39,13 +39,14 @@ public:
 
   virtual ~Conv2D(){};
 
-  virtual std::shared_ptr<Tensor<T>> const
+  virtual std::shared_ptr<Tensor<T>> 
   forward(const std::shared_ptr<Tensor<T>> input){
     int row = input->row(), col = input->col(), channel = input->channel();
     if(M_paddle){
       auto pad_input = std::make_shared<Tensor<T>>
       (row + 2 * M_paddle, col + 2 * M_paddle, channel, 0);
-      paddle(input, pad_input, M_paddle);
+      parallelizer.parallel_channel(paddle_parallel<T>, pad_input, input, M_paddle);
+      // std::cout << "pad_input:\n" << *pad_input << std::endl;
       return conv_boost(pad_input, res_row(row), res_col(col));
     }
 
@@ -59,15 +60,16 @@ protected:
   int res_row(int row){return (row - M_weight.row() + 2 * M_paddle)/M_stride + 1;}
   int res_col(int col){return (col - M_weight.col() + 2 * M_paddle)/M_stride + 1;}
 
-  std::shared_ptr<Tensor<T>> const
+  std::shared_ptr<Tensor<T>> 
   conv_boost(const std::shared_ptr<Tensor<T>> input, int r_row, int r_col){
-    // std::cout << input.use_count() << std::endl;
     int irow = input->row(), icol = input->col(), channel = input->channel();
     int output_ch = M_weight.number();
     // std::cout << "output_ch:" << output_ch << std::endl;
-    auto output_ptr = std::make_shared<Tensor<T>>(r_row, r_col, output_ch, 0);
-    parallel_4D(conv2d_channel<T>, output_ptr, input, M_weight, M_bias, M_stride);
-    return output_ptr;
+    auto output = std::make_shared<Tensor<T>>(r_row, r_col, output_ch, 0);
+    parallelizer.parallel_channel(conv2d_parallel<T>, 
+                                  output, input, 
+                                  M_weight, M_bias, M_stride);
+    return output;
   }
 
 
