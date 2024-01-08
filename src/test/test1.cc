@@ -36,8 +36,8 @@ void plusequal_test(){
 
 // +-*/ test
 void plus_test(){
-  Tensor<int> a(4, 4, 8, 3, 2);  
-  Tensor<int> b(4, 4, 8, 1, 2);
+  Tensor<int> a(1, 4, 4, 1, 3);  
+  Tensor<int> b(4, 4, 4, 1, 1);
   // Tensor<int> a(4, 4, 8, 3);
   // Tensor<int> b(4, 4, 8, 1);
   std::cout << a << b;
@@ -45,7 +45,7 @@ void plus_test(){
   auto d = a - b; 
   auto e = a * b; 
   auto f = a / b; 
-  std::cout << c << d << e << f;
+  std::cout << *c << *d << *e << *f;
 }
  
 // copy test
@@ -82,10 +82,10 @@ void nn_test(){
 }
 
 int main(){
-  // plus_test();
+  plus_test();
   // plusequal_test();
   // smmm_test();
   // reshape_test();
-  nn_test();
+  // nn_test();
   return 0;
 }

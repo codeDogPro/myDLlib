@@ -17,7 +17,7 @@ class Conv2D : public Function<T> {
 public:
   explicit 
   Conv2D (int kernel_size, int input_ch, int output_ch=1, int stride=1, int paddle=0) {
-    M_weight = Tensor<T>(kernel_size, kernel_size, input_ch, -1, output_ch);
+    M_weight = Tensor<T>(kernel_size, kernel_size, input_ch, output_ch, T(-1));
     M_bias = Tensor<T>(output_ch, 1);
     M_stride    = stride;
     M_paddle    = paddle;
@@ -42,9 +42,10 @@ public:
   virtual std::shared_ptr<Tensor<T>> 
   forward(const std::shared_ptr<Tensor<T>> input){
     int row = input->row(), col = input->col(), channel = input->channel();
+    int number = input->number();
     if(M_paddle){
       auto pad_input = std::make_shared<Tensor<T>>
-      (row + 2 * M_paddle, col + 2 * M_paddle, channel, 0);
+      (row + 2 * M_paddle, col + 2 * M_paddle, channel, number, 0);
       parallelizer.parallel_channel(paddle_parallel<T>, pad_input, input, M_paddle);
       // std::cout << "pad_input:\n" << *pad_input << std::endl;
       return conv_boost(pad_input, res_row(row), res_col(col));

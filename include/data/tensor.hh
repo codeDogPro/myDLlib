@@ -21,13 +21,13 @@ public:
   explicit Tensor() = default;
 
   explicit
-  Tensor(int row, int col, int channel=1, T val=-1, int number=1){
+  Tensor(int row, int col, int channel=1, int number=1, T val=T(-1)){
     assert(row != 0 && col != 0 && channel != 0 && number != 0);
 
     // std::cout << "type:" << type_name<T>() << "   val:" << val << std::endl;
     m_data.assign(row * col * channel * number, val);
     m_shape.assign({row, col, channel, number});
-    if(val == -1){ rand_init(*this);}
+    if(val == T(-1)){ rand_init(*this);}
   }
 
   explicit
@@ -49,7 +49,8 @@ public:
   Tensor(const Tensor<T>& t){ 
     m_shape.assign(3, 0); m_data.assign(t.size(), 0);
     for(int i = 0; int x : t.get_cshape()) m_shape[i++] = x;
-    for(int i = 0; int x : t.get_cdata()) m_data[i++] = x;
+    parallel_copy(t);
+    // for(int i = 0; int x : t.get_cdata()) m_data[i++] = x;
   }
 
   // move copy ctor
@@ -62,9 +63,13 @@ public:
   operator=(const Tensor<T>& rhs){
     if(this == &rhs) return *this;
 
+    puts("invoke operator= copy");
     m_shape.assign(4, 0); m_data.assign(rhs.size(), 0);
     for(int i = 0; int x : rhs.get_cshape()) m_shape[i++] = x;
-    for(int i = 0; int x : rhs.get_cdata()) m_data[i++] = x;
+
+    parallel_copy(rhs);
+    puts("Finish operator= copy");
+    // for(int i = 0; int x : rhs.get_cdata()) m_data[i++] = x;
     return *this;
   }
 
@@ -72,27 +77,28 @@ public:
   operator=(Tensor<T>&& rhs){
     if(this == &rhs) return *this;
 
+    puts("invoke operator= move");
     m_data  = std::move(rhs.get_data());
     m_shape = std::move(rhs.get_shape());
     return *this;
   }
 
-  Tensor<T> operator+(const Tensor<T>& rhs) { return tensor_calculator(*this, rhs, Calculator::PLUS);}
-  Tensor<T> operator-(const Tensor<T>& rhs) { return tensor_calculator(*this, rhs, Calculator::MINUS);}
-  Tensor<T> operator*(const Tensor<T>& rhs) { return tensor_calculator(*this, rhs, Calculator::MULTIPLY);}
-  Tensor<T> operator/(const Tensor<T>& rhs) { return tensor_calculator(*this, rhs, Calculator::DIVIDE);}
-  Tensor<T> operator%(const Tensor<T>& rhs) { return tensor_calculator(*this, rhs, Calculator::MOD);}
-  Tensor<T> operator+(T x) { Tensor<T> rhs(m_shape, x); return *this + rhs; }
-  Tensor<T> operator-(T x) { Tensor<T> rhs(m_shape, x); return *this - rhs; }
-  Tensor<T> operator*(T x) { Tensor<T> rhs(m_shape, x); return *this * rhs; }
-  Tensor<T> operator/(T x) { Tensor<T> rhs(m_shape, x); return *this / rhs; }
-  Tensor<T> operator%(T x) { Tensor<T> rhs(m_shape, x); return *this % rhs; }
+  std::shared_ptr<Tensor<T>> operator+(const Tensor<T>& rhs) { return tensor_calculator(*this, rhs, Calculator::PLUS);}
+  std::shared_ptr<Tensor<T>> operator-(const Tensor<T>& rhs) { return tensor_calculator(*this, rhs, Calculator::MINUS);}
+  std::shared_ptr<Tensor<T>> operator*(const Tensor<T>& rhs) { return tensor_calculator(*this, rhs, Calculator::MULTIPLY);}
+  std::shared_ptr<Tensor<T>> operator/(const Tensor<T>& rhs) { return tensor_calculator(*this, rhs, Calculator::DIVIDE);}
+  std::shared_ptr<Tensor<T>> operator%(const Tensor<T>& rhs) { return tensor_calculator(*this, rhs, Calculator::MOD);}
+  std::shared_ptr<Tensor<T>> operator+(T x) { Tensor<T> rhs(m_shape, x); return *this + rhs; }
+  std::shared_ptr<Tensor<T>> operator-(T x) { Tensor<T> rhs(m_shape, x); return *this - rhs; }
+  std::shared_ptr<Tensor<T>> operator*(T x) { Tensor<T> rhs(m_shape, x); return *this * rhs; }
+  std::shared_ptr<Tensor<T>> operator/(T x) { Tensor<T> rhs(m_shape, x); return *this / rhs; }
+  std::shared_ptr<Tensor<T>> operator%(T x) { Tensor<T> rhs(m_shape, x); return *this % rhs; }
 
-  void operator+=(const Tensor<T>& rhs) { *this = *this + rhs; }
-  void operator-=(const Tensor<T>& rhs) { *this = *this - rhs; }
-  void operator*=(const Tensor<T>& rhs) { *this = *this * rhs; }
-  void operator/=(const Tensor<T>& rhs) { *this = *this / rhs; }
-  void operator%=(const Tensor<T>& rhs) { *this = *this % rhs; }
+  void operator+=(const Tensor<T>& rhs) { *this = *(*this + rhs); }
+  void operator-=(const Tensor<T>& rhs) { *this = *(*this - rhs); }
+  void operator*=(const Tensor<T>& rhs) { *this = *(*this * rhs); }
+  void operator/=(const Tensor<T>& rhs) { *this = *(*this / rhs); }
+  void operator%=(const Tensor<T>& rhs) { *this = *(*this % rhs); }
   void operator+=(T x) { Tensor<T> rhs(m_shape, x); *this += rhs; }
   void operator-=(T x) { Tensor<T> rhs(m_shape, x); *this -= rhs; }
   void operator*=(T x) { Tensor<T> rhs(m_shape, x); *this *= rhs; }
@@ -105,14 +111,22 @@ public:
   template<typename U>
   friend std::ostream & operator<<(std::ostream &os, const Tensor<U> &t);
 
-  Tensor<T> sum(int axis=0, bool keepdim=false){ 
-    return tensor_operator(Axis(axis), Operator::SUM, keepdim); }
-  Tensor<T> mean(int axis=0, bool keepdim=false){
-    return tensor_operator(Axis(axis), Operator::MEAN, keepdim);}
-  Tensor<T> max(int axis=0, bool keepdim=false){
-    return tensor_operator(Axis(axis), Operator::MAX, keepdim); }
-  Tensor<T> min(int axis=0, bool keepdim=false){ 
-    return tensor_operator(Axis(axis), Operator::MIN, keepdim); }
+  std::shared_ptr<Tensor<T>>
+  sum(int axis=0, bool keepdim=false){ 
+    return tensor_operator(Axis(axis), Operator::SUM, keepdim);
+  }
+  std::shared_ptr<Tensor<T>>
+  mean(int axis=0, bool keepdim=false){
+    return tensor_operator(Axis(axis), Operator::MEAN, keepdim);
+  }
+  std::shared_ptr<Tensor<T>>
+  max(int axis=0, bool keepdim=false){
+    return tensor_operator(Axis(axis), Operator::MAX, keepdim);
+  }
+  std::shared_ptr<Tensor<T>>
+  min(int axis=0, bool keepdim=false){ 
+    return tensor_operator(Axis(axis), Operator::MIN, keepdim);
+  }
 
   T * const               data()       const {return m_data.data();} 
   T * const               data()             {return m_data.data();} 
@@ -168,9 +182,10 @@ public:
   }
 
 protected:
-  Tensor<T> 
+  void parallel_copy(const Tensor<T> &rhs);
+  std::shared_ptr<Tensor<T>>
   tensor_calculator(const Tensor<T>& lhs, const Tensor<T>& rhs, Calculator mode);
-  Tensor<T> 
+  std::shared_ptr<Tensor<T>>
   tensor_operator(Axis axis, Operator mode, bool keepdim);
 
 private:
@@ -182,65 +197,74 @@ private:
 //################### Tensor::member functions' implementation ###################
 
   template<typename T>
-  Tensor<T>
+  void Tensor<T>::parallel_copy(const Tensor<T> &rhs){
+    int number = this->number(), channel = this->channel();
+    auto deleter = [](Tensor<T> *tensor){ };
+    std::shared_ptr<Tensor<T>> lhs(this, deleter);
+    if(channel >= number * BOOST_CHANNEL){
+      for(int i = 0; i < number; i++){
+        parallelizer.parallel_channel(tensor_copy_channel<T>, lhs, rhs);
+      }
+    }
+    else {
+      parallelizer.parallel_number(tensor_copy_number<T>, lhs, rhs);
+    }
+  }
+
+
+  template<typename T>
+  std::shared_ptr<Tensor<T>>
   Tensor<T>::tensor_calculator
   (const Tensor<T>& lhs, const Tensor<T>& rhs, Calculator mode){
     // col and channel and number must be the same.
-    assert(lhs.row() == rhs.row() && lhs.channel() == rhs.channel());
-    assert(lhs.number() == rhs.number());
-
+    assert(lhs.col() == rhs.col() && lhs.channel() == rhs.channel() &&
+           lhs.number() == rhs.number());
     int row = lhs.row(), col = lhs.col(), channel = lhs.channel();
     int number = lhs.number(), volume = row * col * channel;
-    int ncpu = cpu_number();
 
-    Tensor<T> res(lhs.get_cshape(), 0);
-    // for(int i = 0; i < number; i++){
-    //   int noffset = volume * i;
-    //   // When lhs and rhs are totally same shape.
-    //   if(lhs.row() == rhs.row()){
-    //     if(channel >= ncpu * BOOST_CHANNEL){
-    //       parallel_channel(vec_channel_f<T>, 
-    //       /*nthread, res */NTHREAD_C(ncpu, number), res,
-    //       /*const args...*/lhs, rhs, noffset, mode);
-    //     }
-    //     else if(row >= ncpu * BOOST_ROW){
-    //       parallel_row    (vec_row_f<T>, 
-    //       /*nthread, res */NTHREAD_R(ncpu, number), res,
-    //       /*const args...*/lhs, rhs, noffset, mode);
-    //     }
-    //     else{ // No need to boost
-    //       for(int ch = 0; ch < channel; ch++) 
-    //         vec_row_f(0, row, ch, res, 
-    //                   lhs, rhs, noffset, mode); 
-    //     }
-    //   } 
-    //   // When lhs is not same shape with rhs.
-    //   else{
-    //     if(rhs.row() != 1) goto erro;
-        
-    //     if(channel >= ncpu * BOOST_CHANNEL){
-    //       parallel_channel(vec_channel_s<T>, 
-    //       /*nthread, res */NTHREAD_C(ncpu, number), res,
-    //       /*const args...*/lhs, rhs, noffset, mode);
-    //     } 
-    //     else if(row > ncpu * BOOST_ROW){
-    //       parallel_row    (vec_row_s<T>, 
-    //       /*nthread, res */NTHREAD_R(ncpu, number), res,
-    //       /*const args...*/lhs, rhs, noffset, mode);
-    //     }
-    //     else{ // No need to boost
-    //       for(int ch = 0; ch < channel; ch++) 
-    //         vec_row_s(0, row, ch, res, 
-    //                   lhs, rhs, noffset, mode); 
-    //     }
-    //   }
-    // }
-    return res;
+    std::shared_ptr<Tensor<T>> output;
+    if(row > rhs.row()){
+      if(rhs.row() == 1){
+        output = std::make_shared<Tensor<T>>(lhs.get_cshape(), 0);
+        (*output) = lhs;
+        // if(channel >= number * BOOST_CHANNEL){
+        //   for(int i = 0; i < number; i++){
+        //     parallelizer.parallel_channel(vec_channel_s<T>, output, rhs, mode);
+        //   }
+        // }
+      }
+      else goto erro;
+    }
+    else if(row == rhs.row()){
+      output = std::make_shared<Tensor<T>>(lhs.get_cshape(), 0);
+      (*output) = lhs;
+      // if(channel >= number * BOOST_CHANNEL){
+      //   for(int i = 0; i < number; i++){
+      //     parallelizer.parallel_channel(vec_channel_f<T>, output, rhs, mode);
+      //   }
+      // }
+      // else {
+      //   parallelizer.parallel_number();
+      // }
+    }
+    else{ // lhs.row < rhs.row
+      if(row == 1){
+        output = std::make_shared<Tensor<T>>(rhs.get_cshape(), 0);
+        (*output) = rhs;
+        if(channel >= number * BOOST_CHANNEL){
+          for(int i = 0; i < number; i++){
+            parallelizer.parallel_channel(vec_channel_s<T>, output, *this, mode);
+          }
+        }
+      }
+      else goto erro;
+    }
+    // std::cout << (*output) << std::endl;
+    return output;
 
   erro:
-    fprintf(stderr,
-    "The size of tensor lhs:(%d) must match the size of tensor rhs:(%d) \
-    at non-singleton dimension 0\n", lhs.row(), rhs.row());
+    fprintf(stderr, "The size of tensor lhs:(%d) must match the size of \
+    tensor rhs:(%d) at non-singleton dimension 0\n", lhs.row(), rhs.row());
     exit(-1);
   }
 
@@ -257,13 +281,13 @@ private:
                   -----> min()  -----> [[1],  -----> [1, 4]
                                         [4]] */
   template<typename T>
-  Tensor<T>
+  std::shared_ptr<Tensor<T>>
   Tensor<T>::tensor_operator(Axis axis, Operator mode, bool keepdim){
     int ncpu = cpu_number();
     int row = this->row(), col = this->col(), channel = this->channel();
     int number = this->number();
     int square = row * col, volume = square * channel;
-    Tensor<T> res;
+    return nullptr;
 
     // if(axis == Axis::COL){
     //   if(keepdim) res = Tensor<T>(row, 1, channel, 0, number);
@@ -327,7 +351,6 @@ private:
     //     }
     //   }
     // } // axis == channel
-    return res;
   }
 
 

@@ -1,69 +1,98 @@
 #pragma once
 
 #include <basic/tensor_macro.hh>
+#include <data/tensor.hh>
 #include <vector>
 #include <iostream>
-#include <assert.h>
+#include <cassert>
 
 
 namespace dl{
-  template<typename T> class Tensor;
 
 //##################### Thread functions ########################
-
-  template<typename T>
-  int vec_channel_s
-  (int ch_begin, int ch_num, int pad, Tensor<T>& res,
-   const Tensor<T>& a, const Tensor<T>& b, int noffset, const Calculator mode) {
-    int arow = a.row(), brow = b.row(), col = a.col();
-    int asquare = arow * col, bsquare = brow * col;
-    for(int ch = ch_begin; ch < ch_begin + ch_num; ch++){
-      int astart = noffset + ch * asquare, bstart = noffset + ch * bsquare;
-      int aend = astart + asquare;
-      for(int i = astart; i < aend; i++){
-        switch(mode){
-          case Calculator::PLUS:
-          res[i] = a[i] + b[bstart + i % col]; break;
-          case Calculator::MINUS:
-          res[i] = a[i] - b[bstart + i % col]; break;
-          case Calculator::MULTIPLY:
-          res[i] = a[i] * b[bstart + i % col]; break;
-          case Calculator::DIVIDE:
-          assert(b[bstart + i % col] != 0);
-          res[i] = a[i] / b[bstart + i % col]; break;
-          case Calculator::MOD:
-          res[i] = a[i] % b[bstart + i % col]; break;
-          default: assert(0);
-        }
-      }
+  template<typename T=f32>
+  bool tensor_copy_channel(int ch_begin, int ch_num, 
+  std::shared_ptr<Tensor<T>> lhs, const Tensor<T> &rhs){
+    int row = lhs->row(), col = lhs->col(), square = row * col;
+    int idx_begin = ch_begin * square, idx_end = idx_begin + square * ch_num;
+    for(int idx = idx_begin; idx < idx_end; idx++){
+      // TODO: use simd
+      (*lhs)[idx] = rhs[idx];
     }
-    return ch_begin;
+    return true;
+  }
+
+  template<typename T=f32>
+  bool tensor_copy_number(int n_begin, int n_num, 
+  std::shared_ptr<Tensor<T>> lhs, const Tensor<T> &rhs){
+    int row = lhs->row(), col = lhs->col(), channel = lhs->channel();
+    int volume = row * col * channel;
+    int idx_begin = n_begin * volume, idx_end = idx_begin + volume * n_num;
+    for(int idx = idx_begin; idx < idx_end; idx++){
+      // TODO: use simd
+      (*lhs)[idx] = rhs[idx];
+    }
+    return true;
   }
 
   template<typename T>
-  int vec_channel_f
-  (int ch_begin, int ch_num, int pad, Tensor<T>& res,
-   const Tensor<T>& a, const Tensor<T>& b, int noffset, const Calculator mode) {
+  bool vec_channel_s
+  (int ch_begin, int ch_num, std::shared_ptr<Tensor<T>> output,
+   const Tensor<T> &a, const Tensor<T> &b, const Calculator mode) {
+    int arow = a.row(), col = a.col(), asquare = arow * col;
+    int astart = ch_begin * asquare, aend = astart + asquare;
+    int bstart = ch_begin * col, bend = bstart + col; 
+    for(int ch = ch_begin; ch < ch_begin + ch_num; ch++){
+      for(int a_i = astart; a_i < aend; ){
+        // TODO: use simd
+        for(int b_i = bstart; b_i < bend; a_i++, b_i++){
+          switch(mode){
+            case Calculator::PLUS:
+              (*output)[a_i] = a[a_i] + b[b_i]; break;
+            case Calculator::MINUS:
+              (*output)[a_i] = a[a_i] - b[b_i]; break;
+            case Calculator::MULTIPLY:
+              (*output)[a_i] = a[a_i] * b[b_i]; break;
+            case Calculator::DIVIDE:
+              assert(b[b_i] != 0);
+              (*output)[a_i] = a[a_i] / b[b_i]; break;
+            case Calculator::MOD:
+              (*output)[a_i] = a[a_i] % b[b_i]; break;
+            default: assert(0);
+          }
+        }
+      }
+      astart += asquare, bstart += col;
+      aend += asquare, bend += bstart + col;
+    }
+    return true;
+  }
+
+  template<typename T>
+  bool vec_channel_f
+  (int ch_begin, int ch_num, std::shared_ptr<Tensor<T>> output,
+   const Tensor<T> &a, const Tensor<T> &b, int noffset, const Calculator mode) {
     int square = a.row() * a.col();
     int start = noffset + ch_begin * square;
     int end   = noffset + start + ch_num * square;
     for(int i = start; i < end; i++){
+      // TODO: use simd
       switch(mode){
         case Calculator::PLUS:
-        res[i] = a[i] + b[i]; break;
+          (*output)[i] = a[i] + b[i]; break;
         case Calculator::MINUS:
-        res[i] = a[i] - b[i]; break;
+          (*output)[i] = a[i] - b[i]; break;
         case Calculator::MULTIPLY:
-        res[i] = a[i] * b[i]; break;
+          (*output)[i] = a[i] * b[i]; break;
         case Calculator::DIVIDE:
-        assert(b[i] != 0);
-        res[i] = a[i] / b[i]; break;
+          assert(b[i] != 0);
+          (*output)[i] = a[i] / b[i]; break;
         case Calculator::MOD:
-        res[i] = a[i] % b[i]; break;
+          (*output)[i] = a[i] % b[i]; break;
         default: assert(0);
       }
     }
-    return ch_begin;
+    return true;
   }
 
   template<typename T>
