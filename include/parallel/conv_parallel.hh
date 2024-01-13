@@ -6,13 +6,15 @@
 namespace dl{
 
   template<typename T>
-  bool paddle_parallel(int ch_begin, int ch_num, std::shared_ptr<Tensor<T>> output,
-  const std::shared_ptr<Tensor<T>> input, int npaddle){
+  bool paddle_parallel
+  (int task_begin, int task_num, int shape, int offset,
+   std::shared_ptr<Tensor<T>> output, const std::shared_ptr<Tensor<T>> input, 
+   int npaddle){
     int irow = input->row(), icol = input->col(), ichannel = input->channel();
     int orow = output->row(), ocol = output->col();
-    int input_i = ch_begin * irow * icol;
-    int output_i = npaddle * (ocol + 1) + ch_begin * orow * ocol;
-    for(int ch_idx = ch_begin; ch_idx < ch_begin + ch_num; ch_idx++){
+    int input_i = offset + task_begin * irow * icol;
+    int output_i = offset + npaddle * (ocol + 1) + task_begin * orow * ocol;
+    for(int ch_idx = task_begin; ch_idx < task_begin + task_num; ch_idx++){
       for(int row_cnt = 0; row_cnt < irow; row_cnt++){
         for(int col_cnt = 0; col_cnt < icol; col_cnt++){
           (*output)[output_i++] = (*input)[input_i++];
@@ -26,9 +28,9 @@ namespace dl{
 
   template<typename T=f32>
   bool conv2d_parallel
-  (int n_begin, int n_num, std::shared_ptr<Tensor<T>> output,
-   const std::shared_ptr<Tensor<T>> input, const Tensor<T> &weight,
-   const Tensor<T> &bias, int stride) {
+  (int n_begin, int n_num, int shape, int offset,
+   std::shared_ptr<Tensor<T>> output, const std::shared_ptr<Tensor<T>> input,
+    const Tensor<T> &weight, const Tensor<T> &bias, int stride) {
     int irow = input->row(),  icol = input->col(),  isquare = irow * icol;
     int krow = weight.row(), kcol = weight.col(), ksquare = krow * kcol;
     int orow = output->row(), ocol = output->col(), osquare = orow * ocol;

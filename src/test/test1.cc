@@ -36,8 +36,8 @@ void plusequal_test(){
 
 // +-*/ test
 void plus_test(){
-  Tensor<int> a(1, 4, 4, 1, 3);  
-  Tensor<int> b(4, 4, 4, 1, 1);
+  Tensor<int> a(1, 4, 4, 3, 3);  
+  Tensor<int> b(4, 4, 4, 3, 1);
   // Tensor<int> a(4, 4, 8, 3);
   // Tensor<int> b(4, 4, 8, 1);
   std::cout << a << b;

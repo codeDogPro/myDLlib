@@ -27,65 +27,80 @@ public:
   }
 
   template<typename Fn, typename Tp, typename... Ts>
-  void parallel_row(Fn&& f, std::shared_ptr<Tensor<Tp>> output, Ts&&... cargs) {
-    int output_row = output->row();
+  void parallel_row(Fn&& fn, std::shared_ptr<Tensor<Tp>> output, 
+  int offset, Ts&&... cargs) {
+    int output_row = output->row(), col = output->col();
     int task_size = (int)std::ceil((double)output_row / nthread);
 
     for(int task_begin = 0; task_begin < output_row; task_begin += task_size){
-      auto ret = _M_pool.submit([task_begin, task_size, &f, &output, &cargs...]
-        {return std::forward<Fn>(f) 
-          (task_begin, task_size, output, std::cref(cargs)...);
+      auto ret = _M_pool.submit(
+        [task_begin, task_size, col, offset, &fn, &output, &cargs...]
+        {return std::forward<Fn>(fn) 
+          (task_begin, task_size, col, offset, output, std::cref(cargs)...);
         });
       rets.push_back(std::move(ret));
     }
-    __sync_rets();
   }
 
   template<typename Fn, typename Tp, typename... Ts>
-  void parallel_col(Fn&& f, std::shared_ptr<Tensor<Tp>> output, Ts&&... cargs) {
-    int output_col = output->col();
+  void parallel_col(Fn&& fn, std::shared_ptr<Tensor<Tp>> output,
+  int offset, Ts&&... cargs) {
+    int output_col = output->col(), row = output->row();
     int task_size = (int)std::ceil((double)output_col / nthread);
 
     for(int task_begin = 0; task_begin < output_col; task_begin += task_size){
-      auto ret = _M_pool.submit([task_begin, task_size, &f, &output, &cargs...]
-        {return std::forward<Fn>(f) 
-          (task_begin, task_size, output, std::cref(cargs)...);
+      auto ret = _M_pool.submit(
+        [task_begin, task_size, row, offset, &fn, &output, &cargs...]
+        {return std::forward<Fn>(fn) 
+          (task_begin, task_size, row, offset, output, std::cref(cargs)...);
         });
       rets.push_back(std::move(ret));
     }
-    __sync_rets();
   }
 
   template<typename Fn, typename Tp, typename... Ts>
-  void parallel_channel(Fn&& f, std::shared_ptr<Tensor<Tp>> output, Ts&&... cargs) {
+  void parallel_channel(Fn&& fn, std::shared_ptr<Tensor<Tp>> output, 
+  int offset, Ts&&... cargs) {
     int output_ch = output->channel();
+    int square = output->row() * output->col();
     int task_size = (int)std::ceil((double)output_ch / nthread);
     // printf("task_size: %d\n", task_size);
     // printf("output_ch: %d\n", output_ch);
     // printf("In channel output use_count: %ld\n", output.use_count());
 
     for(int task_begin = 0; task_begin < output_ch; task_begin += task_size){
-      auto ret = _M_pool.submit([task_begin, task_size, &f, &output, &cargs...]
-        {return std::forward<Fn>(f) 
-          (task_begin, task_size, output, std::cref(cargs)...);
+      auto ret = _M_pool.submit(
+        [task_begin, task_size, square, offset, &fn, &output, &cargs...]
+        {return std::forward<Fn>(fn)
+        (task_begin, task_size, square, offset, output, std::cref(cargs)...);
         });
       rets.push_back(std::move(ret));
     }
-    __sync_rets();
   }
 
   template<typename Fn, typename Tp, typename... Ts>
-  void parallel_number(Fn&& f, std::shared_ptr<Tensor<Tp>> output, Ts&&... cargs) {
+  void parallel_number(Fn&& fn, std::shared_ptr<Tensor<Tp>> output, Ts&&... cargs) {
+    puts("In parallel number");
     int output_num = output->number();
+    int volume = output->row() * output->col() * output->channel();
     int task_size = (int)std::ceil((double)output_num / nthread);
 
     for(int task_begin = 0; task_begin < output_num; task_begin += task_size){
-      auto ret = _M_pool.submit([task_begin, task_size, &f, &output, &cargs...]
-        {return std::forward<Fn>(f) 
-          (task_begin, task_size, output, std::cref(cargs)...);
+      auto ret = _M_pool.submit(
+        [task_begin, task_size, volume, &fn, &output, &cargs...]
+        {return std::forward<Fn>(fn) 
+          (task_begin, task_size, volume, 0, output, std::cref(cargs)...);
+         //task_begin, task_num,  shape, offset
         });
       rets.push_back(std::move(ret));
     }
+  }
+
+  /*
+  this function should be called at every layer's forward()
+  to avoid data race.
+  */
+  void sync(){ 
     __sync_rets();
   }
 

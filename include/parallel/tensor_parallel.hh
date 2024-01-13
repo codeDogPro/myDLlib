@@ -11,24 +11,11 @@ namespace dl{
 
 //##################### Thread functions ########################
   template<typename T=f32>
-  bool tensor_copy_channel(int ch_begin, int ch_num, 
+  bool tensor_copy
+  (int task_begin, int task_num, int shape, int offset,  
   std::shared_ptr<Tensor<T>> lhs, const Tensor<T> &rhs){
-    int row = lhs->row(), col = lhs->col(), square = row * col;
-    int idx_begin = ch_begin * square, idx_end = idx_begin + square * ch_num;
-    for(int idx = idx_begin; idx < idx_end; idx++){
-      // TODO: use simd
-      (*lhs)[idx] = rhs[idx];
-    }
-    return true;
-  }
-
-  template<typename T=f32>
-  bool tensor_copy_number(int n_begin, int n_num, 
-  std::shared_ptr<Tensor<T>> lhs, const Tensor<T> &rhs){
-    int row = lhs->row(), col = lhs->col(), channel = lhs->channel();
-    int volume = row * col * channel;
-    int idx_begin = n_begin * volume, idx_end = idx_begin + volume * n_num;
-    for(int idx = idx_begin; idx < idx_end; idx++){
+    int start = offset + task_begin * shape, end = start + task_num * shape;
+    for(int idx = start; idx < end; idx++){
       // TODO: use simd
       (*lhs)[idx] = rhs[idx];
     }
@@ -36,128 +23,176 @@ namespace dl{
   }
 
   template<typename T>
-  bool vec_channel_s
-  (int ch_begin, int ch_num, std::shared_ptr<Tensor<T>> output,
-   const Tensor<T> &a, const Tensor<T> &b, const Calculator mode) {
-    int arow = a.row(), col = a.col(), asquare = arow * col;
-    int astart = ch_begin * asquare, aend = astart + asquare;
-    int bstart = ch_begin * col, bend = bstart + col; 
-    for(int ch = ch_begin; ch < ch_begin + ch_num; ch++){
+  bool vec_add_single
+  (int task_begin, int task_num, int shape, int offset, 
+  std::shared_ptr<Tensor<T>> output, const Tensor<T> &a, const Tensor<T> &b) {
+    int arow = a.row(), col = a.col();
+    int astart = offset + task_begin * shape, aend = astart + shape;
+    int bstart = offset / arow + task_begin * col, bend = bstart + col; 
+    for(int ch = task_begin; ch < task_begin + task_num; ch++){
       for(int a_i = astart; a_i < aend; ){
         // TODO: use simd
         for(int b_i = bstart; b_i < bend; a_i++, b_i++){
-          switch(mode){
-            case Calculator::PLUS:
-              (*output)[a_i] = a[a_i] + b[b_i]; break;
-            case Calculator::MINUS:
-              (*output)[a_i] = a[a_i] - b[b_i]; break;
-            case Calculator::MULTIPLY:
-              (*output)[a_i] = a[a_i] * b[b_i]; break;
-            case Calculator::DIVIDE:
-              assert(b[b_i] != 0);
-              (*output)[a_i] = a[a_i] / b[b_i]; break;
-            case Calculator::MOD:
-              (*output)[a_i] = a[a_i] % b[b_i]; break;
-            default: assert(0);
-          }
+          (*output)[a_i] = a[a_i] + b[b_i];
         }
       }
-      astart += asquare, bstart += col;
-      aend += asquare, bend += bstart + col;
+      astart += shape, bstart += col;
+      aend += shape, bend += bstart + col;
     }
     return true;
   }
 
   template<typename T>
-  bool vec_channel_f
-  (int ch_begin, int ch_num, std::shared_ptr<Tensor<T>> output,
-   const Tensor<T> &a, const Tensor<T> &b, int noffset, const Calculator mode) {
-    int square = a.row() * a.col();
-    int start = noffset + ch_begin * square;
-    int end   = noffset + start + ch_num * square;
+  bool vec_sub_single
+  (int task_begin, int task_num, int shape, int offset, 
+  std::shared_ptr<Tensor<T>> output, const Tensor<T> &a, const Tensor<T> &b) {
+    int arow = a.row(), col = a.col();
+    int astart = offset + task_begin * shape, aend = astart + shape;
+    int bstart = offset / arow + task_begin * col, bend = bstart + col; 
+    for(int ch = task_begin; ch < task_begin + task_num; ch++){
+      for(int a_i = astart; a_i < aend; ){
+        // TODO: use simd
+        for(int b_i = bstart; b_i < bend; a_i++, b_i++){
+          (*output)[a_i] = a[a_i] - b[b_i];
+        }
+      }
+      astart += shape, bstart += col;
+      aend += shape, bend += bstart + col;
+    }
+    return true;
+  }
+  template<typename T>
+  bool vec_mul_single
+  (int task_begin, int task_num, int shape, int offset, 
+  std::shared_ptr<Tensor<T>> output, const Tensor<T> &a, const Tensor<T> &b) {
+    int arow = a.row(), col = a.col();
+    int astart = offset + task_begin * shape, aend = astart + shape;
+    int bstart = offset / arow + task_begin * col, bend = bstart + col; 
+    for(int ch = task_begin; ch < task_begin + task_num; ch++){
+      for(int a_i = astart; a_i < aend; ){
+        // TODO: use simd
+        for(int b_i = bstart; b_i < bend; a_i++, b_i++){
+          (*output)[a_i] = a[a_i] * b[b_i];
+        }
+      }
+      astart += shape, bstart += col;
+      aend += shape, bend += bstart + col;
+    }
+    return true;
+  }
+  template<typename T>
+  bool vec_div_single
+  (int task_begin, int task_num, int shape, int offset, 
+  std::shared_ptr<Tensor<T>> output, const Tensor<T> &a, const Tensor<T> &b) {
+    int arow = a.row(), col = a.col();
+    int astart = offset + task_begin * shape, aend = astart + shape;
+    int bstart = offset / arow + task_begin * col, bend = bstart + col; 
+    for(int ch = task_begin; ch < task_begin + task_num; ch++){
+      for(int a_i = astart; a_i < aend; ){
+        // TODO: use simd
+        for(int b_i = bstart; b_i < bend; a_i++, b_i++){
+          (*output)[a_i] = a[a_i] / b[b_i];
+        }
+      }
+      astart += shape, bstart += col;
+      aend += shape, bend += bstart + col;
+    }
+    return true;
+  }
+  template<typename T>
+  bool vec_mod_single
+  (int task_begin, int task_num, int shape, int offset, 
+  std::shared_ptr<Tensor<T>> output, const Tensor<T> &a, const Tensor<T> &b) {
+    int arow = a.row(), col = a.col();
+    int astart = offset + task_begin * shape, aend = astart + shape;
+    int bstart = offset / arow + task_begin * col, bend = bstart + col; 
+    for(int ch = task_begin; ch < task_begin + task_num; ch++){
+      for(int a_i = astart; a_i < aend; ){
+        // TODO: use simd
+        for(int b_i = bstart; b_i < bend; a_i++, b_i++){
+          (*output)[a_i] = a[a_i] % b[b_i];
+        }
+      }
+      astart += shape, bstart += col;
+      aend += shape, bend += bstart + col;
+    }
+    return true;
+  }
+
+  template<typename T>
+  bool vec_add_full
+  (int task_begin, int task_num, int shape, int offset,
+   std::shared_ptr<Tensor<T>> output, const Tensor<T> &a, const Tensor<T> &b) {
+    int start = offset + task_begin * shape;
+    int end   = start + task_num * shape;
     for(int i = start; i < end; i++){
       // TODO: use simd
-      switch(mode){
-        case Calculator::PLUS:
-          (*output)[i] = a[i] + b[i]; break;
-        case Calculator::MINUS:
-          (*output)[i] = a[i] - b[i]; break;
-        case Calculator::MULTIPLY:
-          (*output)[i] = a[i] * b[i]; break;
-        case Calculator::DIVIDE:
-          assert(b[i] != 0);
-          (*output)[i] = a[i] / b[i]; break;
-        case Calculator::MOD:
-          (*output)[i] = a[i] % b[i]; break;
-        default: assert(0);
-      }
+      (*output)[i] = a[i] + b[i];
     }
     return true;
   }
 
   template<typename T>
-  int vec_row_s // the row number of a must >= b
-  (int row_begin, int row_num, int channel, Tensor<T>& res,
-   const Tensor<T>& a, const Tensor<T>& b, int noffset, const Calculator mode) {
-    int arow = a.row(), brow = b.row(), col = a.col();
-    int asquare = arow * col, bsquare = brow * col;
-    int astart = noffset + channel * asquare + row_begin * col;
-    int bstart = noffset + channel * bsquare;
-    int aend = astart + row_num * col;
-    for(int i = astart; i < aend; i++){
-      switch(mode){
-        case Calculator::PLUS:
-        res[i] = a[i] + b[bstart + i % col]; break;
-        case Calculator::MINUS:
-        res[i] = a[i] - b[bstart + i % col]; break;
-        case Calculator::MULTIPLY:
-        res[i] = a[i] * b[bstart + i % col]; break;
-        case Calculator::DIVIDE:
-        assert(b[bstart + i % col] != 0);
-        res[i] = a[i] / b[bstart + i % col]; break;
-        case Calculator::MOD:
-        res[i] = a[i] % b[bstart + i % col]; break;
-        default: assert(0);
-      }
-    }
-    return row_begin;
-  }
-  
-  template<typename T>
-  int vec_row_f // a and b's shape must be the same
-  (int row_begin, int row_num, int channel, Tensor<T>& res,
-   const Tensor<T>& a, const Tensor<T>& b, int noffset, const Calculator mode) {
-    int row = a.row(), col = a.col(), square = row * col;
-    int start = noffset + channel * square + row_begin * col;
-    int end   = start + row_num * col;
+  bool vec_sub_full
+  (int task_begin, int task_num, int shape, int offset,
+   std::shared_ptr<Tensor<T>> output, const Tensor<T> &a, const Tensor<T> &b) {
+    int start = offset + task_begin * shape;
+    int end   = start + task_num * shape;
     for(int i = start; i < end; i++){
-      switch(mode){
-        case Calculator::PLUS:
-        res[i] = a[i] + b[i]; break;
-        case Calculator::MINUS:
-        res[i] = a[i] - b[i]; break;
-        case Calculator::MULTIPLY:
-        res[i] = a[i] * b[i]; break;
-        case Calculator::DIVIDE:
-        assert(b[i] != 0);
-        res[i] = a[i] / b[i]; break;
-        case Calculator::MOD:
-        res[i] = a[i] % b[i]; break;
-        default: assert(0);
-      }
+      // TODO: use simd
+      (*output)[i] = a[i] - b[i];
     }
-    return row_begin;
+    return true;
+  }
+
+  template<typename T>
+  bool vec_mul_full
+  (int task_begin, int task_num, int shape, int offset,
+   std::shared_ptr<Tensor<T>> output, const Tensor<T> &a, const Tensor<T> &b) {
+    int start = offset + task_begin * shape;
+    int end   = start + task_num * shape;
+    for(int i = start; i < end; i++){
+      // TODO: use simd
+      (*output)[i] = a[i] * b[i];
+    }
+    return true;
+  }
+
+  template<typename T>
+  bool vec_div_full
+  (int task_begin, int task_num, int shape, int offset,
+   std::shared_ptr<Tensor<T>> output, const Tensor<T> &a, const Tensor<T> &b) {
+    int start = offset + task_begin * shape;
+    int end   = start + task_num * shape;
+    for(int i = start; i < end; i++){
+      // TODO: use simd
+      (*output)[i] = a[i] / b[i];
+    }
+    return true;
+  }
+
+  template<typename T>
+  bool vec_mod_full
+  (int task_begin, int task_num, int shape, int offset,
+   std::shared_ptr<Tensor<T>> output, const Tensor<T> &a, const Tensor<T> &b) {
+    int start = offset + task_begin * shape;
+    int end   = start + task_num * shape;
+    for(int i = start; i < end; i++){
+      // TODO: use simd
+      (*output)[i] = a[i] % b[i];
+    }
+    return true;
   }
 
   using std::max, std::min;
 
   template<typename T>
   int operator_axis0_channel
-  (int ch_begin, int ch_num, int pad, Tensor<T>& res, 
-   const Tensor<T>& t, int noffset, int roffset, const Operator mode) {
+  (int task_begin, int task_num, int pad, Tensor<T>& res, 
+   const Tensor<T>& t, int offset, int roffset, const Operator mode) {
     int row = t.row(), col = t.col(), square = row * col, cnt = 0; 
-    int start = noffset + square * ch_num * ch_begin, end = start + square * ch_num;
-    int res_i = roffset + ch_num * ch_begin * row;
+    int start = offset + square * task_num * task_begin, end = start + square * task_num;
+    int res_i = roffset + task_num * task_begin * row;
 
     if(mode == Operator::SUM || mode == Operator::MEAN)
       for(int i = start, sum = 0; i < end; i++){
@@ -186,15 +221,15 @@ namespace dl{
           cnt = 0; min_ = 1e8;
         }
       }
-    return ch_begin;
+    return task_begin;
   }
 
   template<typename T>
   int operator_axis0_row
   (int row_begin, int row_num, int channel, Tensor<T>& res, 
-   const Tensor<T>& t, int noffset, int roffset, const Operator mode) {
+   const Tensor<T>& t, int offset, int roffset, const Operator mode) {
     int row = t.row(), col = t.col(), square = row * col, cnt = 0; 
-    int start = noffset + square * channel + row_num * row_begin * col;
+    int start = offset + square * channel + row_num * row_begin * col;
     int end = start + col * row_num;
     int res_i = roffset + channel * row + row_num * row_begin;
 
@@ -231,11 +266,11 @@ namespace dl{
   template<typename T>
   int operator_axis1_channel
   // (const Tensor<T> &t, Tensor<T> &res, int start, int end, int res_i, auto mode){
-  (int ch_begin, int ch_num, int pad, Tensor<T>& res, 
-   const Tensor<T>& t, int noffset, int roffset, const Operator mode) {
+  (int task_begin, int task_num, int pad, Tensor<T>& res, 
+   const Tensor<T>& t, int offset, int roffset, const Operator mode) {
     int row = t.row(), col = t.col(), square = row * col, cnt = 0; 
-    int start = noffset + square * ch_num * ch_begin, end = start + square * ch_num;
-    int res_i = roffset + ch_num * ch_begin * col;
+    int start = offset + square * task_num * task_begin, end = start + square * task_num;
+    int res_i = roffset + task_num * task_begin * col;
 
     if(mode == Operator::SUM || mode == Operator::MEAN){
       std::vector<T> sums(col, 0);
@@ -280,9 +315,9 @@ namespace dl{
   template<typename T>
   int operator_axis1_col
   (int col_begin, int col_num, int channel, Tensor<T>& res, 
-   const Tensor<T>& t, int noffset, int roffset, const Operator mode){
+   const Tensor<T>& t, int offset, int roffset, const Operator mode){
     int row = t.row(), col = t.col(), square = row * col_num;
-    int start = noffset + square * channel + col_num * col_begin;
+    int start = offset + square * channel + col_num * col_begin;
     int res_i = roffset + channel * col + col_num * col_begin;
 
     if(mode == Operator::SUM || mode == Operator::MEAN){
@@ -317,10 +352,10 @@ namespace dl{
   template<typename T>
   int operator_axis2_row
   (int row_begin, int row_num, int nouse, Tensor<T>& res, 
-   const Tensor<T>& t, int noffset, int roffset, const Operator mode){
+   const Tensor<T>& t, int offset, int roffset, const Operator mode){
     int row = t.row(), col = t.col(), channel = t.channel();
     int zone = row_num * col, square = row * col, cnt = 0;
-    int start = noffset + row_num * row_begin * col;
+    int start = offset + row_num * row_begin * col;
     int end = start + (channel - 1) * square + row_num * col;
     int res_i = roffset + start;
 
@@ -368,10 +403,10 @@ namespace dl{
   template<typename T>
   int operator_axis2_col
   (int col_begin, int col_num, int pad, Tensor<T>& res, 
-   const Tensor<T>& t, int noffset, int roffset, const Operator mode){
+   const Tensor<T>& t, int offset, int roffset, const Operator mode){
     int row = t.row(), col = t.col(), channel = t.channel();
     int zone = col_num * row, square = row * col;
-    int start = noffset + col_num * col_begin;
+    int start = offset + col_num * col_begin;
     int end = start + (channel - 1) * square + (row - 1) * col + col_num;
     int res_i = roffset + start;
 

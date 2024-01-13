@@ -46,7 +46,11 @@ public:
     if(M_paddle){
       auto pad_input = std::make_shared<Tensor<T>>
       (row + 2 * M_paddle, col + 2 * M_paddle, channel, number, 0);
-      parallelizer.parallel_channel(paddle_parallel<T>, pad_input, input, M_paddle);
+      for(int i = 0; i < number; i++){
+        int offset = i * number;
+        parallelizer.parallel_channel(paddle_parallel<T>,
+         pad_input, offset, input, M_paddle);
+      }
       // std::cout << "pad_input:\n" << *pad_input << std::endl;
       return conv_boost(pad_input, res_row(row), res_col(col));
     }
@@ -68,7 +72,7 @@ protected:
     // std::cout << "output_ch:" << output_ch << std::endl;
     auto output = std::make_shared<Tensor<T>>(r_row, r_col, output_ch, 0);
     parallelizer.parallel_channel(conv2d_parallel<T>, 
-                                  output, input, 
+                                  output, 0, input, 
                                   M_weight, M_bias, M_stride);
     return output;
   }
