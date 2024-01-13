@@ -87,23 +87,19 @@ public:
   std::shared_ptr<Tensor<T>> operator-(const Tensor<T>& rhs) { return tensor_calculator(*this, rhs, Calculator::SUB);}
   std::shared_ptr<Tensor<T>> operator*(const Tensor<T>& rhs) { return tensor_calculator(*this, rhs, Calculator::MUL);}
   std::shared_ptr<Tensor<T>> operator/(const Tensor<T>& rhs) { return tensor_calculator(*this, rhs, Calculator::DIV);}
-  std::shared_ptr<Tensor<T>> operator%(const Tensor<T>& rhs) { return tensor_calculator(*this, rhs, Calculator::MOD);}
   std::shared_ptr<Tensor<T>> operator+(T x) { Tensor<T> rhs(m_shape, x); return *this + rhs; }
   std::shared_ptr<Tensor<T>> operator-(T x) { Tensor<T> rhs(m_shape, x); return *this - rhs; }
   std::shared_ptr<Tensor<T>> operator*(T x) { Tensor<T> rhs(m_shape, x); return *this * rhs; }
   std::shared_ptr<Tensor<T>> operator/(T x) { Tensor<T> rhs(m_shape, x); return *this / rhs; }
-  std::shared_ptr<Tensor<T>> operator%(T x) { Tensor<T> rhs(m_shape, x); return *this % rhs; }
 
   void operator+=(const Tensor<T>& rhs) { *this = *(*this + rhs); }
   void operator-=(const Tensor<T>& rhs) { *this = *(*this - rhs); }
   void operator*=(const Tensor<T>& rhs) { *this = *(*this * rhs); }
   void operator/=(const Tensor<T>& rhs) { *this = *(*this / rhs); }
-  void operator%=(const Tensor<T>& rhs) { *this = *(*this % rhs); }
   void operator+=(T x) { Tensor<T> rhs(m_shape, x); *this += rhs; }
   void operator-=(T x) { Tensor<T> rhs(m_shape, x); *this -= rhs; }
   void operator*=(T x) { Tensor<T> rhs(m_shape, x); *this *= rhs; }
   void operator/=(T x) { Tensor<T> rhs(m_shape, x); *this /= rhs; }
-  void operator%=(T x) { Tensor<T> rhs(m_shape, x); *this %= rhs; }
 
         T& operator[](size_t idx)       { return m_data[idx];}
   const T& operator[](size_t idx) const { return m_data[idx];}
@@ -246,9 +242,6 @@ private:
               case Calculator::DIV:
                 parallelizer.parallel_channel(
                   vec_div_single<T>, output, offset, lhs, rhs); break;
-              case Calculator::MOD:
-                parallelizer.parallel_channel(
-                  vec_mod_single<T>, output, offset, lhs, rhs); break;
               default: assert(0); 
             }
           }
@@ -267,9 +260,6 @@ private:
             case Calculator::DIV:
               parallelizer.parallel_number(
                 vec_div_single<T>, output, lhs, rhs); break;
-            case Calculator::MOD:
-              parallelizer.parallel_number(
-                vec_mod_single<T>, output, lhs, rhs); break;
             default: assert(0); 
           }
         }
@@ -295,9 +285,6 @@ private:
             case Calculator::DIV:
               parallelizer.parallel_channel(
                 vec_div_full<T>, output, offset, lhs, rhs); break;
-            case Calculator::MOD:
-              parallelizer.parallel_channel(
-                vec_mod_full<T>, output, offset, lhs, rhs); break;
             default: assert(0); 
           }
         }
@@ -316,9 +303,6 @@ private:
           case Calculator::DIV:
             parallelizer.parallel_number(
               vec_div_full<T>, output, lhs, rhs); break;
-          case Calculator::MOD:
-            parallelizer.parallel_number(
-              vec_mod_full<T>, output, lhs, rhs); break;
           default: assert(0); 
         }
       }
@@ -344,9 +328,6 @@ private:
               case Calculator::DIV:
                 parallelizer.parallel_channel(
                   vec_div_single<T>, output, offset, rhs, *this); break;
-              case Calculator::MOD:
-                parallelizer.parallel_channel(
-                  vec_mod_single<T>, output, offset, rhs, *this); break;
               default: assert(0); 
             }
           }
@@ -365,9 +346,6 @@ private:
             case Calculator::DIV:
               parallelizer.parallel_number(
                 vec_div_single<T>, output, rhs, *this); break;
-            case Calculator::MOD:
-              parallelizer.parallel_number(
-                vec_mod_single<T>, output, rhs, *this); break;
             default: assert(0); 
           }
         }

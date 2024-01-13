@@ -31,13 +31,12 @@ void plusequal_test(){
   c -= d; std::cout << c;
   c *= d; std::cout << c;
   c /= d; std::cout << c;
-  c %= d; std::cout << c;
 }
 
 // +-*/ test
 void plus_test(){
-  Tensor<int> a(1, 4, 4, 3, 3);  
-  Tensor<int> b(4, 4, 4, 3, 1);
+  Tensor<float> a(4, 4, 4, 3, 3.1);  
+  Tensor<float> b(4, 4, 4, 3, 1.2);
   // Tensor<int> a(4, 4, 8, 3);
   // Tensor<int> b(4, 4, 8, 1);
   std::cout << a << b;
@@ -46,6 +45,7 @@ void plus_test(){
   auto e = a * b; 
   auto f = a / b; 
   std::cout << *c << *d << *e << *f;
+  // std::cout << *c;
 }
  
 // copy test

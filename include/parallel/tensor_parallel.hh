@@ -2,10 +2,13 @@
 
 #include <basic/tensor_macro.hh>
 #include <data/tensor.hh>
+
 #include <vector>
 #include <iostream>
 #include <cassert>
 
+// for simd
+#include <immintrin.h>
 
 namespace dl{
 
@@ -61,6 +64,7 @@ namespace dl{
     }
     return true;
   }
+
   template<typename T>
   bool vec_mul_single
   (int task_begin, int task_num, int shape, int offset, 
@@ -80,6 +84,7 @@ namespace dl{
     }
     return true;
   }
+
   template<typename T>
   bool vec_div_single
   (int task_begin, int task_num, int shape, int offset, 
@@ -99,34 +104,27 @@ namespace dl{
     }
     return true;
   }
-  template<typename T>
-  bool vec_mod_single
-  (int task_begin, int task_num, int shape, int offset, 
-  std::shared_ptr<Tensor<T>> output, const Tensor<T> &a, const Tensor<T> &b) {
-    int arow = a.row(), col = a.col();
-    int astart = offset + task_begin * shape, aend = astart + shape;
-    int bstart = offset / arow + task_begin * col, bend = bstart + col; 
-    for(int ch = task_begin; ch < task_begin + task_num; ch++){
-      for(int a_i = astart; a_i < aend; ){
-        // TODO: use simd
-        for(int b_i = bstart; b_i < bend; a_i++, b_i++){
-          (*output)[a_i] = a[a_i] % b[b_i];
-        }
-      }
-      astart += shape, bstart += col;
-      aend += shape, bend += bstart + col;
-    }
-    return true;
-  }
 
   template<typename T>
   bool vec_add_full
   (int task_begin, int task_num, int shape, int offset,
    std::shared_ptr<Tensor<T>> output, const Tensor<T> &a, const Tensor<T> &b) {
-    int start = offset + task_begin * shape;
-    int end   = start + task_num * shape;
-    for(int i = start; i < end; i++){
-      // TODO: use simd
+    int start = offset + task_begin * shape, end = start + task_num * shape;
+    // align to use simd
+    int align_end = end - end % 16;
+    for(int i = start; i < align_end; i += 16){
+      __m256 res[2];
+      for(int offset = 0; offset < 2; offset ++){
+        __m256 _a = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&a[i + 8 * offset]));
+        __m256 _b = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&b[i + 8 * offset]));
+        res[offset] = _mm256_add_ps(_a, _b);
+      }
+      for(int offset = 0; offset < 2; offset ++){
+        _mm256_storeu_ps(reinterpret_cast<f32 *>(&((*output)[i + 8 * offset])), res[offset]);
+      }
+    }
+    // the rest of elem can't use simd
+    for(int i = align_end; i < end; i++){
       (*output)[i] = a[i] + b[i];
     }
     return true;
@@ -136,10 +134,22 @@ namespace dl{
   bool vec_sub_full
   (int task_begin, int task_num, int shape, int offset,
    std::shared_ptr<Tensor<T>> output, const Tensor<T> &a, const Tensor<T> &b) {
-    int start = offset + task_begin * shape;
-    int end   = start + task_num * shape;
-    for(int i = start; i < end; i++){
-      // TODO: use simd
+    int start = offset + task_begin * shape, end = start + task_num * shape;
+    // align to use simd
+    int align_end = end - end % 16;
+    for(int i = start; i < align_end; i += 16){
+      __m256 res[2];
+      for(int offset = 0; offset < 2; offset ++){
+        __m256 _a = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&a[i + 8 * offset]));
+        __m256 _b = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&b[i + 8 * offset]));
+        res[offset] = _mm256_sub_ps(_a, _b);
+      }
+      for(int offset = 0; offset < 2; offset ++){
+        _mm256_storeu_ps(reinterpret_cast<f32 *>(&((*output)[i + 8 * offset])), res[offset]);
+      }
+    }
+    // the rest of elem can't use simd
+    for(int i = align_end; i < end; i++){
       (*output)[i] = a[i] - b[i];
     }
     return true;
@@ -149,10 +159,22 @@ namespace dl{
   bool vec_mul_full
   (int task_begin, int task_num, int shape, int offset,
    std::shared_ptr<Tensor<T>> output, const Tensor<T> &a, const Tensor<T> &b) {
-    int start = offset + task_begin * shape;
-    int end   = start + task_num * shape;
-    for(int i = start; i < end; i++){
-      // TODO: use simd
+    int start = offset + task_begin * shape, end = start + task_num * shape;
+    // align to use simd
+    int align_end = end - end % 16;
+    for(int i = start; i < align_end; i += 16){
+      __m256 res[2];
+      for(int offset = 0; offset < 2; offset ++){
+        __m256 _a = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&a[i + 8 * offset]));
+        __m256 _b = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&b[i + 8 * offset]));
+        res[offset] = _mm256_mul_ps(_a, _b);
+      }
+      for(int offset = 0; offset < 2; offset ++){
+        _mm256_storeu_ps(reinterpret_cast<f32 *>(&((*output)[i + 8 * offset])), res[offset]);
+      }
+    }
+    // the rest of elem can't use simd
+    for(int i = align_end; i < end; i++){
       (*output)[i] = a[i] * b[i];
     }
     return true;
@@ -162,27 +184,27 @@ namespace dl{
   bool vec_div_full
   (int task_begin, int task_num, int shape, int offset,
    std::shared_ptr<Tensor<T>> output, const Tensor<T> &a, const Tensor<T> &b) {
-    int start = offset + task_begin * shape;
-    int end   = start + task_num * shape;
-    for(int i = start; i < end; i++){
-      // TODO: use simd
+    int start = offset + task_begin * shape, end = start + task_num * shape;
+    // align to use simd
+    int align_end = end - end % 16;
+    for(int i = start; i < align_end; i += 16){
+      __m256 res[2];
+      for(int offset = 0; offset < 2; offset ++){
+        __m256 _a = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&a[i + 8 * offset]));
+        __m256 _b = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&b[i + 8 * offset]));
+        res[offset] = _mm256_div_ps(_a, _b);
+      }
+      for(int offset = 0; offset < 2; offset ++){
+        _mm256_storeu_ps(reinterpret_cast<f32 *>(&((*output)[i + 8 * offset])), res[offset]);
+      }
+    }
+    // the rest of elem can't use simd
+    for(int i = align_end; i < end; i++){
       (*output)[i] = a[i] / b[i];
     }
     return true;
   }
 
-  template<typename T>
-  bool vec_mod_full
-  (int task_begin, int task_num, int shape, int offset,
-   std::shared_ptr<Tensor<T>> output, const Tensor<T> &a, const Tensor<T> &b) {
-    int start = offset + task_begin * shape;
-    int end   = start + task_num * shape;
-    for(int i = start; i < end; i++){
-      // TODO: use simd
-      (*output)[i] = a[i] % b[i];
-    }
-    return true;
-  }
 
   using std::max, std::min;
 
