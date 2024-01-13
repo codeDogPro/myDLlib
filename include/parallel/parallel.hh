@@ -64,9 +64,6 @@ public:
     int output_ch = output->channel();
     int square = output->row() * output->col();
     int task_size = (int)std::ceil((double)output_ch / nthread);
-    // printf("task_size: %d\n", task_size);
-    // printf("output_ch: %d\n", output_ch);
-    // printf("In channel output use_count: %ld\n", output.use_count());
 
     for(int task_begin = 0; task_begin < output_ch; task_begin += task_size){
       auto ret = _M_pool.submit(
@@ -80,7 +77,6 @@ public:
 
   template<typename Fn, typename Tp, typename... Ts>
   void parallel_number(Fn&& fn, std::shared_ptr<Tensor<Tp>> output, Ts&&... cargs) {
-    puts("In parallel number");
     int output_num = output->number();
     int volume = output->row() * output->col() * output->channel();
     int task_size = (int)std::ceil((double)output_num / nthread);

@@ -22,8 +22,8 @@ public:
     M_stride    = stride;
     M_paddle    = paddle;
     //debug
-    std::cout << "weight:\n" << M_weight << std::endl;
-    std::cout << "bias:\n" << M_bias << std::endl;
+    // std::cout << "weight:\n" << M_weight << std::endl;
+    // std::cout << "bias:\n" << M_bias << std::endl;
   }
 
   explicit 
@@ -33,8 +33,8 @@ public:
     M_stride    = stride;
     M_paddle    = paddle;
     //debug
-    std::cout << "weight:\n" << M_weight << std::endl;
-    std::cout << "bias:\n" << M_bias << std::endl;
+    // std::cout << "weight:\n" << M_weight << std::endl;
+    // std::cout << "bias:\n" << M_bias << std::endl;
   }
 
   virtual ~Conv2D(){};
@@ -51,6 +51,7 @@ public:
         parallelizer.parallel_channel(paddle_parallel<T>,
          pad_input, offset, input, M_paddle);
       }
+      parallelizer.sync();
       // std::cout << "pad_input:\n" << *pad_input << std::endl;
       return conv_boost(pad_input, res_row(row), res_col(col));
     }
@@ -70,10 +71,10 @@ protected:
     int irow = input->row(), icol = input->col(), channel = input->channel();
     int output_ch = M_weight.number();
     // std::cout << "output_ch:" << output_ch << std::endl;
-    auto output = std::make_shared<Tensor<T>>(r_row, r_col, output_ch, 0);
-    parallelizer.parallel_channel(conv2d_parallel<T>, 
-                                  output, 0, input, 
+    auto output = std::make_shared<Tensor<T>>(r_row, r_col, output_ch, 1, 0);
+    parallelizer.parallel_channel(conv2d_parallel<T>, output, 0, input, 
                                   M_weight, M_bias, M_stride);
+    parallelizer.sync();
     return output;
   }
 

@@ -3,6 +3,9 @@
 #include <data/tensor.hh>
 #include <basic/tensor_macro.hh>
 
+// for simd
+#include <immintrin.h>
+
 namespace dl{
 
   template<typename T>
@@ -14,14 +17,29 @@ namespace dl{
     int orow = output->row(), ocol = output->col();
     int input_i = offset + task_begin * irow * icol;
     int output_i = offset + npaddle * (ocol + 1) + task_begin * orow * ocol;
-    for(int ch_idx = task_begin; ch_idx < task_begin + task_num; ch_idx++){
-      for(int row_cnt = 0; row_cnt < irow; row_cnt++){
-        for(int col_cnt = 0; col_cnt < icol; col_cnt++){
-          (*output)[output_i++] = (*input)[input_i++];
+    if(icol >= 16){
+      for(int ch_idx = task_begin; ch_idx < task_begin + task_num; ch_idx++){
+        for(int row_cnt = 0; row_cnt < irow; row_cnt++){
+          for(int col_cnt = 0; col_cnt < icol; col_cnt += 8){
+            _mm256_storeu_ps(reinterpret_cast<f32 *>(&((*output)[output_i])),
+              _mm256_loadu_ps(reinterpret_cast<const f32 *>(&(*input)[input_i])));
+            input_i += 8, output_i += 8;
+          }
+          output_i += 2 * npaddle;
         }
-        output_i += 2 * npaddle;
+        output_i += 2 * npaddle * ocol;
       }
-      output_i += 2 * npaddle * ocol;
+    } 
+    else{
+      for(int ch_idx = task_begin; ch_idx < task_begin + task_num; ch_idx++){
+        for(int row_cnt = 0; row_cnt < irow; row_cnt++){
+          for(int col_cnt = 0; col_cnt < icol; col_cnt++){
+            (*output)[output_i++] = (*input)[input_i++];
+          }
+          output_i += 2 * npaddle;
+        }
+        output_i += 2 * npaddle * ocol;
+      }
     }
     return true;
   }

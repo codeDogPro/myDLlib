@@ -32,15 +32,35 @@ namespace dl{
     int arow = a.row(), col = a.col();
     int astart = offset + task_begin * shape, aend = astart + shape;
     int bstart = offset / arow + task_begin * col, bend = bstart + col; 
-    for(int ch = task_begin; ch < task_begin + task_num; ch++){
-      for(int a_i = astart; a_i < aend; ){
-        // TODO: use simd
-        for(int b_i = bstart; b_i < bend; a_i++, b_i++){
-          (*output)[a_i] = a[a_i] + b[b_i];
+    if(col >= 16){
+      for(int ch = task_begin; ch < task_begin + task_num; ch++){
+        for(int a_i = astart; a_i < aend; ){
+          for(int b_i = bstart; b_i < bend; a_i += 16, b_i += 16){
+            __m256 res[2];
+            for(int offset = 0; offset < 2; offset ++){
+              __m256 _a = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
+              __m256 _b = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
+              res[offset] = _mm256_add_ps(_a, _b);
+            }
+            for(int offset = 0; offset < 2; offset ++){
+              _mm256_storeu_ps(reinterpret_cast<f32 *>(&((*output)[a_i + 8 * offset])), res[offset]);
+            }
+          }
         }
+        astart += shape, bstart += col;
+        aend += shape, bend += bstart + col;
       }
-      astart += shape, bstart += col;
-      aend += shape, bend += bstart + col;
+    }
+    else{ // no need to use simd
+      for(int ch = task_begin; ch < task_begin + task_num; ch++){
+        for(int a_i = astart; a_i < aend; ){
+          for(int b_i = bstart; b_i < bend; a_i++, b_i++){
+            (*output)[a_i] = a[a_i] + b[b_i];
+          }
+        }
+        astart += shape, bstart += col;
+        aend += shape, bend += bstart + col;
+      }
     }
     return true;
   }
@@ -52,15 +72,35 @@ namespace dl{
     int arow = a.row(), col = a.col();
     int astart = offset + task_begin * shape, aend = astart + shape;
     int bstart = offset / arow + task_begin * col, bend = bstart + col; 
-    for(int ch = task_begin; ch < task_begin + task_num; ch++){
-      for(int a_i = astart; a_i < aend; ){
-        // TODO: use simd
-        for(int b_i = bstart; b_i < bend; a_i++, b_i++){
-          (*output)[a_i] = a[a_i] - b[b_i];
+    if(col >= 16){
+      for(int ch = task_begin; ch < task_begin + task_num; ch++){
+        for(int a_i = astart; a_i < aend; ){
+          for(int b_i = bstart; b_i < bend; a_i += 16, b_i += 16){
+            __m256 res[2];
+            for(int offset = 0; offset < 2; offset ++){
+              __m256 _a = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
+              __m256 _b = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
+              res[offset] = _mm256_sub_ps(_a, _b);
+            }
+            for(int offset = 0; offset < 2; offset ++){
+              _mm256_storeu_ps(reinterpret_cast<f32 *>(&((*output)[a_i + 8 * offset])), res[offset]);
+            }
+          }
         }
+        astart += shape, bstart += col;
+        aend += shape, bend += bstart + col;
       }
-      astart += shape, bstart += col;
-      aend += shape, bend += bstart + col;
+    }
+    else{ // no need to use simd
+      for(int ch = task_begin; ch < task_begin + task_num; ch++){
+        for(int a_i = astart; a_i < aend; ){
+          for(int b_i = bstart; b_i < bend; a_i++, b_i++){
+            (*output)[a_i] = a[a_i] - b[b_i];
+          }
+        }
+        astart += shape, bstart += col;
+        aend += shape, bend += bstart + col;
+      }
     }
     return true;
   }
@@ -72,15 +112,35 @@ namespace dl{
     int arow = a.row(), col = a.col();
     int astart = offset + task_begin * shape, aend = astart + shape;
     int bstart = offset / arow + task_begin * col, bend = bstart + col; 
-    for(int ch = task_begin; ch < task_begin + task_num; ch++){
-      for(int a_i = astart; a_i < aend; ){
-        // TODO: use simd
-        for(int b_i = bstart; b_i < bend; a_i++, b_i++){
-          (*output)[a_i] = a[a_i] * b[b_i];
+    if(col >= 16){
+      for(int ch = task_begin; ch < task_begin + task_num; ch++){
+        for(int a_i = astart; a_i < aend; ){
+          for(int b_i = bstart; b_i < bend; a_i += 16, b_i += 16){
+            __m256 res[2];
+            for(int offset = 0; offset < 2; offset ++){
+              __m256 _a = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
+              __m256 _b = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
+              res[offset] = _mm256_mul_ps(_a, _b);
+            }
+            for(int offset = 0; offset < 2; offset ++){
+              _mm256_storeu_ps(reinterpret_cast<f32 *>(&((*output)[a_i + 8 * offset])), res[offset]);
+            }
+          }
         }
+        astart += shape, bstart += col;
+        aend += shape, bend += bstart + col;
       }
-      astart += shape, bstart += col;
-      aend += shape, bend += bstart + col;
+    }
+    else{ // no need to use simd
+      for(int ch = task_begin; ch < task_begin + task_num; ch++){
+        for(int a_i = astart; a_i < aend; ){
+          for(int b_i = bstart; b_i < bend; a_i++, b_i++){
+            (*output)[a_i] = a[a_i] * b[b_i];
+          }
+        }
+        astart += shape, bstart += col;
+        aend += shape, bend += bstart + col;
+      }
     }
     return true;
   }
@@ -92,15 +152,35 @@ namespace dl{
     int arow = a.row(), col = a.col();
     int astart = offset + task_begin * shape, aend = astart + shape;
     int bstart = offset / arow + task_begin * col, bend = bstart + col; 
-    for(int ch = task_begin; ch < task_begin + task_num; ch++){
-      for(int a_i = astart; a_i < aend; ){
-        // TODO: use simd
-        for(int b_i = bstart; b_i < bend; a_i++, b_i++){
-          (*output)[a_i] = a[a_i] / b[b_i];
+    if(col >= 16){
+      for(int ch = task_begin; ch < task_begin + task_num; ch++){
+        for(int a_i = astart; a_i < aend; ){
+          for(int b_i = bstart; b_i < bend; a_i += 16, b_i += 16){
+            __m256 res[2];
+            for(int offset = 0; offset < 2; offset ++){
+              __m256 _a = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
+              __m256 _b = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
+              res[offset] = _mm256_div_ps(_a, _b);
+            }
+            for(int offset = 0; offset < 2; offset ++){
+              _mm256_storeu_ps(reinterpret_cast<f32 *>(&((*output)[a_i + 8 * offset])), res[offset]);
+            }
+          }
         }
+        astart += shape, bstart += col;
+        aend += shape, bend += bstart + col;
       }
-      astart += shape, bstart += col;
-      aend += shape, bend += bstart + col;
+    }
+    else{ // no need to use simd
+      for(int ch = task_begin; ch < task_begin + task_num; ch++){
+        for(int a_i = astart; a_i < aend; ){
+          for(int b_i = bstart; b_i < bend; a_i++, b_i++){
+            (*output)[a_i] = a[a_i] / b[b_i];
+          }
+        }
+        astart += shape, bstart += col;
+        aend += shape, bend += bstart + col;
+      }
     }
     return true;
   }

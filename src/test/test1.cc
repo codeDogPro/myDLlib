@@ -35,8 +35,8 @@ void plusequal_test(){
 
 // +-*/ test
 void plus_test(){
-  Tensor<float> a(4, 4, 4, 3, 3.1);  
-  Tensor<float> b(4, 4, 4, 3, 1.2);
+  Tensor<float> a(16, 32, 4, 3, 3.1);  
+  Tensor<float> b(1, 32, 4, 3, 1.2);
   // Tensor<int> a(4, 4, 8, 3);
   // Tensor<int> b(4, 4, 8, 1);
   std::cout << a << b;
@@ -44,8 +44,9 @@ void plus_test(){
   auto d = a - b; 
   auto e = a * b; 
   auto f = a / b; 
-  std::cout << *c << *d << *e << *f;
-  // std::cout << *c;
+  // std::cout << *c << *d << *e << *f;
+  // std::cout << *f;
+  // f->shape();
 }
  
 // copy test
@@ -70,8 +71,8 @@ void reshape_test(){
 void nn_test(){
   // model.push_back(new Relu<float>(true));
   // model.push_back(new Sigmoid<float>(true));
-  auto input = std::make_shared<Tensor<f32>>(7, 7, 3, 1);
-  std::cout << "input:\n" << *input;
+  auto input = std::make_shared<Tensor<f32>>(32, 32, 3, 1);
+  // std::cout << "input:\n" << *input;
   Conv2D<float> conv2d(3, 3, 2, 1, 1);
   auto output = conv2d.forward(input);
   std::cout << "output:\n" << *output << std::endl;
@@ -82,10 +83,10 @@ void nn_test(){
 }
 
 int main(){
-  plus_test();
+  // plus_test();
   // plusequal_test();
   // smmm_test();
   // reshape_test();
-  // nn_test();
+  nn_test();
   return 0;
 }
