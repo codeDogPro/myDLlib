@@ -71,9 +71,9 @@ void reshape_test(){
 void nn_test(){
   // model.push_back(new Relu<float>(true));
   // model.push_back(new Sigmoid<float>(true));
-  auto input = std::make_shared<Tensor<f32>>(32, 32, 3, 1);
-  // std::cout << "input:\n" << *input;
-  Conv2D<float> conv2d(3, 3, 2, 1, 1);
+  auto input = std::make_shared<Tensor<f32>>(8, 8, 3, 1);
+  std::cout << "input:\n" << *input;
+  Conv2D<float> conv2d(3, 3, 8, 1, 1);
   auto output = conv2d.forward(input);
   std::cout << "output:\n" << *output << std::endl;
   // std::cout << output.use_count() << std::endl;

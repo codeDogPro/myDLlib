@@ -16,14 +16,13 @@ template<typename T=f32>
 class Conv2D : public Function<T> {
 public:
   explicit 
-  Conv2D (int kernel_size, int input_ch, int output_ch=1, int stride=1, int paddle=0) {
-    M_weight = Tensor<T>(kernel_size, kernel_size, input_ch, output_ch, T(-1));
-    M_bias = Tensor<T>(output_ch, 1);
+  Conv2D (int kernel_size, int input_ch, int output_ch=1, int stride=1, int paddle=0)
+  : M_weight(kernel_size, kernel_size, input_ch, output_ch), M_bias(output_ch, 1) {
     M_stride    = stride;
     M_paddle    = paddle;
     //debug
-    // std::cout << "weight:\n" << M_weight << std::endl;
-    // std::cout << "bias:\n" << M_bias << std::endl;
+    std::cout << "weight:\n" << M_weight << std::endl;
+    std::cout << "bias:\n" << M_bias << std::endl;
   }
 
   explicit 
@@ -33,8 +32,8 @@ public:
     M_stride    = stride;
     M_paddle    = paddle;
     //debug
-    // std::cout << "weight:\n" << M_weight << std::endl;
-    // std::cout << "bias:\n" << M_bias << std::endl;
+    std::cout << "weight:\n" << M_weight << std::endl;
+    std::cout << "bias:\n" << M_bias << std::endl;
   }
 
   virtual ~Conv2D(){};
