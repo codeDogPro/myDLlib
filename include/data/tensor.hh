@@ -50,7 +50,6 @@ public:
     m_shape.assign(3, 0); m_data.assign(t.size(), 0);
     for(int i = 0; int x : t.get_cshape()) m_shape[i++] = x;
     parallel_copy(t);
-    // for(int i = 0; int x : t.get_cdata()) m_data[i++] = x;
   }
 
   // move copy ctor

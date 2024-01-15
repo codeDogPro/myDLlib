@@ -68,18 +68,23 @@ void reshape_test(){
 }
 
 
-void nn_test(){
-  // model.push_back(new Relu<float>(true));
-  // model.push_back(new Sigmoid<float>(true));
+void conv_test(){
   auto input = std::make_shared<Tensor<f32>>(8, 8, 3, 1);
   std::cout << "input:\n" << *input;
   Conv2D<float> conv2d(3, 3, 8, 1, 1);
   auto output = conv2d.forward(input);
   std::cout << "output:\n" << *output << std::endl;
-  // std::cout << output.use_count() << std::endl;
-  // auto output = model[0]->forward(input);
-  // auto output_act = model[1]->forward(output);
-  // std::cout << output << output_act;
+}
+
+void maxpool_test(){
+  auto input = std::make_shared<Tensor<f32>>(6, 6, 1, 1);
+  std::cout << "input:\n" << *input;
+  // MaxPool2D maxpool2d(2, 2, 1);
+  AvgPool2D avgpool2d(2, 2, 1);
+  // auto output1 = maxpool2d.forward(input);
+  auto output2 = avgpool2d.forward(input);
+  // std::cout << "output1:\n" << *output1 << std::endl;
+  std::cout << "output2:\n" << *output2 << std::endl;
 }
 
 int main(){
@@ -87,6 +92,7 @@ int main(){
   // plusequal_test();
   // smmm_test();
   // reshape_test();
-  nn_test();
+  // conv_test();
+  maxpool_test();
   return 0;
 }

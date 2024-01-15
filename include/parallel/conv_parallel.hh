@@ -9,7 +9,7 @@
 namespace dl{
 
   template<typename T>
-  bool paddle_parallel
+  bool padding_parallel
   (int task_begin, int task_num, int shape, int offset,
    std::shared_ptr<Tensor<T>> output, const std::shared_ptr<Tensor<T>> input, 
    int npaddle){
