@@ -87,12 +87,25 @@ void maxpool_test(){
   std::cout << "output2:\n" << *output2 << std::endl;
 }
 
+void sequential_test(){
+  auto input = std::make_shared<Tensor<f32>>(8, 8, 3, 1);
+  std::cout << "input:\n" << *input;
+  auto conv2d_1 = new Conv2D(3, 3, 8, 1, 1);
+  auto maxpool = new MaxPool2D(2);
+  auto relu = new Relu();
+  auto conv2d_2 = new Conv2D(3, 8, 16, 1, 1);
+  Sequential seq(conv2d_1, maxpool, relu, conv2d_2, maxpool, relu);
+  auto output = seq.forward(input);
+  // std::cout << "output:\n" << *output << std::endl;
+}
+
 int main(){
   // plus_test();
   // plusequal_test();
   // smmm_test();
   // reshape_test();
   // conv_test();
-  maxpool_test();
+  // maxpool_test();
+  sequential_test();
   return 0;
 }

@@ -2,32 +2,37 @@
 
 #include <basic/function.hh>
 #include <data/tensor.hh>
-#include <parallel/activation_boost.hh>
+#include <parallel/activation_parallel.hh>
 
 namespace dl{
   
-template<typename T>
+template<typename T=f32>
 class Relu : public Function<T> {
 public:
   explicit
-  Relu() = delete;
+  Relu() = default;
 
-  explicit
-  Relu(bool auto_grad=false) : M_auto_grad(auto_grad) {}
-
-  virtual Tensor<T> 
-  forward(const Tensor<T>& input){
-    Tensor<T> res(input.get_cshape(), 0);
-    if(M_auto_grad) M_grad = input;
-
-    activation_forward(relu_channel<T>, relu_col<T>, res, input);
-
-    return res;
+  virtual std::shared_ptr<Tensor<T>> 
+  forward(const std::shared_ptr<Tensor<T>> input){
+    auto output = std::make_shared<Tensor<T>>(input->get_cshape(), 0);
+    int row = input->row(), col = input->col(), channel = input->channel();
+    int number = input->number(), volume = row * col * channel;
+    if(channel > 1){
+      // in conv layer
+      for(int i = 0; i < number; i++){
+        int offset = i * volume;
+        parallelizer.parallel_channel(
+          relu_parallel<T>, output, offset, input);
+      }
+    }
+    else{
+      // in linear layer
+      parallelizer.parallel_col(
+        relu_parallel<T>, output, 0, input);
+    }
+    parallelizer.sync();
+    return output;
   }
-
-private:
-  bool M_auto_grad;
-  Tensor<T> M_grad;
 };
 
 }

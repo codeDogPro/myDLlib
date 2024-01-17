@@ -36,7 +36,6 @@ public:
 
 
 private:
-  bool M_auto_grad;
   Tensor<T> M_weight, M_bias;
 };
 }

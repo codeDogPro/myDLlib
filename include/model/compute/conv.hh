@@ -21,8 +21,8 @@ public:
     M_stride    = stride;
     M_padding    = padding;
     //debug
-    std::cout << "weight:\n" << M_weight << std::endl;
-    std::cout << "bias:\n" << M_bias << std::endl;
+    // std::cout << "weight:\n" << M_weight << std::endl;
+    // std::cout << "bias:\n" << M_bias << std::endl;
   }
 
   explicit 
@@ -32,8 +32,8 @@ public:
     M_stride    = stride;
     M_padding    = padding;
     //debug
-    std::cout << "weight:\n" << M_weight << std::endl;
-    std::cout << "bias:\n" << M_bias << std::endl;
+    // std::cout << "weight:\n" << M_weight << std::endl;
+    // std::cout << "bias:\n" << M_bias << std::endl;
   }
 
   virtual ~Conv2D(){};

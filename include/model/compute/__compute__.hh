@@ -4,3 +4,4 @@
 #include "linear.hh"
 #include "averagePool.hh"
 #include "maxPool.hh"
+#include "sequential.hh"
