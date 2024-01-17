@@ -286,287 +286,263 @@ namespace dl{
   }
 
 
-  using std::max, std::min;
 
   template<typename T>
-  int operator_axis0_channel
-  (int task_begin, int task_num, int pad, Tensor<T>& res, 
-   const Tensor<T>& t, int offset, int roffset, const Operator mode) {
-    int row = t.row(), col = t.col(), square = row * col, cnt = 0; 
-    int start = offset + square * task_num * task_begin, end = start + square * task_num;
-    int res_i = roffset + task_num * task_begin * row;
+  bool operator_sum_axis0
+  (int task_begin, int task_num, int shape, int offset, 
+  std::shared_ptr<Tensor<T>> output, const Tensor<T> &self) {
+    int row = self.row(), col = self.col(); shape *= col; 
+    int start = offset + shape * task_begin, end = start + shape * task_num;
+    int res_i = offset / col + task_begin * row;
+    for(int idx = start; idx < end; res_i++){
+      for(int col_cnt = 0; col_cnt < col; col_cnt ++){
+        (*output)[res_i] += self[idx++];
+      }
+    }
+    return true;
+  }
 
-    if(mode == Operator::SUM || mode == Operator::MEAN)
-      for(int i = start, sum = 0; i < end; i++){
-        sum += t[i];
-        if(++cnt == col){
-          if(mode == Operator::SUM)
-            res[res_i++] = sum;
-          if(mode == Operator::MEAN)
-            res[res_i++] = sum / col;
-          sum = cnt = 0;
-        }
+
+  template<typename T>
+  bool operator_mean_axis0
+  (int task_begin, int task_num, int shape, int offset, 
+  std::shared_ptr<Tensor<T>> output, const Tensor<T> &self) {
+    int row = self.row(), col = self.col(); shape *= col;
+    int start = offset + shape * task_begin, end = start + shape * task_num;
+    int res_i = offset / col + task_begin * row;
+    for(int idx = start; idx < end; res_i++){
+      for(int col_cnt = 0; col_cnt < col; col_cnt ++){
+        (*output)[res_i] += self[idx++];
       }
-    else if(mode == Operator::MAX)
-      for(int i = start, max_ = 1e-8; i < end; i++){
-        max_ = max(max_, t[i]);
-        if(++cnt == col){
-          res[res_i++] = max_;
-          cnt = 0; max_ = 1e-8;
-        }
-      }
-    else if(mode == Operator::MIN)
-      for(int i = start, min_ = 1e8; i < end; i++){
-        min_ = min(min_, t[i]);
-        if(++cnt == col){
-          res[res_i++] = min_;
-          cnt = 0; min_ = 1e8;
-        }
-      }
-    return task_begin;
+      (*output)[res_i] /= col;
+    }
+    return true;
   }
 
   template<typename T>
-  int operator_axis0_row
-  (int row_begin, int row_num, int channel, Tensor<T>& res, 
-   const Tensor<T>& t, int offset, int roffset, const Operator mode) {
-    int row = t.row(), col = t.col(), square = row * col, cnt = 0; 
-    int start = offset + square * channel + row_num * row_begin * col;
-    int end = start + col * row_num;
-    int res_i = roffset + channel * row + row_num * row_begin;
-
-    if(mode == Operator::SUM || mode == Operator::MEAN)
-      for(int i = start, sum = 0; i < end; i++){
-        sum += t[i];
-        if(++cnt == col){
-          if(mode == Operator::SUM)
-            res[res_i++] = sum;
-          if(mode == Operator::MEAN)
-            res[res_i++] = sum / col;
-          sum = cnt = 0;
+  bool operator_max_axis0
+  (int task_begin, int task_num, int shape, int offset, 
+  std::shared_ptr<Tensor<T>> output, const Tensor<T> &self) {
+    int row = self.row(), col = self.col(), channel = self.channel(); 
+    shape *= col;
+    int start = offset + shape * task_begin, end = start + shape * task_num;
+    int res_i = offset / col + task_begin * row;
+    for(int idx = start; idx < end;){
+      std::vector<T> maxs(row, INT_MIN);
+      for(int row_idx = 0; row_idx < row; row_idx ++){
+        for(int col_cnt = 0; col_cnt < col; col_cnt ++){
+          maxs[row_idx] = std::max(maxs[row_idx], self[idx++]);
         }
+        (*output)[res_i ++] = maxs[row_idx];
       }
-    else if(mode == Operator::MAX)
-      for(int i = start, max_ = 1e-8; i < end; i++){
-        max_ = max(max_, t[i]);
-        if(++cnt == col){
-          res[res_i++] = max_;
-          cnt = 0; max_ = 1e-8;
-        }
-      }
-    else if(mode == Operator::MIN)
-      for(int i = start, min_ = 1e8; i < end; i++){
-        min_ = min(min_, t[i]);
-        if(++cnt == col){
-          res[res_i++] = min_;
-          cnt = 0; min_ = 1e8;
-        }
-      }
-    return row_begin;
+    }
+    return true;
   }
 
   template<typename T>
-  int operator_axis1_channel
-  // (const Tensor<T> &t, Tensor<T> &res, int start, int end, int res_i, auto mode){
-  (int task_begin, int task_num, int pad, Tensor<T>& res, 
-   const Tensor<T>& t, int offset, int roffset, const Operator mode) {
-    int row = t.row(), col = t.col(), square = row * col, cnt = 0; 
-    int start = offset + square * task_num * task_begin, end = start + square * task_num;
-    int res_i = roffset + task_num * task_begin * col;
+  bool operator_min_axis0
+  (int task_begin, int task_num, int shape, int offset, 
+  std::shared_ptr<Tensor<T>> output, const Tensor<T> &self) {
+    int row = self.row(), col = self.col(), channel = self.channel(); 
+    shape *= col;
+    int start = offset + shape * task_begin, end = start + shape * task_num;
+    int res_i = offset / col + task_begin * row;
+    for(int idx = start; idx < end;){
+      std::vector<T> mins(row, INT_MAX);
+      for(int row_idx = 0; row_idx < row; row_idx ++){
+        for(int col_cnt = 0; col_cnt < col; col_cnt ++){
+          mins[row_idx] = std::min(mins[row_idx], self[idx++]);
+        }
+        (*output)[res_i ++] = mins[row_idx ++];
+      }
+    }
+    return true;
+  }
 
-    if(mode == Operator::SUM || mode == Operator::MEAN){
+  template<typename T>
+  bool operator_sum_axis1
+  (int task_begin, int task_num, int shape, int offset, 
+  std::shared_ptr<Tensor<T>> output, const Tensor<T> &self) {
+    int row = self.row(), col = self.col(); shape *= row;
+    int start = offset + shape * task_begin, end = start + shape * task_num;
+    int res_i = offset / row + task_begin * col;
+    for(int idx = start; idx < end;){
       std::vector<T> sums(col, 0);
-      for(int i = start; i < end; i++){
-        sums[i % col] += t[i];
-        if(++cnt == square){
-          for(auto &sum : sums){
-            if(mode == Operator::SUM)
-              res[res_i++] = sum;
-            if(mode == Operator::MEAN)
-              res[res_i++] = sum / row;
-            sum = 0;
-          } cnt = 0;
-        } 
+      for(int row_cnt = 0; row_cnt < row; row_cnt++){
+        for(int col_idx = 0; col_idx < col; col_idx ++){
+          sums[col_idx] += self[idx++];
+        }
+      }
+      for(int col_idx = 0; col_idx < col; col_idx++){
+        (*output)[res_i ++] = sums[col_idx];
       }
     }
-    else if(mode == Operator::MAX){
-      std::vector<T> maxs(col, 1e-8);
-      for(int i = start; i < end; i++){
-        maxs[i % col] = max(maxs[i % col], t[i]);
-        if(++cnt == square){
-          for(auto &max_ : maxs){
-            res[res_i++] = max_; max_ = 1e-8;
-          } cnt = 0;
-        } 
-      }
-    }
-    else if(mode == Operator::MIN){
-      std::vector<T> mins(col, 1e8);
-      for(int i = start; i < end; i++){
-        mins[i % col] = min(mins[i % col], t[i]);
-        if(++cnt == square){
-          for(auto &min_ : mins){
-            res[res_i++] = min_; min_ = 1e8;
-          } cnt = 0;
-        } 
-      }
-    }
-    return 1;
+    return true;
   }
 
   template<typename T>
-  int operator_axis1_col
-  (int col_begin, int col_num, int channel, Tensor<T>& res, 
-   const Tensor<T>& t, int offset, int roffset, const Operator mode){
-    int row = t.row(), col = t.col(), square = row * col_num;
-    int start = offset + square * channel + col_num * col_begin;
-    int res_i = roffset + channel * col + col_num * col_begin;
-
-    if(mode == Operator::SUM || mode == Operator::MEAN){
-      std::vector<T> sums(col_num, 0);
-      for(int r = 0, i = start; r < row; r++, i += col - col_num)
-        for(int c = 0; c < col_num; c++, i++)
-          sums[c] += t[i];
-      for(auto sum : sums){
-        if(mode == Operator::SUM)
-          res[res_i++] = sum;
-        if(mode == Operator::MEAN)
-          res[res_i++] = sum / row;
+  bool operator_mean_axis1
+  (int task_begin, int task_num, int shape, int offset, 
+  std::shared_ptr<Tensor<T>> output, const Tensor<T> &self) {
+    int row = self.row(), col = self.col(); shape *= row;
+    int start = offset + shape * task_begin, end = start + shape * task_num;
+    int res_i = offset / row + task_begin * col;
+    for(int idx = start; idx < end;){
+      std::vector<T> sums(col, 0);
+      for(int row_cnt = 0; row_cnt < row; row_cnt++){
+        for(int col_idx = 0; col_idx < col; col_idx ++){
+          sums[col_idx] += self[idx++];
+        }
+      }
+      for(int col_idx = 0; col_idx < col; col_idx++){
+        (*output)[res_i ++] = sums[col_idx] / row;
       }
     }
-    else if(mode == Operator::MAX){
-      std::vector<T> maxs(col_num, 1e-8);
-      for(int r = 0, i = start; r < row; r++, i += col - col_num)
-        for(int c = 0; c < col_num; c++, i++)
-          maxs[c] = max(maxs[c], t[i]);
-      for(auto max : maxs) res[res_i++] = max;
-    }
-    else if(mode == Operator::MIN){
-      std::vector<T> mins(col_num, 1e8);
-      for(int r = 0, i = start; r < row; r++, i += col - col_num)
-        for(int c = 0; c < col_num; c++, i++)
-          mins[c] = min(mins[c], t[i]);
-      for(auto min : mins) res[res_i++] = min;
-    }
-    return col_begin;
+    return true;
   }
 
   template<typename T>
-  int operator_axis2_row
-  (int row_begin, int row_num, int nouse, Tensor<T>& res, 
-   const Tensor<T>& t, int offset, int roffset, const Operator mode){
-    int row = t.row(), col = t.col(), channel = t.channel();
-    int zone = row_num * col, square = row * col, cnt = 0;
-    int start = offset + row_num * row_begin * col;
-    int end = start + (channel - 1) * square + row_num * col;
-    int res_i = roffset + start;
-
-    if(mode == Operator::SUM || mode == Operator::MEAN){
-      std::vector<T> sums(zone, 0);
-      for(int i = start, cnt = 0; i < end; i++){
-        sums[cnt] += t[i];
-        if(++cnt == zone){
-          i += square - zone;
-          cnt = 0;
+  bool operator_max_axis1
+  (int task_begin, int task_num, int shape, int offset, 
+  std::shared_ptr<Tensor<T>> output, const Tensor<T> &self) {
+    int row = self.row(), col = self.col();  shape *= row;
+    int start = offset + shape * task_begin, end = start + shape * task_num;
+    int res_i = offset / row + task_begin * col;
+    for(int idx = start; idx < end;){
+      std::vector<T> maxs(col, INT_MIN);
+      for(int row_cnt = 0; row_cnt < row; row_cnt++){
+        for(int col_idx = 0; col_idx < col; col_idx ++){
+          maxs[col_idx] = std::max(maxs[col_idx], self[idx++]);
         }
       }
-      for(auto & sum : sums){
-        if(mode == Operator::SUM)
-          res[res_i++] = sum;
-        if(mode == Operator::MEAN)
-          res[res_i++] = sum / row;
-      } 
-    }
-    else if(mode == Operator::MAX){
-      std::vector<T> maxs(zone, 1e-8);
-      for(int i = start; i < end; i++){
-        maxs[cnt] = max(maxs[cnt], t[i]);
-        if(++cnt == zone){
-          i += square - zone;
-          cnt = 0;
-        }
+      for(int col_idx = 0; col_idx < col; col_idx++){
+        (*output)[res_i ++] = maxs[col_idx];
       }
-      for(auto max : maxs) res[res_i++] = max;
     }
-    else if(mode == Operator::MIN){
-      std::vector<T> mins(zone, 1e8);
-      for(int i = start; i < end; i++){
-        mins[cnt] = min(mins[cnt], t[i]);
-        if(++cnt == zone){
-          i += square - zone;
-          cnt = 0;
-        }
-      }
-      for(auto min : mins) res[res_i++] = min;
-    }
-    return row_begin;
+    return true;
   }
 
   template<typename T>
-  int operator_axis2_col
-  (int col_begin, int col_num, int pad, Tensor<T>& res, 
-   const Tensor<T>& t, int offset, int roffset, const Operator mode){
-    int row = t.row(), col = t.col(), channel = t.channel();
-    int zone = col_num * row, square = row * col;
-    int start = offset + col_num * col_begin;
-    int end = start + (channel - 1) * square + (row - 1) * col + col_num;
-    int res_i = roffset + start;
+  bool operator_min_axis1
+  (int task_begin, int task_num, int shape, int offset, 
+  std::shared_ptr<Tensor<T>> output, const Tensor<T> &self) {
+    int row = self.row(), col = self.col(); shape *= row; 
+    int start = offset + shape * task_begin, end = start + shape * task_num;
+    int res_i = offset / row + task_begin * col;
+    for(int idx = start; idx < end;){
+      std::vector<T> mins(col, INT_MAX);
+      for(int row_cnt = 0; row_cnt < row; row_cnt++){
+        for(int col_idx = 0; col_idx < col; col_idx ++){
+          mins[col_idx] = std::min(mins[col_idx], self[idx++]);
+        }
+      }
+      for(int col_idx = 0; col_idx < col; col_idx++){
+        (*output)[res_i ++] = mins[col_idx];
+      }
+    }
+    return true;
+  }
 
-    if(mode == Operator::SUM || mode == Operator::MEAN){
-      std::vector<T> sums(zone, 0);
-      for(int i = start, cnt = 0, sums_i = 0; i < end; i++, sums_i++){
-        sums[sums_i % zone] += t[i];
-        if(++cnt == col_num){
-          i += col - col_num;
-          cnt = 0;
-        }
-      }
-      for(int cnt = 0; auto sum : sums){
-        if(mode == Operator::SUM)
-          res[res_i++] = sum;
-        if(mode == Operator::MEAN)
-          res[res_i++] = sum / channel; 
-        if(++cnt == col_num){
-          res_i += col - col_num;
-          cnt = 0;
+  template<typename T>
+  bool operator_sum_axis2
+  (int task_begin, int task_num, int shape, int offset, 
+  std::shared_ptr<Tensor<T>> output, const Tensor<T> &self) {
+    int row = self.row(), col = self.col(), channel = self.channel(); 
+    shape *= channel;
+    int start = offset + shape * task_begin, end = start + shape * task_num;
+    std::vector<T> sums(row * col, 0);
+    for(int idx = start; idx < end;){
+      for(int row_idx = 0; row_idx < row; row_idx++){
+        for(int col_idx = 0; col_idx < col; col_idx ++){
+          sums[row_idx * col + col_idx] += self[idx++];
         }
       }
     }
-    else if(mode == Operator::MAX){
-      std::vector<T> maxs(zone, 1e-8);
-      for(int i = start, cnt = 0, maxs_i = 0; i < end; i++, maxs_i++){
-        maxs[maxs_i % zone] = max(maxs[maxs_i % zone], t[i]);
-        if(++cnt == col_num){
-          i += col - col_num;
-          cnt = 0;
-        }
+    int res_offset = offset / channel;
+    for(int row_idx = 0; row_idx < row; row_idx++){
+      for(int col_idx = 0; col_idx < col; col_idx ++){
+        int idx = row_idx * col + col_idx; 
+        (*output)[res_offset + idx] = sums[idx];
       }
-      for(int cnt = 0; auto max : maxs){
-        res[res_i++] = max;
-        if(++cnt == col_num){
-          res_i += col - col_num;
-          cnt = 0;
+    }
+    return true;
+  }
+
+  template<typename T>
+  bool operator_mean_axis2
+  (int task_begin, int task_num, int shape, int offset, 
+  std::shared_ptr<Tensor<T>> output, const Tensor<T> &self) {
+    int row = self.row(), col = self.col(), channel = self.channel(); 
+    shape *= channel;
+    int start = offset + shape * task_begin, end = start + shape * task_num;
+    std::vector<T> sums(row * col, 0);
+    for(int idx = start; idx < end;){
+      for(int row_idx = 0; row_idx < row; row_idx++){
+        for(int col_idx = 0; col_idx < col; col_idx ++){
+          sums[row_idx * col + col_idx] += self[idx++];
         }
       }
     }
-    else if(mode == Operator::MIN){
-      std::vector<T> mins(zone, 1e-8);
-      for(int i = start, cnt = 0, mins_i = 0; i < end; i++, mins_i++){
-        mins[mins_i % zone] = min(mins[mins_i % zone], t[i]);
-        if(++cnt == col_num){
-          i += col - col_num;
-          cnt = 0;
-        }
+    int res_offset = offset / channel;
+    for(int row_idx = 0; row_idx < row; row_idx++){
+      for(int col_idx = 0; col_idx < col; col_idx ++){
+        int idx = row_idx * col + col_idx; 
+        (*output)[res_offset + idx] = sums[idx] / channel;
       }
-      for(int cnt = 0; auto min : mins){
-        res[res_i++] = min;
-        if(++cnt == col_num){
-          res_i += col - col_num;
-          cnt = 0;
+    }
+    return true;
+  }
+
+  template<typename T>
+  bool operator_max_axis2
+  (int task_begin, int task_num, int shape, int offset, 
+  std::shared_ptr<Tensor<T>> output, const Tensor<T> &self) {
+    int row = self.row(), col = self.col(), channel = self.channel(); 
+    shape *= channel;
+    int start = offset + shape * task_begin, end = start + shape * task_num;
+    std::vector<T> maxs(row * col, INT_MIN);
+    for(int idx = start; idx < end;){
+      for(int row_idx = 0; row_idx < row; row_idx++){
+        for(int col_idx = 0; col_idx < col; col_idx ++){
+          int max_idx = row_idx * col + col_idx;
+          maxs[max_idx] = std::max(maxs[max_idx], self[idx++]);
         }
       }
     }
-    return col_begin;
+    int res_offset = offset / channel;
+    for(int row_idx = 0; row_idx < row; row_idx++){
+      for(int col_idx = 0; col_idx < col; col_idx ++){
+        int idx = row_idx * col + col_idx; 
+        (*output)[res_offset + idx] = maxs[idx];
+      }
+    }
+    return true;
+  }
+
+  template<typename T>
+  bool operator_min_axis2
+  (int task_begin, int task_num, int shape, int offset, 
+  std::shared_ptr<Tensor<T>> output, const Tensor<T> &self) {
+    int row = self.row(), col = self.col(), channel = self.channel(); 
+    shape *= channel;
+    int start = offset + shape * task_begin, end = start + shape * task_num;
+    std::vector<T> mins(row * col, INT_MAX);
+    for(int idx = start; idx < end;){
+      for(int row_idx = 0; row_idx < row; row_idx++){
+        for(int col_idx = 0; col_idx < col; col_idx ++){
+          int min_idx = row_idx * col + col_idx;
+          mins[min_idx] = std::min(mins[min_idx], self[idx++]);
+        }
+      }
+    }
+    int res_offset = offset / channel;
+    for(int row_idx = 0; row_idx < row; row_idx++){
+      for(int col_idx = 0; col_idx < col; col_idx ++){
+        int idx = row_idx * col + col_idx; 
+        (*output)[res_offset + idx] = mins[idx];
+      }
+    }
+    return true;
   }
 
 } // namespace dl

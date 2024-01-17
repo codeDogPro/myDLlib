@@ -64,7 +64,7 @@ public:
     int output_ch = output->channel();
     int square = output->row() * output->col();
     int task_size = (int)std::ceil((double)output_ch / nthread);
-    printf("task_size: %d\n", task_size);
+    // printf("task_size: %d\n", task_size);
     // printf("output_ch: %d\n", output_ch);
 
     for(int task_begin = 0; task_begin < output_ch; task_begin += task_size){

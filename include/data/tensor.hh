@@ -376,74 +376,83 @@ private:
   template<typename T>
   std::shared_ptr<Tensor<T>>
   Tensor<T>::tensor_operator(Axis axis, Operator mode, bool keepdim){
-    int ncpu = cpu_number();
     int row = this->row(), col = this->col(), channel = this->channel();
-    int number = this->number();
     int square = row * col, volume = square * channel;
-    return nullptr;
-
-    // if(axis == Axis::COL){
-    //   if(keepdim) res = Tensor<T>(row, 1, channel, 0, number);
-    //   else        res = Tensor<T>(1, row, channel, 0, number);
-    //   for(int n = 0; n < number; n++){
-    //     int noffset = volume * n, roffset = row * channel * n;
-    //     if(channel >= ncpu * BOOST_CHANNEL / number){
-    //       parallel_channel(operator_axis0_channel<T>,
-    //       /*nthread, res */NTHREAD_C(ncpu, number), res,
-    //       /*const args...*/*this, noffset, roffset, mode);
-    //     }
-    //     else if(row >= ncpu * BOOST_ROW){
-    //       parallel_row    (operator_axis0_row<T>, 
-    //       /*nthread, res */NTHREAD_R(ncpu, number), res,
-    //       /*const args...*/*this, noffset, roffset, mode);
-    //     }
-    //     else{ // Not need to boost.
-    //       operator_axis0_channel(0, channel, 0, res,
-    //                              *this, noffset, roffset, mode); 
-    //     }
-    //   }
-    // } // axix == col
-    // else if(axis == Axis::ROW){
-    //   res = Tensor<T>(1, col, channel, 0, number);
-    //   for(int n = 0; n < number; n++){
-    //     int noffset = volume * n, roffset = col * channel * n;
-    //     if(channel >= ncpu * BOOST_CHANNEL){
-    //       parallel_channel(operator_axis1_channel<T>, 
-    //       /*nthread, res */NTHREAD_C(ncpu, number), res,
-    //       /*const args...*/*this, noffset, roffset, mode);
-    //     }
-    //     else if(row >= ncpu * BOOST_ROW){
-    //       parallel_col    (operator_axis1_col<T>, 
-    //       /*nthread, res */NTHREAD_R(ncpu, number), res,
-    //       /*const args...*/*this, noffset, roffset, mode);
-    //     }
-    //     else{ // Not need to boost.
-    //       int start = noffset, end = start + volume;
-    //       operator_axis1_channel(0, channel, 0, res,
-    //                              *this, noffset, roffset, mode); 
-    //     }
-    //   }
-    // } // axix == row
-    // else if(axis == Axis::CHANNEL){
-    //   res = Tensor<T>(row, col, 1, 0, number);
-    //   for(int n = 0; n < number; n++){
-    //     int noffset = volume * n, roffset = row * col * n;
-    //     if(row >= ncpu * BOOST_ROW){
-    //       parallel_row    (operator_axis2_row<T>, 
-    //       /*nthread, res */NTHREAD_C(ncpu, number), res,
-    //       /*const args...*/*this, noffset, roffset, mode);
-    //     }
-    //     else if(col >= ncpu * BOOST_ROW){
-    //       parallel_col    (operator_axis2_col<T>, 
-    //       /*nthread, res */NTHREAD_R(ncpu, number), res,
-    //       /*const args...*/*this, noffset, roffset, mode);
-    //     }
-    //     else{ // Not need to boost.
-    //       operator_axis2_row(0, row, channel, res,
-    //                          *this, noffset, roffset, mode); 
-    //     }
-    //   }
-    // } // axis == channel
+    int number = this->number();
+    std::shared_ptr<Tensor<T>> output;
+    // TODO: 还有parallel_row的情况要加
+    if(axis == Axis::COL){
+      if(keepdim == true){
+        output = std::make_shared<Tensor<T>>(row, 1, channel, number, 0);
+      }
+      else{
+        output = std::make_shared<Tensor<T>>(1, row, channel, number, 0);
+      }
+      for(int i = 0; i < number; i++){
+        int offset = i * volume;
+        switch(mode){
+          case Operator::SUM:
+            parallelizer.parallel_channel(
+              operator_sum_axis0<T>, output, offset, *this); break;
+          case Operator::MEAN:
+            parallelizer.parallel_channel(
+              operator_mean_axis0<T>, output, offset, *this); break;
+          case Operator::MAX:
+            parallelizer.parallel_channel(
+              operator_max_axis0<T>, output, offset, *this); break;
+          case Operator::MIN:
+            parallelizer.parallel_channel(
+              operator_min_axis0<T>, output, offset, *this); break;
+        }
+      }
+    }
+    else if(axis == Axis::ROW){
+      output = std::make_shared<Tensor<T>>(1, col, channel, number, 0);
+      for(int i = 0; i < number; i++){
+        int offset = i * volume;
+        switch(mode){
+          case Operator::SUM:
+            parallelizer.parallel_channel(
+              operator_sum_axis1<T>, output, offset, *this); break;
+          case Operator::MEAN:
+            parallelizer.parallel_channel(
+              operator_mean_axis1<T>, output, offset, *this); break;
+          case Operator::MAX:
+            parallelizer.parallel_channel(
+              operator_max_axis1<T>, output, offset, *this); break;
+          case Operator::MIN:
+            parallelizer.parallel_channel(
+              operator_min_axis1<T>, output, offset, *this); break;
+        }
+      }
+    }
+    else{
+      if(keepdim == true){
+        output = std::make_shared<Tensor<T>>(row, col, number, 1, 0);
+      }
+      else{
+        output = std::make_shared<Tensor<T>>(row, col, 1, number, 0);
+      }
+      for(int i = 0; i < number; i++){
+        int offset = i * volume;
+        switch(mode){
+          case Operator::SUM:
+            parallelizer.parallel_channel(
+              operator_sum_axis2<T>, output, offset, *this); break;
+          case Operator::MEAN:
+            parallelizer.parallel_channel(
+              operator_mean_axis2<T>, output, offset, *this); break;
+          case Operator::MAX:
+            parallelizer.parallel_channel(
+              operator_max_axis2<T>, output, offset, *this); break;
+          case Operator::MIN:
+            parallelizer.parallel_channel(
+              operator_min_axis2<T>, output, offset, *this); break;
+        }
+      }
+    }
+    parallelizer.sync();
+    return output;
   }
 
 

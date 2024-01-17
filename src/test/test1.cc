@@ -14,13 +14,25 @@ void initialization_test(){
 
 // sum(), mean(), max(), min(). test
 void smmm_test(){
-  Tensor<int> c(3, 5, 8, -1);
+  Tensor<int> c(3, 5, 8, 1);
   std::cout << c;
-  
-  std::cout << c.sum(0) << c.sum(1) << c.sum(2);
-  std::cout << c.mean(0) << c.mean(1) << c.mean(2);
-  std::cout << c.max(0) << c.max(1) << c.max(2);
-  std::cout << c.min(0) << c.min(1) << c.min(2);
+  auto sum0 = c.sum(0, true);
+  auto sum1 = c.sum(1, true);
+  auto sum2 = c.sum(2, true);
+  std::cout << *sum0 << *sum1 << *sum2;
+  auto mean0 = c.mean(0, true); 
+  auto mean1 = c.mean(1, true); 
+  auto mean2 = c.mean(2, true); 
+  std::cout << *mean0 << *mean1 << *mean2;
+  auto max0 = c.max(0, true); 
+  auto max1 = c.max(1, true); 
+  auto max2 = c.max(2, true); 
+  std::cout << *max0 << *max1 << *max2;
+  auto min0 = c.min(0, true); 
+  auto min1 = c.min(1, true); 
+  auto min2 = c.min(2, true); 
+  std::cout << *min0 << *min1 << *min2;
+  // std::cout << *sum0 << *mean0 << *max0 << *min0;
 }
 
 // += -= *= /= test
@@ -102,10 +114,10 @@ void sequential_test(){
 int main(){
   // plus_test();
   // plusequal_test();
-  // smmm_test();
+  smmm_test();
   // reshape_test();
   // conv_test();
   // maxpool_test();
-  sequential_test();
+  // sequential_test();
   return 0;
 }
