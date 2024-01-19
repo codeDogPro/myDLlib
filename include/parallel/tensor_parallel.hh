@@ -329,11 +329,11 @@ namespace dl{
     int res_i = offset / col + task_begin * row;
     for(int idx = start; idx < end;){
       std::vector<T> maxs(row, INT_MIN);
-      for(int row_idx = 0; row_idx < row; row_idx ++){
+      for(int r_idx = 0; r_idx < row; r_idx ++){
         for(int col_cnt = 0; col_cnt < col; col_cnt ++){
-          maxs[row_idx] = std::max(maxs[row_idx], self[idx++]);
+          maxs[r_idx] = std::max(maxs[r_idx], self[idx++]);
         }
-        (*output)[res_i ++] = maxs[row_idx];
+        (*output)[res_i ++] = maxs[r_idx];
       }
     }
     return true;
@@ -349,11 +349,11 @@ namespace dl{
     int res_i = offset / col + task_begin * row;
     for(int idx = start; idx < end;){
       std::vector<T> mins(row, INT_MAX);
-      for(int row_idx = 0; row_idx < row; row_idx ++){
+      for(int r_idx = 0; r_idx < row; r_idx ++){
         for(int col_cnt = 0; col_cnt < col; col_cnt ++){
-          mins[row_idx] = std::min(mins[row_idx], self[idx++]);
+          mins[r_idx] = std::min(mins[r_idx], self[idx++]);
         }
-        (*output)[res_i ++] = mins[row_idx ++];
+        (*output)[res_i ++] = mins[r_idx ++];
       }
     }
     return true;
@@ -369,12 +369,12 @@ namespace dl{
     for(int idx = start; idx < end;){
       std::vector<T> sums(col, 0);
       for(int row_cnt = 0; row_cnt < row; row_cnt++){
-        for(int col_idx = 0; col_idx < col; col_idx ++){
-          sums[col_idx] += self[idx++];
+        for(int c_idx = 0; c_idx < col; c_idx ++){
+          sums[c_idx] += self[idx++];
         }
       }
-      for(int col_idx = 0; col_idx < col; col_idx++){
-        (*output)[res_i ++] = sums[col_idx];
+      for(int c_idx = 0; c_idx < col; c_idx++){
+        (*output)[res_i ++] = sums[c_idx];
       }
     }
     return true;
@@ -390,12 +390,12 @@ namespace dl{
     for(int idx = start; idx < end;){
       std::vector<T> sums(col, 0);
       for(int row_cnt = 0; row_cnt < row; row_cnt++){
-        for(int col_idx = 0; col_idx < col; col_idx ++){
-          sums[col_idx] += self[idx++];
+        for(int c_idx = 0; c_idx < col; c_idx ++){
+          sums[c_idx] += self[idx++];
         }
       }
-      for(int col_idx = 0; col_idx < col; col_idx++){
-        (*output)[res_i ++] = sums[col_idx] / row;
+      for(int c_idx = 0; c_idx < col; c_idx++){
+        (*output)[res_i ++] = sums[c_idx] / row;
       }
     }
     return true;
@@ -411,12 +411,12 @@ namespace dl{
     for(int idx = start; idx < end;){
       std::vector<T> maxs(col, INT_MIN);
       for(int row_cnt = 0; row_cnt < row; row_cnt++){
-        for(int col_idx = 0; col_idx < col; col_idx ++){
-          maxs[col_idx] = std::max(maxs[col_idx], self[idx++]);
+        for(int c_idx = 0; c_idx < col; c_idx ++){
+          maxs[c_idx] = std::max(maxs[c_idx], self[idx++]);
         }
       }
-      for(int col_idx = 0; col_idx < col; col_idx++){
-        (*output)[res_i ++] = maxs[col_idx];
+      for(int c_idx = 0; c_idx < col; c_idx++){
+        (*output)[res_i ++] = maxs[c_idx];
       }
     }
     return true;
@@ -432,12 +432,12 @@ namespace dl{
     for(int idx = start; idx < end;){
       std::vector<T> mins(col, INT_MAX);
       for(int row_cnt = 0; row_cnt < row; row_cnt++){
-        for(int col_idx = 0; col_idx < col; col_idx ++){
-          mins[col_idx] = std::min(mins[col_idx], self[idx++]);
+        for(int c_idx = 0; c_idx < col; c_idx ++){
+          mins[c_idx] = std::min(mins[c_idx], self[idx++]);
         }
       }
-      for(int col_idx = 0; col_idx < col; col_idx++){
-        (*output)[res_i ++] = mins[col_idx];
+      for(int c_idx = 0; c_idx < col; c_idx++){
+        (*output)[res_i ++] = mins[c_idx];
       }
     }
     return true;
@@ -448,21 +448,23 @@ namespace dl{
   (int task_begin, int task_num, int shape, int offset, 
   std::shared_ptr<Tensor<T>> output, const Tensor<T> &self) {
     int row = self.row(), col = self.col(), channel = self.channel(); 
-    shape *= channel;
-    int start = offset + shape * task_begin, end = start + shape * task_num;
-    std::vector<T> sums(row * col, 0);
-    for(int idx = start; idx < end;){
-      for(int row_idx = 0; row_idx < row; row_idx++){
-        for(int col_idx = 0; col_idx < col; col_idx ++){
-          sums[row_idx * col + col_idx] += self[idx++];
+    int start = offset + shape * task_begin;
+    std::vector<T> sums(task_num * col, 0);
+    for(int ch = 0, idx = start; ch < channel; ch++){
+      for(int r_idx = 0; r_idx < task_num; r_idx++){
+        int r_offset = r_idx * col;
+        for(int c_idx = 0; c_idx < col; c_idx ++){
+          sums[r_offset + c_idx] += self[idx++];
         }
       }
+      idx += (row - task_num) * col;
     }
     int res_offset = offset / channel;
-    for(int row_idx = 0; row_idx < row; row_idx++){
-      for(int col_idx = 0; col_idx < col; col_idx ++){
-        int idx = row_idx * col + col_idx; 
-        (*output)[res_offset + idx] = sums[idx];
+    for(int r_idx = 0; r_idx < task_num; r_idx++){
+      int o_idx = res_offset + (task_begin + r_idx) * col;
+      int s_idx = r_idx * col; 
+      for(int c_idx = 0; c_idx < col; c_idx ++){
+        (*output)[o_idx + c_idx] = sums[s_idx + c_idx];
       }
     }
     return true;
@@ -473,21 +475,23 @@ namespace dl{
   (int task_begin, int task_num, int shape, int offset, 
   std::shared_ptr<Tensor<T>> output, const Tensor<T> &self) {
     int row = self.row(), col = self.col(), channel = self.channel(); 
-    shape *= channel;
-    int start = offset + shape * task_begin, end = start + shape * task_num;
-    std::vector<T> sums(row * col, 0);
-    for(int idx = start; idx < end;){
-      for(int row_idx = 0; row_idx < row; row_idx++){
-        for(int col_idx = 0; col_idx < col; col_idx ++){
-          sums[row_idx * col + col_idx] += self[idx++];
+    int start = offset + shape * task_begin;
+    std::vector<T> sums(task_num * col, 0);
+    for(int ch = 0, idx = start; ch < channel; ch++){
+      for(int r_idx = 0; r_idx < task_num; r_idx++){
+        int r_offset = r_idx * col;
+        for(int c_idx = 0; c_idx < col; c_idx ++){
+          sums[r_offset + c_idx] += self[idx++];
         }
       }
+      idx += (row - task_num) * col;
     }
     int res_offset = offset / channel;
-    for(int row_idx = 0; row_idx < row; row_idx++){
-      for(int col_idx = 0; col_idx < col; col_idx ++){
-        int idx = row_idx * col + col_idx; 
-        (*output)[res_offset + idx] = sums[idx] / channel;
+    for(int r_idx = 0; r_idx < task_num; r_idx++){
+      int o_idx = res_offset + (task_begin + r_idx) * col;
+      int s_idx = r_idx * col; 
+      for(int c_idx = 0; c_idx < col; c_idx ++){
+        (*output)[o_idx + c_idx] = sums[s_idx + c_idx] / channel;
       }
     }
     return true;
@@ -498,22 +502,23 @@ namespace dl{
   (int task_begin, int task_num, int shape, int offset, 
   std::shared_ptr<Tensor<T>> output, const Tensor<T> &self) {
     int row = self.row(), col = self.col(), channel = self.channel(); 
-    shape *= channel;
-    int start = offset + shape * task_begin, end = start + shape * task_num;
-    std::vector<T> maxs(row * col, INT_MIN);
-    for(int idx = start; idx < end;){
-      for(int row_idx = 0; row_idx < row; row_idx++){
-        for(int col_idx = 0; col_idx < col; col_idx ++){
-          int max_idx = row_idx * col + col_idx;
-          maxs[max_idx] = std::max(maxs[max_idx], self[idx++]);
+    int start = offset + shape * task_begin;
+    std::vector<T> maxs(task_num * col, INT_MIN);
+    for(int ch = 0, idx = start; ch < channel; ch++){
+      for(int r_idx = 0; r_idx < task_num; r_idx++){
+        int r_offset = r_idx * col;
+        for(int c_idx = 0; c_idx < col; c_idx ++){
+          maxs[r_offset + c_idx] = std::max(maxs[r_offset + c_idx], self[idx++]);
         }
       }
+      idx += (row - task_num) * col;
     }
     int res_offset = offset / channel;
-    for(int row_idx = 0; row_idx < row; row_idx++){
-      for(int col_idx = 0; col_idx < col; col_idx ++){
-        int idx = row_idx * col + col_idx; 
-        (*output)[res_offset + idx] = maxs[idx];
+    for(int r_idx = 0; r_idx < task_num; r_idx++){
+      int o_idx = res_offset + (task_begin + r_idx) * col;
+      int m_idx = r_idx * col; 
+      for(int c_idx = 0; c_idx < col; c_idx ++){
+        (*output)[o_idx + c_idx] = maxs[m_idx + c_idx];
       }
     }
     return true;
@@ -524,22 +529,23 @@ namespace dl{
   (int task_begin, int task_num, int shape, int offset, 
   std::shared_ptr<Tensor<T>> output, const Tensor<T> &self) {
     int row = self.row(), col = self.col(), channel = self.channel(); 
-    shape *= channel;
-    int start = offset + shape * task_begin, end = start + shape * task_num;
-    std::vector<T> mins(row * col, INT_MAX);
-    for(int idx = start; idx < end;){
-      for(int row_idx = 0; row_idx < row; row_idx++){
-        for(int col_idx = 0; col_idx < col; col_idx ++){
-          int min_idx = row_idx * col + col_idx;
-          mins[min_idx] = std::min(mins[min_idx], self[idx++]);
+    int start = offset + shape * task_begin;
+    std::vector<T> mins(task_num * col, INT_MAX);
+    for(int ch = 0, idx = start; ch < channel; ch++){
+      for(int r_idx = 0; r_idx < task_num; r_idx++){
+        int r_offset = r_idx * col;
+        for(int c_idx = 0; c_idx < col; c_idx ++){
+          mins[r_offset + c_idx] = std::min(mins[r_offset + c_idx], self[idx++]);
         }
       }
+      idx += (row - task_num) * col;
     }
     int res_offset = offset / channel;
-    for(int row_idx = 0; row_idx < row; row_idx++){
-      for(int col_idx = 0; col_idx < col; col_idx ++){
-        int idx = row_idx * col + col_idx; 
-        (*output)[res_offset + idx] = mins[idx];
+    for(int r_idx = 0; r_idx < task_num; r_idx++){
+      int o_idx = res_offset + (task_begin + r_idx) * col;
+      int m_idx = r_idx * col; 
+      for(int c_idx = 0; c_idx < col; c_idx ++){
+        (*output)[o_idx + c_idx] = mins[m_idx + c_idx];
       }
     }
     return true;

@@ -380,7 +380,6 @@ private:
     int square = row * col, volume = square * channel;
     int number = this->number();
     std::shared_ptr<Tensor<T>> output;
-    // TODO: 还有parallel_row的情况要加
     if(axis == Axis::COL){
       if(keepdim == true){
         output = std::make_shared<Tensor<T>>(row, 1, channel, number, 0);
@@ -426,7 +425,7 @@ private:
         }
       }
     }
-    else{
+    else if(axis == Axis::CHANNEL){
       if(keepdim == true){
         output = std::make_shared<Tensor<T>>(row, col, number, 1, 0);
       }
@@ -437,16 +436,16 @@ private:
         int offset = i * volume;
         switch(mode){
           case Operator::SUM:
-            parallelizer.parallel_channel(
+            parallelizer.parallel_row(
               operator_sum_axis2<T>, output, offset, *this); break;
           case Operator::MEAN:
-            parallelizer.parallel_channel(
+            parallelizer.parallel_row(
               operator_mean_axis2<T>, output, offset, *this); break;
           case Operator::MAX:
-            parallelizer.parallel_channel(
+            parallelizer.parallel_row(
               operator_max_axis2<T>, output, offset, *this); break;
           case Operator::MIN:
-            parallelizer.parallel_channel(
+            parallelizer.parallel_row(
               operator_min_axis2<T>, output, offset, *this); break;
         }
       }

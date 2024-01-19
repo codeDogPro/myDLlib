@@ -14,25 +14,32 @@ void initialization_test(){
 
 // sum(), mean(), max(), min(). test
 void smmm_test(){
-  Tensor<int> c(3, 5, 8, 1);
+  Tensor<f32> c(3, 5, 8, 1);
   std::cout << c;
-  auto sum0 = c.sum(0, true);
-  auto sum1 = c.sum(1, true);
+  // auto sum0 = c.sum(0, true);
+  // auto mean0 = c.mean(0, true); 
+  // auto max0 = c.max(0, true); 
+  // auto min0 = c.min(0, true); 
+  // std::cout << *sum0;
+  // std::cout << *mean0;
+  // std::cout << *max0;
+  // std::cout << *min0;
+  // auto sum1 = c.sum(1, true);
+  // auto mean1 = c.mean(1, true); 
+  // auto max1 = c.max(1, true); 
+  // auto min1 = c.min(1, true); 
+  // std::cout << *sum1;
+  // std::cout << *mean1;
+  // std::cout << *max1;
+  // std::cout << *min1;
   auto sum2 = c.sum(2, true);
-  std::cout << *sum0 << *sum1 << *sum2;
-  auto mean0 = c.mean(0, true); 
-  auto mean1 = c.mean(1, true); 
   auto mean2 = c.mean(2, true); 
-  std::cout << *mean0 << *mean1 << *mean2;
-  auto max0 = c.max(0, true); 
-  auto max1 = c.max(1, true); 
   auto max2 = c.max(2, true); 
-  std::cout << *max0 << *max1 << *max2;
-  auto min0 = c.min(0, true); 
-  auto min1 = c.min(1, true); 
   auto min2 = c.min(2, true); 
-  std::cout << *min0 << *min1 << *min2;
-  // std::cout << *sum0 << *mean0 << *max0 << *min0;
+  std::cout << *sum2;
+  std::cout << *mean2;
+  std::cout << *max2;
+  std::cout << *min2;
 }
 
 // += -= *= /= test
