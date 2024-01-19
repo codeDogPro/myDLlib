@@ -14,24 +14,24 @@ void initialization_test(){
 
 // sum(), mean(), max(), min(). test
 void smmm_test(){
-  Tensor<f32> c(3, 5, 8, 1);
+  Tensor<int> c(3, 5, 8, 1);
   std::cout << c;
-  // auto sum0 = c.sum(0, true);
-  // auto mean0 = c.mean(0, true); 
-  // auto max0 = c.max(0, true); 
-  // auto min0 = c.min(0, true); 
-  // std::cout << *sum0;
-  // std::cout << *mean0;
-  // std::cout << *max0;
-  // std::cout << *min0;
-  // auto sum1 = c.sum(1, true);
-  // auto mean1 = c.mean(1, true); 
-  // auto max1 = c.max(1, true); 
-  // auto min1 = c.min(1, true); 
-  // std::cout << *sum1;
-  // std::cout << *mean1;
-  // std::cout << *max1;
-  // std::cout << *min1;
+  auto sum0 = c.sum(0, true);
+  auto mean0 = c.mean(0, true); 
+  auto max0 = c.max(0, true); 
+  auto min0 = c.min(0, true); 
+  std::cout << *sum0;
+  std::cout << *mean0;
+  std::cout << *max0;
+  std::cout << *min0;
+  auto sum1 = c.sum(1, true);
+  auto mean1 = c.mean(1, true); 
+  auto max1 = c.max(1, true); 
+  auto min1 = c.min(1, true); 
+  std::cout << *sum1;
+  std::cout << *mean1;
+  std::cout << *max1;
+  std::cout << *min1;
   auto sum2 = c.sum(2, true);
   auto mean2 = c.mean(2, true); 
   auto max2 = c.max(2, true); 
@@ -118,13 +118,28 @@ void sequential_test(){
   // std::cout << "output:\n" << *output << std::endl;
 }
 
+void softmax_test(){
+  auto input = std::make_shared<Tensor<f32>>(4, 4, 3, 1);
+  std::cout << "input:\n" << *input;
+  Softmax sm0(0);
+  auto output0 = sm0.forward(input);
+  std::cout << "output0:\n" << *output0 << std::endl;
+  Softmax sm1(1);
+  auto output1 = sm1.forward(input);
+  std::cout << "output1:\n" << *output1 << std::endl;
+  Softmax sm2(2);
+  auto output2 = sm2.forward(input);
+  std::cout << "output2:\n" << *output2 << std::endl;
+}
+
 int main(){
   // plus_test();
   // plusequal_test();
-  smmm_test();
+  // smmm_test();
   // reshape_test();
   // conv_test();
   // maxpool_test();
   // sequential_test();
+  softmax_test();
   return 0;
 }
