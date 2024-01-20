@@ -86,7 +86,6 @@ void reshape_test(){
 
 }
 
-
 void conv_test(){
   auto input = std::make_shared<Tensor<f32>>(8, 8, 3, 1);
   std::cout << "input:\n" << *input;
@@ -132,6 +131,25 @@ void softmax_test(){
   std::cout << "output2:\n" << *output2 << std::endl;
 }
 
+void flatten_test(){
+  auto input = std::make_shared<Tensor<f32>>(4, 4, 3, 1);
+  std::cout << "input:\n" << *input;
+  Flatten ft(1, 3);
+  auto output = ft.forward(input);
+  std::cout << "output:\n" << *output;
+}
+
+void linear_test(){
+  auto input = std::make_shared<Tensor<f32>>(4, 4, 3, 1);
+  std::cout << "input:\n" << *input;
+  Flatten ft(1, 3);
+  auto output0 = ft.forward(input);
+  std::cout << "output0:\n" << *output0;
+  Linear fc(4 * 4 * 3, 10);
+  auto output1 = fc.forward(output0);
+  std::cout << "output1:\n" << *output1;
+}
+
 int main(){
   // plus_test();
   // plusequal_test();
@@ -140,6 +158,7 @@ int main(){
   // conv_test();
   // maxpool_test();
   // sequential_test();
-  softmax_test();
+  // softmax_test();
+  linear_test();
   return 0;
 }
