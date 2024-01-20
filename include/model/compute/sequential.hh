@@ -12,6 +12,12 @@ public:
   Sequential(Args... args){
     _add_fn(args...);
   }
+
+  ~Sequential(){
+    for(auto &func : functions){
+      delete func;
+    }
+  }
   
   virtual std::shared_ptr<Tensor<Tp>> 
   forward(const std::shared_ptr<Tensor<Tp>> input){

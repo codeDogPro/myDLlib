@@ -87,9 +87,9 @@ void reshape_test(){
 }
 
 void conv_test(){
-  auto input = std::make_shared<Tensor<f32>>(8, 8, 3, 1);
+  auto input = std::make_shared<Tensor<f32>>(4, 4, 3, 1);
   std::cout << "input:\n" << *input;
-  Conv2D<float> conv2d(3, 3, 8, 1, 1);
+  Conv2D<float> conv2d(1, 3, 8, 1);
   auto output = conv2d.forward(input);
   std::cout << "output:\n" << *output << std::endl;
 }
@@ -150,6 +150,14 @@ void linear_test(){
   std::cout << "output1:\n" << *output1;
 }
 
+void residual_test(){
+  auto input = std::make_shared<Tensor<f32>>(4, 4, 32, 1);
+  std::cout << "input:\n" << *input;
+  ResidualBlock_bottle res_block(32, 32, 64);
+  auto output = res_block.forward(input);
+  std::cout << "output:\n" << *output;
+}
+
 int main(){
   // plus_test();
   // plusequal_test();
@@ -159,6 +167,7 @@ int main(){
   // maxpool_test();
   // sequential_test();
   // softmax_test();
-  linear_test();
+  // linear_test();
+  residual_test();
   return 0;
 }

@@ -13,18 +13,9 @@ public:
 
   virtual std::shared_ptr<Tensor<T>>
   forward(const std::shared_ptr<Tensor<T>> input) override{
-    if(input->row() != 1) input->reshape(1, input->col(), input->channel());
-    // std::cout << "input: ";
-    // input->shape();
     auto mat = M_weight * (*input);
-    // std::cout << "mat: ";
-    // mat->shape();
     mat = mat->sum();
-    // std::cout << "mat_sum: ";
-    // mat->shape();
     auto output = *mat + M_bias; 
-    // std::cout << "output: ";
-    // output->shape();
     return output;
   }
 

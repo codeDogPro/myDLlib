@@ -6,7 +6,7 @@
 
 namespace dl{
 
-template<typename T>
+template<typename T=f32>
 class Conv1D : public Function<T> {
 
 };
@@ -16,7 +16,7 @@ template<typename T=f32>
 class Conv2D : public Function<T> {
 public:
   explicit 
-  Conv2D (int kernel_size, int input_ch, int output_ch=1, int stride=1, int padding=0)
+  Conv2D (int kernel_size, int input_ch, int output_ch, int stride=1, int padding=0)
   : M_weight(kernel_size, kernel_size, input_ch, output_ch), M_bias(output_ch, 1) {
     M_stride    = stride;
     M_padding    = padding;

@@ -7,8 +7,8 @@
 
 namespace dl{
 
-  template<typename T=f32>
-  class MaxPool2D : public Function<T> {
+template<typename T=f32>
+class MaxPool2D : public Function<T> {
 public:
   explicit
   MaxPool2D() = default;
