@@ -6,7 +6,7 @@
 
 namespace dl{
 
-#define CONV_DEBUG
+// #define CONV_DEBUG
 
 template<typename T=f32>
 class Conv1D : public Function<T> {
@@ -78,12 +78,10 @@ protected:
     int irow = input->row(), icol = input->col(), ichannel = input->channel();
     int number = input->number(), ivolume = irow * icol * ichannel;
     int output_ch = M_weight.number();
-    // std::cout << "output_ch:" << output_ch << std::endl;
     auto output = std::make_shared<Tensor<T>>(o_row, o_col, output_ch, number, 0);
     for(int i = 0; i < number; i++){
       int offset = i * ivolume;
       if(M_kernelSize == 1){
-        puts("In 1x1");
         parallelizer.parallel_channel(conv2d_1x1_parallel<T>, output, offset, input, 
           M_weight, M_bias, M_stride);
       }

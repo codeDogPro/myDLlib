@@ -21,6 +21,8 @@ namespace dl{
   #define NTHREAD_R(ncpu, num) (ncpu * 1 / num)
 
   const int PRINT_PRECISION = 4;
+  const int MAX_PRINT_LEN = 12;
+  const int SHOW_NUMBER_LEN = 3;
 
   const f32 eps = 1e-8;
 

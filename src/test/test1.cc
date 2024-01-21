@@ -163,7 +163,7 @@ int main(){
   // plusequal_test();
   // smmm_test();
   // reshape_test();
-  conv_test();
+  // conv_test();
   // maxpool_test();
   // sequential_test();
   // softmax_test();
