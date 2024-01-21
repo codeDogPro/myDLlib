@@ -6,6 +6,8 @@
 
 namespace dl{
 
+#define CONV_DEBUG
+
 template<typename T=f32>
 class Conv1D : public Function<T> {
 
@@ -20,9 +22,11 @@ public:
   : M_weight(kernel_size, kernel_size, input_ch, output_ch), M_bias(output_ch, 1) {
     M_stride    = stride;
     M_padding    = padding;
-    //debug
-    // std::cout << "weight:\n" << M_weight << std::endl;
-    // std::cout << "bias:\n" << M_bias << std::endl;
+    M_kernelSize = kernel_size;
+  #ifdef CONV_DEBUG
+    std::cout << "weight:\n" << M_weight << std::endl;
+    std::cout << "bias:\n" << M_bias << std::endl;
+  #endif
   }
 
   explicit 
@@ -31,9 +35,11 @@ public:
     M_bias = std::move(bias);
     M_stride    = stride;
     M_padding    = padding;
-    //debug
-    // std::cout << "weight:\n" << M_weight << std::endl;
-    // std::cout << "bias:\n" << M_bias << std::endl;
+    M_kernelSize = M_weight.row();
+  #ifdef CONV_DEBUG
+    std::cout << "weight:\n" << M_weight << std::endl;
+    std::cout << "bias:\n" << M_bias << std::endl;
+  #endif
   }
 
   virtual ~Conv2D(){};
@@ -51,7 +57,9 @@ public:
          pad_input, offset, input, M_padding);
       }
       parallelizer.sync();
-      // std::cout << "pad_input:\n" << *pad_input << std::endl;
+  #ifdef CONV_DEBUG
+      std::cout << "pad_input:\n" << *pad_input << std::endl;
+  #endif
       return conv_boost(pad_input, res_row(row), res_col(col));
     }
 
@@ -66,13 +74,24 @@ protected:
   int res_col(int col){return (col - M_weight.col() + 2 * M_padding)/M_stride + 1;}
 
   std::shared_ptr<Tensor<T>> 
-  conv_boost(const std::shared_ptr<Tensor<T>> input, int r_row, int r_col){
-    int irow = input->row(), icol = input->col(), channel = input->channel();
+  conv_boost(const std::shared_ptr<Tensor<T>> input, int o_row, int o_col){
+    int irow = input->row(), icol = input->col(), ichannel = input->channel();
+    int number = input->number(), ivolume = irow * icol * ichannel;
     int output_ch = M_weight.number();
     // std::cout << "output_ch:" << output_ch << std::endl;
-    auto output = std::make_shared<Tensor<T>>(r_row, r_col, output_ch, 1, 0);
-    parallelizer.parallel_channel(conv2d_parallel<T>, output, 0, input, 
-                                  M_weight, M_bias, M_stride);
+    auto output = std::make_shared<Tensor<T>>(o_row, o_col, output_ch, number, 0);
+    for(int i = 0; i < number; i++){
+      int offset = i * ivolume;
+      if(M_kernelSize == 1){
+        puts("In 1x1");
+        parallelizer.parallel_channel(conv2d_1x1_parallel<T>, output, offset, input, 
+          M_weight, M_bias, M_stride);
+      }
+      else{
+        parallelizer.parallel_channel(conv2d_parallel<T>, output, offset, input, 
+          M_weight, M_bias, M_stride);
+      }
+    }
     parallelizer.sync();
     return output;
   }
@@ -81,6 +100,7 @@ protected:
 private:
   int M_padding;
   int M_stride;
+  int M_kernelSize;
   Tensor<T> M_weight, M_bias;
 };
 
