@@ -24,8 +24,10 @@ namespace dl{
       }
     }
     if(name.compare("float") == 0 || name.compare("double") == 0){
-      std::uniform_real_distribution<float> random(-1, 1);
-      for(auto &x : t.get_data()){ x = random(engine);
+      std::uniform_real_distribution<float> random(-0.9f, 0.9f);
+      for(auto &x : t.get_data()){ 
+        x = random(engine);
+        x = x > 0 ? x + 0.1f : x - 0.1f;
       #ifdef DEBUG_INIT
         std::cout << x << ' ';
       #endif

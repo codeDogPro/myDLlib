@@ -158,16 +158,26 @@ void residual_test(){
   std::cout << "output:\n" << *output;
 }
 
+void matMul_test(){
+  auto a = std::make_shared<Tensor<f32>>(16, 4, 1, 1, 0.2);
+  auto b = std::make_shared<Tensor<f32>>(4, 8, 1, 1, 0.3);
+  std::cout << "a:\n" << *a;
+  std::cout << "b:\n" << *b;
+  auto output = matMul<f32>(a, b);
+  std::cout << "output:\n" << *output;
+}
+
 int main(){
-  // plus_test();
-  // plusequal_test();
-  // smmm_test();
-  // reshape_test();
-  // conv_test();
-  // maxpool_test();
-  // sequential_test();
-  // softmax_test();
-  // linear_test();
-  // residual_test();
+  // plus_test();         // pass
+  // plusequal_test();    // pass
+  // smmm_test();         // pass
+  // reshape_test();      // pass
+  // conv_test();         // pass
+  // maxpool_test();      // pass
+  // sequential_test();   // pass
+  // softmax_test();      // pass
+  // linear_test();       // pass
+  // residual_test();     // pass
+  matMul_test();
   return 0;
 }

@@ -508,22 +508,22 @@ private:
           if(col > MAX_PRINT_LEN){
             if(t.getFullPrintMode() == true){
               for(int c = 0; c < col; c++){
-                os << std::setw(4) << t[noffset + c]; if(c != col - 1) os << ", ";
+                os << std::setw(4) << t[row_idx + c]; if(c != col - 1) os << ", ";
               }
             }
             else{ // 省略输出模式
               for(int c = 0; c < SHOW_NUMBER_LEN; c++)
-                os << std::setw(4) << t[noffset + c] << ", ";
+                os << std::setw(4) << t[row_idx + c] << ", ";
               printf(" ..., ");
               for(int c = col - SHOW_NUMBER_LEN; c < col; c++){
-                os << std::setw(4) << t[noffset + c]; 
+                os << std::setw(4) << t[row_idx + c]; 
                 if(c != col - 1) os << ", ";
               }
             }
           }
           else{
             for(int c = 0; c < col; c++){
-              os << std::setw(4) << t[noffset + c]; if(c != col - 1) os << ", ";
+              os << std::setw(4) << t[row_idx + c]; if(c != col - 1) os << ", ";
             }
           }
           printf("]");

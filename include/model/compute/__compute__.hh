@@ -6,3 +6,4 @@
 #include "avgPool.hh"
 #include "maxPool.hh"
 #include "sequential.hh"
+#include "matrix.hh"

@@ -20,6 +20,7 @@ namespace dl{
   #define NTHREAD_C(ncpu, num) (ncpu * 1 / num)
   #define NTHREAD_R(ncpu, num) (ncpu * 1 / num)
 
+  // PRINT MACRO
   const int PRINT_PRECISION = 4;
   const int MAX_PRINT_LEN = 12;
   const int SHOW_NUMBER_LEN = 3;
