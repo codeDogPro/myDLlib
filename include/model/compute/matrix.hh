@@ -38,9 +38,16 @@ namespace dl{
 
   template<typename T=f32>
   std::shared_ptr<Tensor<T>>
-  transpose(const std::shared_ptr<Tensor<T>> input){
+  matTranspose(const std::shared_ptr<Tensor<T>> input){
     auto output = std::make_shared<Tensor<T>>(input->get_cshape(), 0);
-    //TODO: implement it
+    int row = input->row(), col = input->col(), channel = input->channel();
+    int number = input->number(), volume = row * col * channel;
+    for(int i = 0; i < number; i++){
+      int offset = i * volume;
+      parallelizer.parallel_channel(matTranspose_parallel<T>, output,
+        offset, input);
+    }
+    parallelizer.sync();
     return output;
   }
 }

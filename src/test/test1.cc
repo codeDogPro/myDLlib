@@ -167,8 +167,16 @@ void matMul_test(){
   std::cout << "output:\n" << *output;
 }
 
+void matTranspose_test(){
+  auto input = std::make_shared<Tensor<f32>>(8, 8, 4, 1);
+  std::cout << "input:\n" << *input;
+  auto output = matTranspose(input);
+  // output->setFullPrintMode(true);
+  std::cout << "output:\n" << *output;
+}
+
 int main(){
-  plus_test();         // pass
+  // plus_test();         // pass
   // plusequal_test();    // pass
   // smmm_test();         // pass
   // reshape_test();      // pass
@@ -179,5 +187,6 @@ int main(){
   // linear_test();       // pass
   // residual_test();     // pass
   // matMul_test();
+  matTranspose_test();
   return 0;
 }

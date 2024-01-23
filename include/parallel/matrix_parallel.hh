@@ -3,6 +3,8 @@
 #include <data/tensor.hh>
 #include <basic/tensor_macro.hh>
 
+// for tiled for loop
+#include <parallel/morton.hh>
 // for simd
 #include <immintrin.h>
 
@@ -111,6 +113,51 @@ namespace dl{
           a_idx ++, b_idx += bcol;
         }
         o_idx += acol;
+      }
+    }
+    return true;
+  }
+
+  // channel base
+  template<typename T>
+  bool matTranspose_parallel(
+    int task_begin, int task_num, int shape, int offset,
+    std::shared_ptr<Tensor<T>> output, const std::shared_ptr<Tensor<T>> input){
+    int row = input->row(), col = input->col(), channel = input->channel();
+    if(row >= BLOCK_SIZE){
+      puts("tiled ");
+      i32 *output_addr = reinterpret_cast<i32 *>(&(*output)[0]);
+      int align_row = row - row % BLOCK_SIZE;
+      int align_col = col - col % BLOCK_SIZE;
+      for(int ch = task_begin; ch < task_begin + task_num; ch ++){
+        int idx_base = offset + ch * shape;
+        int mortonEnd = (align_row / BLOCK_SIZE) * (align_col / BLOCK_SIZE);
+        for(int mortonCode = 0; mortonCode < mortonEnd; mortonCode ++){
+          auto [xBase, yBase] = morton2d::decode(mortonCode);
+          xBase *= BLOCK_SIZE;
+          yBase *= BLOCK_SIZE;
+          for(int y = yBase; y < yBase + BLOCK_SIZE; y++){
+            for(int x = xBase; x < xBase + BLOCK_SIZE; x ++){
+              int o_idx = idx_base + y * col + x;
+              int i_idx = idx_base + x * col + y;
+              _mm_stream_si32(output_addr + o_idx,
+                static_cast<int>((*input)[i_idx]));
+            }
+          }
+        }
+      }
+    }
+    else{
+      // matrix's size is too small to tiled
+      for(int ch = task_begin; ch < task_begin + task_num; ch ++){
+        int idx_base = offset + ch * shape;
+        for(int y = 0; y < row; y ++){
+          int o_idx = idx_base + y * col;
+          for(int x = 0; x < col; x ++){
+            int i_idx = idx_base + x * col + y;
+            (*output)[o_idx + x] = (*input)[i_idx];
+          }
+        }
       }
     }
     return true;

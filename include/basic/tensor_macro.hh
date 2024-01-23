@@ -3,9 +3,9 @@
 namespace dl{
   enum class Calculator{ADD, SUB, MUL, DIV, MOD};  // for calculator
 
-  enum class Operator{SUM, MEAN, MAX, MIN};                   // operator for Tensor
+  enum class Operator{SUM, MEAN, MAX, MIN};        // operator for Tensor
 
-  enum class Axis{COL, ROW, CHANNEL};                         // axis 0, 1, 2
+  enum class Axis{COL, ROW, CHANNEL};              // axis 0, 1, 2
 
   enum class Pool{MAX, AVG};
 
@@ -19,6 +19,9 @@ namespace dl{
   const int BOOST_CHANNEL = 1 << 2;
   #define NTHREAD_C(ncpu, num) (ncpu * 1 / num)
   #define NTHREAD_R(ncpu, num) (ncpu * 1 / num)
+
+  // 循环分块的块大小
+  const int BLOCK_SIZE = 64;
 
   // PRINT MACRO
   const int PRINT_PRECISION = 4;
