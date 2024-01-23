@@ -63,7 +63,7 @@ void plus_test(){
   auto d = a - b; 
   auto e = a * b; 
   auto f = a / b; 
-  // std::cout << *c << *d << *e << *f;
+  std::cout << *c << *d << *e << *f;
   // std::cout << *f;
   // f->shape();
 }
@@ -168,11 +168,11 @@ void matMul_test(){
 }
 
 int main(){
-  // plus_test();         // pass
+  plus_test();         // pass
   // plusequal_test();    // pass
   // smmm_test();         // pass
   // reshape_test();      // pass
-  conv_test();         // pass
+  // conv_test();         // pass
   // maxpool_test();      // pass
   // sequential_test();   // pass
   // softmax_test();      // pass

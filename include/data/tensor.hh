@@ -474,6 +474,7 @@ private:
     }
     for(int n = 0; n < number; n++){
       int noffset = volume * n;
+      if(n != 0) printf(" ");
       if(row == 1 && channel == 1){
         printf("[");
         if(col > MAX_PRINT_LEN){
@@ -509,6 +510,7 @@ private:
         printf("[");
         for(int r = 0; r < row; r++){
           int row_idx = noffset + col * r;
+          if(number > 1 && r != 0) printf(" ");
           if(r != 0)             printf(" ");
           printf("[");
           if(col > MAX_PRINT_LEN){
@@ -547,10 +549,12 @@ private:
         printf("[");
         for(int ch = 0; ch < channel; ch++){
           int ch_offset = noffset + ch * square;
+          if(number > 1 && ch != 0) printf(" ");
           if(ch != 0)            printf(" ");
           printf("[");
           for(int r = 0; r < row; r++){
             int row_idx = ch_offset + col * r;
+            if(number > 1 && r != 0) printf(" ");
             if(r != 0)           printf("  ");
             printf("[");
             if(col > MAX_PRINT_LEN){
