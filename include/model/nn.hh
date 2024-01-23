@@ -2,4 +2,4 @@
 
 #include <model/compute/__compute__.hh>
 #include <model/activation/__activation__.hh>
-#include <model/utils/__reshape__.hh>
+#include <model/utils/__utils__.hh>

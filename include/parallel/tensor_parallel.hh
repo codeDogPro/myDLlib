@@ -38,12 +38,12 @@ namespace dl{
           for(int b_i = bstart; b_i < bend; a_i += 16, b_i += 16){
             __m256 res[2];
             for(int offset = 0; offset < 2; offset ++){
-              __m256 _a = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
-              __m256 _b = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
+              __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
+              __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
               res[offset] = _mm256_add_ps(_a, _b);
             }
             for(int offset = 0; offset < 2; offset ++){
-              _mm256_storeu_ps(reinterpret_cast<f32 *>(&((*output)[a_i + 8 * offset])), res[offset]);
+              _mm256_store_ps(reinterpret_cast<f32 *>(&((*output)[a_i + 8 * offset])), res[offset]);
             }
           }
         }
@@ -78,12 +78,12 @@ namespace dl{
           for(int b_i = bstart; b_i < bend; a_i += 16, b_i += 16){
             __m256 res[2];
             for(int offset = 0; offset < 2; offset ++){
-              __m256 _a = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
-              __m256 _b = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
+              __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
+              __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
               res[offset] = _mm256_sub_ps(_a, _b);
             }
             for(int offset = 0; offset < 2; offset ++){
-              _mm256_storeu_ps(reinterpret_cast<f32 *>(&((*output)[a_i + 8 * offset])), res[offset]);
+              _mm256_store_ps(reinterpret_cast<f32 *>(&((*output)[a_i + 8 * offset])), res[offset]);
             }
           }
         }
@@ -118,12 +118,12 @@ namespace dl{
           for(int b_i = bstart; b_i < bend; a_i += 16, b_i += 16){
             __m256 res[2];
             for(int offset = 0; offset < 2; offset ++){
-              __m256 _a = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
-              __m256 _b = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
+              __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
+              __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
               res[offset] = _mm256_mul_ps(_a, _b);
             }
             for(int offset = 0; offset < 2; offset ++){
-              _mm256_storeu_ps(reinterpret_cast<f32 *>(&((*output)[a_i + 8 * offset])), res[offset]);
+              _mm256_store_ps(reinterpret_cast<f32 *>(&((*output)[a_i + 8 * offset])), res[offset]);
             }
           }
         }
@@ -158,12 +158,12 @@ namespace dl{
           for(int b_i = bstart; b_i < bend; a_i += 16, b_i += 16){
             __m256 res[2];
             for(int offset = 0; offset < 2; offset ++){
-              __m256 _a = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
-              __m256 _b = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
+              __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
+              __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
               res[offset] = _mm256_div_ps(_a, _b);
             }
             for(int offset = 0; offset < 2; offset ++){
-              _mm256_storeu_ps(reinterpret_cast<f32 *>(&((*output)[a_i + 8 * offset])), res[offset]);
+              _mm256_store_ps(reinterpret_cast<f32 *>(&((*output)[a_i + 8 * offset])), res[offset]);
             }
           }
         }
@@ -195,12 +195,12 @@ namespace dl{
     for(int i = start; i < align_end; i += 16){
       __m256 res[2];
       for(int offset = 0; offset < 2; offset ++){
-        __m256 _a = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&a[i + 8 * offset]));
-        __m256 _b = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&b[i + 8 * offset]));
+        __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[i + 8 * offset]));
+        __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[i + 8 * offset]));
         res[offset] = _mm256_add_ps(_a, _b);
       }
       for(int offset = 0; offset < 2; offset ++){
-        _mm256_storeu_ps(reinterpret_cast<f32 *>(&((*output)[i + 8 * offset])), res[offset]);
+        _mm256_store_ps(reinterpret_cast<f32 *>(&((*output)[i + 8 * offset])), res[offset]);
       }
     }
     // the rest of elem can't use simd
@@ -220,12 +220,12 @@ namespace dl{
     for(int i = start; i < align_end; i += 16){
       __m256 res[2];
       for(int offset = 0; offset < 2; offset ++){
-        __m256 _a = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&a[i + 8 * offset]));
-        __m256 _b = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&b[i + 8 * offset]));
+        __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[i + 8 * offset]));
+        __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[i + 8 * offset]));
         res[offset] = _mm256_sub_ps(_a, _b);
       }
       for(int offset = 0; offset < 2; offset ++){
-        _mm256_storeu_ps(reinterpret_cast<f32 *>(&((*output)[i + 8 * offset])), res[offset]);
+        _mm256_store_ps(reinterpret_cast<f32 *>(&((*output)[i + 8 * offset])), res[offset]);
       }
     }
     // the rest of elem can't use simd
@@ -245,12 +245,12 @@ namespace dl{
     for(int i = start; i < align_end; i += 16){
       __m256 res[2];
       for(int offset = 0; offset < 2; offset ++){
-        __m256 _a = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&a[i + 8 * offset]));
-        __m256 _b = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&b[i + 8 * offset]));
+        __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[i + 8 * offset]));
+        __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[i + 8 * offset]));
         res[offset] = _mm256_mul_ps(_a, _b);
       }
       for(int offset = 0; offset < 2; offset ++){
-        _mm256_storeu_ps(reinterpret_cast<f32 *>(&((*output)[i + 8 * offset])), res[offset]);
+        _mm256_store_ps(reinterpret_cast<f32 *>(&((*output)[i + 8 * offset])), res[offset]);
       }
     }
     // the rest of elem can't use simd
@@ -270,12 +270,12 @@ namespace dl{
     for(int i = start; i < align_end; i += 16){
       __m256 res[2];
       for(int offset = 0; offset < 2; offset ++){
-        __m256 _a = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&a[i + 8 * offset]));
-        __m256 _b = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&b[i + 8 * offset]));
+        __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[i + 8 * offset]));
+        __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[i + 8 * offset]));
         res[offset] = _mm256_div_ps(_a, _b);
       }
       for(int offset = 0; offset < 2; offset ++){
-        _mm256_storeu_ps(reinterpret_cast<f32 *>(&((*output)[i + 8 * offset])), res[offset]);
+        _mm256_store_ps(reinterpret_cast<f32 *>(&((*output)[i + 8 * offset])), res[offset]);
       }
     }
     // the rest of elem can't use simd

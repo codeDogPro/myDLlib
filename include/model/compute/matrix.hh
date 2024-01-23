@@ -34,4 +34,13 @@ namespace dl{
       exit(-1);
     }
   }
+
+
+  template<typename T=f32>
+  std::shared_ptr<Tensor<T>>
+  transpose(const std::shared_ptr<Tensor<T>> input){
+    auto output = std::make_shared<Tensor<T>>(input->get_cshape(), 0);
+    //TODO: implement it
+    return output;
+  }
 }

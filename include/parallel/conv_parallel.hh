@@ -10,20 +10,23 @@ namespace dl{
 
   template<typename T>
   bool padding_parallel
-  (int task_begin, int task_num, int shape, int offset,
+  (int task_begin, int task_num, int shape, int ioffset,
    std::shared_ptr<Tensor<T>> output, const std::shared_ptr<Tensor<T>> input, 
    int npaddle){
     int irow = input->row(), icol = input->col(), ichannel = input->channel();
     int orow = output->row(), ocol = output->col();
-    int input_i = offset + task_begin * irow * icol;
-    int output_i = offset + npaddle * (ocol + 1) + task_begin * orow * ocol;
+    int input_i = ioffset + task_begin * irow * icol;
+    int ooffset = ioffset / (irow * icol) * orow * ocol;
+    int output_i = ooffset + npaddle * (ocol + 1) + task_begin * orow * ocol;
     if(icol >= 8){
       int icol_align = icol - icol % 8;
+      const f32 *input_addr = reinterpret_cast<f32 *>(&(*input)[0]);
+      f32 *output_addr = reinterpret_cast<f32 *>(&(*output)[0]);
       for(int ch_idx = task_begin; ch_idx < task_begin + task_num; ch_idx++){
         for(int row_cnt = 0; row_cnt < irow; row_cnt++){
           for(int col_cnt = 0; col_cnt < icol_align; col_cnt += 8){
-            _mm256_storeu_ps(reinterpret_cast<f32 *>(&((*output)[output_i])),
-              _mm256_loadu_ps(reinterpret_cast<const f32 *>(&(*input)[input_i])));
+            _mm256_storeu_ps(output_addr + output_i, 
+              _mm256_load_ps(input_addr + input_i));
             input_i += 8, output_i += 8;
           }
           for(int col_cnt = icol_align; col_cnt < icol; col_cnt ++){

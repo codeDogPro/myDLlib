@@ -6,7 +6,7 @@
 
 namespace dl{
 
-// #define CONV_DEBUG
+#define CONV_DEBUG
 
 template<typename T=f32>
 class Conv1D : public Function<T> {
@@ -51,8 +51,9 @@ public:
     if(M_padding){
       auto pad_input = std::make_shared<Tensor<T>>
       (row + 2 * M_padding, col + 2 * M_padding, channel, number, 0);
+      int ivolume = row * col * channel;
       for(int i = 0; i < number; i++){
-        int offset = i * number;
+        int offset = i * ivolume;
         parallelizer.parallel_channel(padding_parallel<T>,
          pad_input, offset, input, M_padding);
       }

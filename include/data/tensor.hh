@@ -1,6 +1,7 @@
 #pragma once
 
 #include <data/rand_init.hh>
+#include <data/align_alloc.hh>
 #include <parallel/parallel.hh>
 #include <parallel/tensor_parallel.hh>
 
@@ -39,7 +40,7 @@ public:
   }
 
   explicit
-  Tensor(std::vector<int>& data, std::vector<int>& shape)
+  Tensor(std::vector<T, AlignedAllocator<T, 64>>& data, std::vector<int>& shape)
   : m_data(data), m_shape(shape), full_print(false) {}
 
   // deep copy
@@ -126,10 +127,12 @@ public:
 
   T * const               data()       const {return m_data.data();} 
   T * const               data()             {return m_data.data();} 
-  std::vector<T>   &      get_data  ()       { return m_data; }
   std::vector<int> &      get_shape ()       { return m_shape;}
-  std::vector<T>   const& get_cdata () const { return m_data; }
   std::vector<int> const& get_cshape() const { return m_shape;}
+  std::vector<T, AlignedAllocator<T, 64>> &      
+  get_data ()       { return m_data; }
+  std::vector<T, AlignedAllocator<T, 64>> const& 
+  get_cdata() const { return m_data; }
 
   bool reshape(const std::vector<int>& shape){ 
     size_t size = std::reduce(shape.begin(), shape.end(), 1, std::multiplies{});
@@ -188,7 +191,7 @@ protected:
 
 private:
   std::vector<int> m_shape; // [0]:row [1]:col [2]:channel [3]:number
-  std::vector<T> m_data;
+  std::vector<T, AlignedAllocator<T, 64>> m_data;
   bool full_print;
 };
 
@@ -494,8 +497,11 @@ private:
             os << std::setw(4) << t[noffset + i]; if(i != col - 1) os << ", ";
           }
         }
-        if(number == 1 || n != number - 1){
+        if(number == 1){
           printf("]\n");
+        }
+        else if(n != number - 1){
+          printf("],\n");
         }
         else if(n == number - 1) printf("]");
       }
@@ -529,8 +535,11 @@ private:
           printf("]");
           if(r != row - 1)       printf("\n");
         }
-        if(number == 1 || n != number - 1){
+        if(number == 1){
           printf("]\n");
+        }
+        else if(n != number - 1){
+          printf("],\n");
         }
         else if(n == number - 1) printf("]");
       }
@@ -571,8 +580,11 @@ private:
           printf("]");
           if(ch != channel - 1)  printf(",\n");
         }
-        if(number == 1 || n != number - 1){
+        if(number == 1){
           printf("]\n");
+        }
+        else if(n != number - 1){
+          printf("],\n");
         }
         else if(n == number - 1) printf("]"); 
       }

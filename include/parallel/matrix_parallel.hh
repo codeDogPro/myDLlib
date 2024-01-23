@@ -20,8 +20,8 @@ namespace dl{
     int b_start = offset * bvolume + task_begin * bsquare; 
     int o_start = offset * ovolume + task_begin * osquare;
     if(bcol >= 8){
-      f32 *out_address = reinterpret_cast<f32*>(&((*output)[0]));
-      const f32 *b_address = reinterpret_cast<const f32*>(&((*b)[0]));
+      f32 *out_address = reinterpret_cast<f32*>(&(*output)[0]);
+      const f32 *b_address = reinterpret_cast<const f32*>(&(*b)[0]);
       int align_bcol = bcol - bcol % 8;
       for(int ch = task_begin; ch < task_begin + task_num; ch ++){
         int a_idx = a_start + ch * asquare; 
@@ -32,9 +32,9 @@ namespace dl{
             for(int b_x = 0; b_x < align_bcol; b_x += 8){
               f32 *output_src = out_address + o_idx + b_x;
               __m256 _a = _mm256_set1_ps((*a)[a_idx]);
-              __m256 _b = _mm256_loadu_ps(b_address + b_idx + b_x);
+              __m256 _b = _mm256_load_ps(b_address + b_idx + b_x);
               __m256 mul_res = _mm256_mul_ps(_a, _b);
-              __m256 out = _mm256_loadu_ps(output_src);
+              __m256 out = _mm256_load_ps(output_src);
               __m256 accum = _mm256_add_ps(out, mul_res);
               _mm256_storeu_ps(output_src, accum);
             }
@@ -85,9 +85,9 @@ namespace dl{
           for(int b_x = 0; b_x < align_bcol; b_x += 8){
             f32 *output_src = out_address + o_idx + b_x;
             __m256 _a = _mm256_set1_ps((*a)[a_idx]);
-            __m256 _b = _mm256_loadu_ps(b_address + b_idx + b_x);
+            __m256 _b = _mm256_load_ps(b_address + b_idx + b_x);
             __m256 mul_res = _mm256_mul_ps(_a, _b);
-            __m256 out = _mm256_loadu_ps(output_src);
+            __m256 out = _mm256_load_ps(output_src);
             __m256 accum = _mm256_add_ps(out, mul_res);
             _mm256_storeu_ps(output_src, accum);
           }

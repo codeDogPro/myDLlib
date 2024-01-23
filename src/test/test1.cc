@@ -3,14 +3,14 @@
 
 using namespace dl;
 
-// Initialization test
-void initialization_test(){
-  std::vector shape{3, 3};
-  std::vector data{1, 1, 1, 4, 5, 6, 7, 8, 9};
-  Tensor<int> a(data, shape);
-  std::vector data_b{1, 3, 7, 2, 1, 3, 4, 11, 5};
-  Tensor<int> b(data_b, shape);
-}
+// // Initialization test
+// void initialization_test(){
+//   std::vector shape{3, 3};
+//   std::vector data{1, 1, 1, 4, 5, 6, 7, 8, 9};
+//   Tensor<int> a(data, shape);
+//   std::vector data_b{1, 3, 7, 2, 1, 3, 4, 11, 5};
+//   Tensor<int> b(data_b, shape);
+// }
 
 // sum(), mean(), max(), min(). test
 void smmm_test(){
@@ -87,9 +87,9 @@ void reshape_test(){
 }
 
 void conv_test(){
-  auto input = std::make_shared<Tensor<int>>(4, 4, 3, 3);
+  auto input = std::make_shared<Tensor<int>>(8, 8, 3, 3);
   std::cout << "input:\n" << *input;
-  Conv2D<int> conv2d(1, 3, 8, 1);
+  Conv2D<int> conv2d(3, 3, 8, 1, 1);
   auto output = conv2d.forward(input);
   std::cout << "output:\n" << *output << std::endl;
 }
@@ -172,12 +172,12 @@ int main(){
   // plusequal_test();    // pass
   // smmm_test();         // pass
   // reshape_test();      // pass
-  // conv_test();         // pass
+  conv_test();         // pass
   // maxpool_test();      // pass
   // sequential_test();   // pass
   // softmax_test();      // pass
   // linear_test();       // pass
   // residual_test();     // pass
-  matMul_test();
+  // matMul_test();
   return 0;
 }
