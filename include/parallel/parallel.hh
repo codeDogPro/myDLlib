@@ -8,7 +8,6 @@
 #include "thread_pool.hh"
 #include <basic/tensor_macro.hh>
 
-#include <cmath>
 #include <iostream>
 
 namespace dl{
@@ -30,13 +29,22 @@ public:
   void parallel_row(Fn&& fn, std::shared_ptr<Tensor<Tp>> output, 
   int offset, Ts&&... cargs) {
     int output_row = output->row(), col = output->col();
-    int task_size = (int)std::ceil((double)output_row / nthread);
+    int task_size = (output_row / nthread) ? output_row / nthread : 1;
+    int align_end = output_row - output_row % task_size;
 
-    for(int task_begin = 0; task_begin < output_row; task_begin += task_size){
+    for(int task_begin = 0; task_begin < align_end; task_begin += task_size){
       auto ret = _M_pool.submit(
         [task_begin, task_size, col, offset, &fn, &output, &cargs...]
         {return std::forward<Fn>(fn) 
           (task_begin, task_size, col, offset, output, std::cref(cargs)...);
+        });
+      rets.push_back(std::move(ret));
+    }
+    for(int task_begin = align_end; task_begin < output_row; task_begin ++){
+      auto ret = _M_pool.submit(
+        [task_begin, col, offset, &fn, &output, &cargs...]
+        {return std::forward<Fn>(fn) 
+          (task_begin, 1, col, offset, output, std::cref(cargs)...);
         });
       rets.push_back(std::move(ret));
     }
@@ -46,13 +54,22 @@ public:
   void parallel_col(Fn&& fn, std::shared_ptr<Tensor<Tp>> output,
   int offset, Ts&&... cargs) {
     int output_col = output->col(), row = output->row();
-    int task_size = (int)std::ceil((double)output_col / nthread);
+    int task_size = (output_col / nthread) ? output_col / nthread : 1;
+    int align_end = output_col - output_col % task_size;
 
-    for(int task_begin = 0; task_begin < output_col; task_begin += task_size){
+    for(int task_begin = 0; task_begin < align_end; task_begin += task_size){
       auto ret = _M_pool.submit(
         [task_begin, task_size, row, offset, &fn, &output, &cargs...]
         {return std::forward<Fn>(fn) 
           (task_begin, task_size, row, offset, output, std::cref(cargs)...);
+        });
+      rets.push_back(std::move(ret));
+    }
+    for(int task_begin = align_end; task_begin < output_col; task_begin ++){
+      auto ret = _M_pool.submit(
+        [task_begin, row, offset, &fn, &output, &cargs...]
+        {return std::forward<Fn>(fn) 
+          (task_begin, 1, row, offset, output, std::cref(cargs)...);
         });
       rets.push_back(std::move(ret));
     }
@@ -63,11 +80,10 @@ public:
   int offset, Ts&&... cargs) {
     int output_ch = output->channel();
     int square = output->row() * output->col();
-    int task_size = (int)std::ceil((double)output_ch / nthread);
-    // printf("task_size: %d\n", task_size);
-    // printf("output_ch: %d\n", output_ch);
+    int task_size = (output_ch / nthread) ? output_ch / nthread : 1;
+    int align_end = output_ch - output_ch % task_size;
 
-    for(int task_begin = 0; task_begin < output_ch; task_begin += task_size){
+    for(int task_begin = 0; task_begin < align_end; task_begin += task_size){
       auto ret = _M_pool.submit(
         [task_begin, task_size, square, offset, &fn, &output, &cargs...]
         {return std::forward<Fn>(fn)
@@ -75,21 +91,37 @@ public:
         });
       rets.push_back(std::move(ret));
     }
+    for(int task_begin = align_end; task_begin < output_ch; task_begin ++){
+      auto ret = _M_pool.submit(
+        [task_begin, square, offset, &fn, &output, &cargs...]
+        {return std::forward<Fn>(fn)
+        (task_begin, 1, square, offset, output, std::cref(cargs)...);
+        });
+      rets.push_back(std::move(ret));
+    }
   }
 
   template<typename Fn, typename Tp, typename... Ts>
   void parallel_number(Fn&& fn, std::shared_ptr<Tensor<Tp>> output, Ts&&... cargs) {
-    // puts("In parallel number");
     int output_num = output->number();
     int volume = output->row() * output->col() * output->channel();
-    int task_size = (int)std::ceil((double)output_num / nthread);
+    int task_size = (output_num / nthread) ? output_num / nthread : 1;
+    int align_end = output_num - output_num % task_size;
 
-    for(int task_begin = 0; task_begin < output_num; task_begin += task_size){
+    for(int task_begin = 0; task_begin < align_end; task_begin += task_size){
       auto ret = _M_pool.submit(
         [task_begin, task_size, volume, &fn, &output, &cargs...]
-        {return std::forward<Fn>(fn) 
-          (task_begin, task_size, volume, 0, output, std::cref(cargs)...);
-         //task_begin, task_num,  shape, offset
+        {return std::forward<Fn>(fn)
+        (task_begin, task_size, volume, 0, output, std::cref(cargs)...);
+         //task_begin, task_num, shape, offset
+        });
+      rets.push_back(std::move(ret));
+    }
+    for(int task_begin = align_end; task_begin < output_num; task_begin ++){
+      auto ret = _M_pool.submit(
+        [task_begin, volume, &fn, &output, &cargs...]
+        {return std::forward<Fn>(fn)
+        (task_begin, 1, volume, 0, output, std::cref(cargs)...);
         });
       rets.push_back(std::move(ret));
     }

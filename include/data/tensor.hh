@@ -10,6 +10,8 @@
 #include <cstring>
 #include <iomanip>
 
+#include <opencv2/core.hpp>
+
 namespace dl{
 
 template<typename T=f32>
@@ -184,16 +186,14 @@ public:
 
 protected:
   void parallel_copy(const Tensor<T> &rhs);
-  std::shared_ptr<Tensor<T>>
-  tensor_calculator(const Tensor<T>& lhs, const Tensor<T>& rhs, Calculator mode);
-  std::shared_ptr<Tensor<T>>
-  tensor_operator(Axis axis, Operator mode, bool keepdim);
+  std::shared_ptr<Tensor<T>> tensor_calculator(const Tensor<T>& lhs, const Tensor<T>& rhs, Calculator mode);
+  std::shared_ptr<Tensor<T>> tensor_operator(Axis axis, Operator mode, bool keepdim);
 
 private:
   std::vector<int> m_shape; // [0]:row [1]:col [2]:channel [3]:number
   std::vector<T, AlignedAllocator<T, 64>> m_data;
   bool full_print;
-};
+}; // class Tensor
 
 
 //################### Tensor::member functions' implementation ###################
@@ -598,5 +598,15 @@ private:
     return os;
   }
 
+  template<typename T=f32>
+  std::shared_ptr<Tensor<T>>
+  to_Tensor(const cv::Mat &data){
+    cv::MatSize size = data.size;
+    int channel = data.channels();
+    auto output = std::make_shared<Tensor<T>>(size[0], size[1], channel, 1, 0);
+    parallelizer.parallel_channel(cvMat2Tensor, output, 0, data);
+    parallelizer.sync();
+    return output;
+  }
 } // namespace dl
 

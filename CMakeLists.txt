@@ -10,4 +10,8 @@ add_definitions(-mavx2)
 
 add_executable(test src/test/test1.cc)
 
+find_package(OpenCV REQUIRED)
+target_include_directories(test PUBLIC ${OpenCV_INCLUDE_DIRS})
 target_include_directories(test PUBLIC include)
+
+target_link_libraries(test ${OpenCV_LIBS})

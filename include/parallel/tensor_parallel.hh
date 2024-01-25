@@ -5,23 +5,37 @@
 
 #include <vector>
 #include <iostream>
-#include <cassert>
 
 // for simd
 #include <immintrin.h>
+// for opencv
+#include <opencv2/core.hpp>
 
 namespace dl{
 
-//##################### Thread functions ########################
   template<typename T=f32>
   bool tensor_copy
   (int task_begin, int task_num, int shape, int offset,  
   std::shared_ptr<Tensor<T>> lhs, const Tensor<T> &rhs){
     int start = offset + task_begin * shape, end = start + task_num * shape;
-    for(int idx = start; idx < end; idx++){
-      // TODO: use simd
-      (*lhs)[idx] = rhs[idx];
+    if(end - start >= 8){
+      for(int idx = start; idx < end; idx += 8){
+        //TODO:simd
+      }
     }
+    else{
+      for(int idx = start; idx < end; idx++){
+        (*lhs)[idx] = rhs[idx];
+      }
+    }
+    return true;
+  }
+
+  template<typename T=f32>
+  bool cvMat2Tensor
+  (int task_begin, int task_num, int shape, int offset,  
+  std::shared_ptr<Tensor<T>> output, const cv::Mat &mat){
+    int start = offset + task_begin * shape, end = start + task_num * shape;
     return true;
   }
 
@@ -33,22 +47,48 @@ namespace dl{
     int astart = offset + task_begin * shape, aend = astart + shape;
     int bstart = offset / arow + task_begin * col, bend = bstart + col; 
     if(col >= 16){
-      for(int ch = task_begin; ch < task_begin + task_num; ch++){
-        for(int a_i = astart; a_i < aend; ){
-          for(int b_i = bstart; b_i < bend; a_i += 16, b_i += 16){
-            __m256 res[2];
-            for(int offset = 0; offset < 2; offset ++){
-              __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
-              __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
-              res[offset] = _mm256_add_ps(_a, _b);
-            }
-            for(int offset = 0; offset < 2; offset ++){
-              _mm256_store_ps(reinterpret_cast<f32 *>(&((*output)[a_i + 8 * offset])), res[offset]);
+      if(col % 16 == 0){
+        for(int ch = task_begin; ch < task_begin + task_num; ch++){
+          for(int a_i = astart; a_i < aend; ){
+            for(int b_i = bstart; b_i < bend; a_i += 16, b_i += 16){
+              __m256 res[2];
+              for(int offset = 0; offset < 2; offset ++){
+                __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
+                __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
+                res[offset] = _mm256_add_ps(_a, _b);
+              }
+              for(int offset = 0; offset < 2; offset ++){
+                _mm256_store_ps(reinterpret_cast<f32 *>(&((*output)[a_i + 8 * offset])), res[offset]);
+              }
             }
           }
+          astart += shape, bstart += col;
+          aend += shape, bend += bstart + col;
         }
-        astart += shape, bstart += col;
-        aend += shape, bend += bstart + col;
+      }
+      else{ // not align to 64B
+        for(int ch = task_begin; ch < task_begin + task_num; ch++){
+          int align_bend = bend - col % 16;
+          for(int a_i = astart; a_i < aend; ){
+            for(int b_i = bstart; b_i < align_bend; a_i += 16, b_i += 16){
+              __m256 res[2];
+              for(int offset = 0; offset < 2; offset ++){
+                __m256 _a = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
+                __m256 _b = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
+                res[offset] = _mm256_add_ps(_a, _b);
+              }
+              for(int offset = 0; offset < 2; offset ++){
+                _mm256_storeu_ps(reinterpret_cast<f32 *>(&((*output)[a_i + 8 * offset])), res[offset]);
+              }
+            }
+            // finish the rest of elements that can't use simd
+            for(int b_i = align_bend; b_i < bend; a_i++, b_i++){
+              (*output)[a_i] = a[a_i] + b[b_i];
+            }
+          }
+          astart += shape, bstart += col;
+          aend += shape, bend += bstart + col;
+        }
       }
     }
     else{ // no need to use simd
@@ -73,22 +113,48 @@ namespace dl{
     int astart = offset + task_begin * shape, aend = astart + shape;
     int bstart = offset / arow + task_begin * col, bend = bstart + col; 
     if(col >= 16){
-      for(int ch = task_begin; ch < task_begin + task_num; ch++){
-        for(int a_i = astart; a_i < aend; ){
-          for(int b_i = bstart; b_i < bend; a_i += 16, b_i += 16){
-            __m256 res[2];
-            for(int offset = 0; offset < 2; offset ++){
-              __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
-              __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
-              res[offset] = _mm256_sub_ps(_a, _b);
-            }
-            for(int offset = 0; offset < 2; offset ++){
-              _mm256_store_ps(reinterpret_cast<f32 *>(&((*output)[a_i + 8 * offset])), res[offset]);
+      if(col % 16 == 0){
+        for(int ch = task_begin; ch < task_begin + task_num; ch++){
+          for(int a_i = astart; a_i < aend; ){
+            for(int b_i = bstart; b_i < bend; a_i += 16, b_i += 16){
+              __m256 res[2];
+              for(int offset = 0; offset < 2; offset ++){
+                __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
+                __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
+                res[offset] = _mm256_sub_ps(_a, _b);
+              }
+              for(int offset = 0; offset < 2; offset ++){
+                _mm256_store_ps(reinterpret_cast<f32 *>(&((*output)[a_i + 8 * offset])), res[offset]);
+              }
             }
           }
+          astart += shape, bstart += col;
+          aend += shape, bend += bstart + col;
         }
-        astart += shape, bstart += col;
-        aend += shape, bend += bstart + col;
+      }
+      else{ // not align to 64B
+        for(int ch = task_begin; ch < task_begin + task_num; ch++){
+          int align_bend = bend - col % 16;
+          for(int a_i = astart; a_i < aend; ){
+            for(int b_i = bstart; b_i < align_bend; a_i += 16, b_i += 16){
+              __m256 res[2];
+              for(int offset = 0; offset < 2; offset ++){
+                __m256 _a = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
+                __m256 _b = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
+                res[offset] = _mm256_sub_ps(_a, _b);
+              }
+              for(int offset = 0; offset < 2; offset ++){
+                _mm256_storeu_ps(reinterpret_cast<f32 *>(&((*output)[a_i + 8 * offset])), res[offset]);
+              }
+            }
+            // finish the rest of elements that can't use simd
+            for(int b_i = align_bend; b_i < bend; a_i++, b_i++){
+              (*output)[a_i] = a[a_i] - b[b_i];
+            }
+          }
+          astart += shape, bstart += col;
+          aend += shape, bend += bstart + col;
+        }
       }
     }
     else{ // no need to use simd
@@ -113,22 +179,48 @@ namespace dl{
     int astart = offset + task_begin * shape, aend = astart + shape;
     int bstart = offset / arow + task_begin * col, bend = bstart + col; 
     if(col >= 16){
-      for(int ch = task_begin; ch < task_begin + task_num; ch++){
-        for(int a_i = astart; a_i < aend; ){
-          for(int b_i = bstart; b_i < bend; a_i += 16, b_i += 16){
-            __m256 res[2];
-            for(int offset = 0; offset < 2; offset ++){
-              __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
-              __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
-              res[offset] = _mm256_mul_ps(_a, _b);
-            }
-            for(int offset = 0; offset < 2; offset ++){
-              _mm256_store_ps(reinterpret_cast<f32 *>(&((*output)[a_i + 8 * offset])), res[offset]);
+      if(col % 16 == 0){
+        for(int ch = task_begin; ch < task_begin + task_num; ch++){
+          for(int a_i = astart; a_i < aend; ){
+            for(int b_i = bstart; b_i < bend; a_i += 16, b_i += 16){
+              __m256 res[2];
+              for(int offset = 0; offset < 2; offset ++){
+                __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
+                __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
+                res[offset] = _mm256_mul_ps(_a, _b);
+              }
+              for(int offset = 0; offset < 2; offset ++){
+                _mm256_store_ps(reinterpret_cast<f32 *>(&((*output)[a_i + 8 * offset])), res[offset]);
+              }
             }
           }
+          astart += shape, bstart += col;
+          aend += shape, bend += bstart + col;
         }
-        astart += shape, bstart += col;
-        aend += shape, bend += bstart + col;
+      }
+      else{ // not align to 64B
+        for(int ch = task_begin; ch < task_begin + task_num; ch++){
+          int align_bend = bend - col % 16;
+          for(int a_i = astart; a_i < aend; ){
+            for(int b_i = bstart; b_i < align_bend; a_i += 16, b_i += 16){
+              __m256 res[2];
+              for(int offset = 0; offset < 2; offset ++){
+                __m256 _a = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
+                __m256 _b = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
+                res[offset] = _mm256_mul_ps(_a, _b);
+              }
+              for(int offset = 0; offset < 2; offset ++){
+                _mm256_storeu_ps(reinterpret_cast<f32 *>(&((*output)[a_i + 8 * offset])), res[offset]);
+              }
+            }
+            // finish the rest of elements that can't use simd
+            for(int b_i = align_bend; b_i < bend; a_i++, b_i++){
+              (*output)[a_i] = a[a_i] * b[b_i];
+            }
+          }
+          astart += shape, bstart += col;
+          aend += shape, bend += bstart + col;
+        }
       }
     }
     else{ // no need to use simd
@@ -153,22 +245,48 @@ namespace dl{
     int astart = offset + task_begin * shape, aend = astart + shape;
     int bstart = offset / arow + task_begin * col, bend = bstart + col; 
     if(col >= 16){
-      for(int ch = task_begin; ch < task_begin + task_num; ch++){
-        for(int a_i = astart; a_i < aend; ){
-          for(int b_i = bstart; b_i < bend; a_i += 16, b_i += 16){
-            __m256 res[2];
-            for(int offset = 0; offset < 2; offset ++){
-              __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
-              __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
-              res[offset] = _mm256_div_ps(_a, _b);
-            }
-            for(int offset = 0; offset < 2; offset ++){
-              _mm256_store_ps(reinterpret_cast<f32 *>(&((*output)[a_i + 8 * offset])), res[offset]);
+      if(col % 16 == 0){
+        for(int ch = task_begin; ch < task_begin + task_num; ch++){
+          for(int a_i = astart; a_i < aend; ){
+            for(int b_i = bstart; b_i < bend; a_i += 16, b_i += 16){
+              __m256 res[2];
+              for(int offset = 0; offset < 2; offset ++){
+                __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
+                __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
+                res[offset] = _mm256_mul_ps(_a, _b);
+              }
+              for(int offset = 0; offset < 2; offset ++){
+                _mm256_store_ps(reinterpret_cast<f32 *>(&((*output)[a_i + 8 * offset])), res[offset]);
+              }
             }
           }
+          astart += shape, bstart += col;
+          aend += shape, bend += bstart + col;
         }
-        astart += shape, bstart += col;
-        aend += shape, bend += bstart + col;
+      }
+      else{ // not align to 64B
+        for(int ch = task_begin; ch < task_begin + task_num; ch++){
+          int align_bend = bend - col % 16;
+          for(int a_i = astart; a_i < aend; ){
+            for(int b_i = bstart; b_i < align_bend; a_i += 16, b_i += 16){
+              __m256 res[2];
+              for(int offset = 0; offset < 2; offset ++){
+                __m256 _a = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
+                __m256 _b = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
+                res[offset] = _mm256_div_ps(_a, _b);
+              }
+              for(int offset = 0; offset < 2; offset ++){
+                _mm256_storeu_ps(reinterpret_cast<f32 *>(&((*output)[a_i + 8 * offset])), res[offset]);
+              }
+            }
+            // finish the rest of elements that can't use simd
+            for(int b_i = align_bend; b_i < bend; a_i++, b_i++){
+              (*output)[a_i] = a[a_i] / b[b_i];
+            }
+          }
+          astart += shape, bstart += col;
+          aend += shape, bend += bstart + col;
+        }
       }
     }
     else{ // no need to use simd
@@ -190,22 +308,35 @@ namespace dl{
   (int task_begin, int task_num, int shape, int offset,
    std::shared_ptr<Tensor<T>> output, const Tensor<T> &a, const Tensor<T> &b) {
     int start = offset + task_begin * shape, end = start + task_num * shape;
-    // align to use simd
-    int align_end = end - end % 16;
-    for(int i = start; i < align_end; i += 16){
-      __m256 res[2];
-      for(int offset = 0; offset < 2; offset ++){
-        __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[i + 8 * offset]));
-        __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[i + 8 * offset]));
-        res[offset] = _mm256_add_ps(_a, _b);
+    if(a.col() >= 16){
+      int align_start = start + 16 - (start % 16);
+      int align_end = end - end % 16;
+      // the start of elem can't use simd
+      for(int i = start; i < align_start; i++){
+        (*output)[i] = a[i] + b[i];
       }
-      for(int offset = 0; offset < 2; offset ++){
-        _mm256_store_ps(reinterpret_cast<f32 *>(&((*output)[i + 8 * offset])), res[offset]);
+      // aligned idx, so it can use _mm256_load_ps
+      for(int i = align_start; i < align_end; i += 16){
+        __m256 res[2];
+        for(int offset = 0; offset < 2; offset ++){
+          __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[i + 8 * offset]));
+          __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[i + 8 * offset]));
+          res[offset] = _mm256_add_ps(_a, _b);
+        }
+        for(int offset = 0; offset < 2; offset ++){
+          _mm256_store_ps(reinterpret_cast<f32 *>(&((*output)[i + 8 * offset])), res[offset]);
+        }
+      }
+      // the rest of elem can't use simd
+      for(int i = align_end; i < end; i++){
+        (*output)[i] = a[i] + b[i];
       }
     }
-    // the rest of elem can't use simd
-    for(int i = align_end; i < end; i++){
-      (*output)[i] = a[i] + b[i];
+    else{
+      // tensor is too small to use simd
+      for(int i = start; i < end; i++){
+        (*output)[i] = a[i] + b[i];
+      }
     }
     return true;
   }
@@ -215,22 +346,35 @@ namespace dl{
   (int task_begin, int task_num, int shape, int offset,
    std::shared_ptr<Tensor<T>> output, const Tensor<T> &a, const Tensor<T> &b) {
     int start = offset + task_begin * shape, end = start + task_num * shape;
-    // align to use simd
-    int align_end = end - end % 16;
-    for(int i = start; i < align_end; i += 16){
-      __m256 res[2];
-      for(int offset = 0; offset < 2; offset ++){
-        __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[i + 8 * offset]));
-        __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[i + 8 * offset]));
-        res[offset] = _mm256_sub_ps(_a, _b);
+    if(a.col() >= 16){
+      int align_start = start + 16 - (start % 16);
+      int align_end = end - end % 16;
+      // the start of elem can't use simd
+      for(int i = start; i < align_start; i++){
+        (*output)[i] = a[i] - b[i];
       }
-      for(int offset = 0; offset < 2; offset ++){
-        _mm256_store_ps(reinterpret_cast<f32 *>(&((*output)[i + 8 * offset])), res[offset]);
+      // aligned idx, so it can use _mm256_load_ps
+      for(int i = align_start; i < align_end; i += 16){
+        __m256 res[2];
+        for(int offset = 0; offset < 2; offset ++){
+          __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[i + 8 * offset]));
+          __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[i + 8 * offset]));
+          res[offset] = _mm256_sub_ps(_a, _b);
+        }
+        for(int offset = 0; offset < 2; offset ++){
+          _mm256_store_ps(reinterpret_cast<f32 *>(&((*output)[i + 8 * offset])), res[offset]);
+        }
+      }
+      // the rest of elem can't use simd
+      for(int i = align_end; i < end; i++){
+        (*output)[i] = a[i] - b[i];
       }
     }
-    // the rest of elem can't use simd
-    for(int i = align_end; i < end; i++){
-      (*output)[i] = a[i] - b[i];
+    else{
+      // tensor is too small to use simd
+      for(int i = start; i < end; i++){
+        (*output)[i] = a[i] - b[i];
+      }
     }
     return true;
   }
@@ -240,22 +384,35 @@ namespace dl{
   (int task_begin, int task_num, int shape, int offset,
    std::shared_ptr<Tensor<T>> output, const Tensor<T> &a, const Tensor<T> &b) {
     int start = offset + task_begin * shape, end = start + task_num * shape;
-    // align to use simd
-    int align_end = end - end % 16;
-    for(int i = start; i < align_end; i += 16){
-      __m256 res[2];
-      for(int offset = 0; offset < 2; offset ++){
-        __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[i + 8 * offset]));
-        __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[i + 8 * offset]));
-        res[offset] = _mm256_mul_ps(_a, _b);
+    if(a.col() >= 16){
+      int align_start = start + 16 - (start % 16);
+      int align_end = end - end % 16;
+      // the start of elem can't use simd
+      for(int i = start; i < align_start; i++){
+        (*output)[i] = a[i] * b[i];
       }
-      for(int offset = 0; offset < 2; offset ++){
-        _mm256_store_ps(reinterpret_cast<f32 *>(&((*output)[i + 8 * offset])), res[offset]);
+      // aligned idx, so it can use _mm256_load_ps
+      for(int i = align_start; i < align_end; i += 16){
+        __m256 res[2];
+        for(int offset = 0; offset < 2; offset ++){
+          __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[i + 8 * offset]));
+          __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[i + 8 * offset]));
+          res[offset] = _mm256_mul_ps(_a, _b);
+        }
+        for(int offset = 0; offset < 2; offset ++){
+          _mm256_store_ps(reinterpret_cast<f32 *>(&((*output)[i + 8 * offset])), res[offset]);
+        }
+      }
+      // the rest of elem can't use simd
+      for(int i = align_end; i < end; i++){
+        (*output)[i] = a[i] * b[i];
       }
     }
-    // the rest of elem can't use simd
-    for(int i = align_end; i < end; i++){
-      (*output)[i] = a[i] * b[i];
+    else{
+      // tensor is too small to use simd
+      for(int i = start; i < end; i++){
+        (*output)[i] = a[i] * b[i];
+      }
     }
     return true;
   }
@@ -265,22 +422,35 @@ namespace dl{
   (int task_begin, int task_num, int shape, int offset,
    std::shared_ptr<Tensor<T>> output, const Tensor<T> &a, const Tensor<T> &b) {
     int start = offset + task_begin * shape, end = start + task_num * shape;
-    // align to use simd
-    int align_end = end - end % 16;
-    for(int i = start; i < align_end; i += 16){
-      __m256 res[2];
-      for(int offset = 0; offset < 2; offset ++){
-        __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[i + 8 * offset]));
-        __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[i + 8 * offset]));
-        res[offset] = _mm256_div_ps(_a, _b);
+    if(a.col() >= 16){
+      int align_start = start + 16 - (start % 16);
+      int align_end = end - end % 16;
+      // the start of elem can't use simd
+      for(int i = start; i < align_start; i++){
+        (*output)[i] = a[i] / b[i];
       }
-      for(int offset = 0; offset < 2; offset ++){
-        _mm256_store_ps(reinterpret_cast<f32 *>(&((*output)[i + 8 * offset])), res[offset]);
+      // aligned idx, so it can use _mm256_load_ps
+      for(int i = align_start; i < align_end; i += 16){
+        __m256 res[2];
+        for(int offset = 0; offset < 2; offset ++){
+          __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[i + 8 * offset]));
+          __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[i + 8 * offset]));
+          res[offset] = _mm256_div_ps(_a, _b);
+        }
+        for(int offset = 0; offset < 2; offset ++){
+          _mm256_store_ps(reinterpret_cast<f32 *>(&((*output)[i + 8 * offset])), res[offset]);
+        }
+      }
+      // the rest of elem can't use simd
+      for(int i = align_end; i < end; i++){
+        (*output)[i] = a[i] / b[i];
       }
     }
-    // the rest of elem can't use simd
-    for(int i = align_end; i < end; i++){
-      (*output)[i] = a[i] / b[i];
+    else{
+      // tensor is too small to use simd
+      for(int i = start; i < end; i++){
+        (*output)[i] = a[i] / b[i];
+      }
     }
     return true;
   }

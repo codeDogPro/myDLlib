@@ -1,16 +1,6 @@
 #include <dl.hh>
-#include <mylib.h>
 
 using namespace dl;
-
-// // Initialization test
-// void initialization_test(){
-//   std::vector shape{3, 3};
-//   std::vector data{1, 1, 1, 4, 5, 6, 7, 8, 9};
-//   Tensor<int> a(data, shape);
-//   std::vector data_b{1, 3, 7, 2, 1, 3, 4, 11, 5};
-//   Tensor<int> b(data_b, shape);
-// }
 
 // sum(), mean(), max(), min(). test
 void smmm_test(){
@@ -54,18 +44,14 @@ void plusequal_test(){
 
 // +-*/ test
 void plus_test(){
-  Tensor<float> a(16, 32, 4, 3, 3.1);  
-  Tensor<float> b(1, 32, 4, 3, 1.2);
-  // Tensor<int> a(4, 4, 8, 3);
-  // Tensor<int> b(4, 4, 8, 1);
+  Tensor<float> a(15, 31, 9, 9, 3.1);  
+  Tensor<float> b(15, 31, 9, 9, 1.2);
   std::cout << a << b;
   auto c = a + b;
   auto d = a - b; 
   auto e = a * b; 
   auto f = a / b; 
   std::cout << *c << *d << *e << *f;
-  // std::cout << *f;
-  // f->shape();
 }
  
 // copy test
@@ -175,8 +161,15 @@ void matTranspose_test(){
   std::cout << "output:\n" << *output;
 }
 
+#include <opencv2/opencv.hpp>
+void cvMat2Tensor_test(){
+  cv::Mat img = cv::imread("imgs/img1.jpg");
+  std::cout << img.size.dims() << std::endl;
+  std::cout << img.channels() << std::endl;
+}
+
 int main(){
-  // plus_test();         // pass
+  plus_test();         // pass
   // plusequal_test();    // pass
   // smmm_test();         // pass
   // reshape_test();      // pass
@@ -186,7 +179,8 @@ int main(){
   // softmax_test();      // pass
   // linear_test();       // pass
   // residual_test();     // pass
-  // matMul_test();
-  matTranspose_test();
+  // matMul_test();       // pass
+  // matTranspose_test(); // pass
+  // cvMat2Tensor_test();
   return 0;
 }
