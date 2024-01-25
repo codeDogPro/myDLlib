@@ -65,12 +65,12 @@ public:
   operator=(const Tensor<T>& rhs){
     if(this == &rhs) return *this;
 
-    puts("invoke operator= copy");
+    // puts("invoke operator= copy");
     m_shape.assign(4, 0); m_data.assign(rhs.size(), 0);
     for(int i = 0; int x : rhs.get_cshape()) m_shape[i++] = x;
 
     parallel_copy(rhs);
-    puts("Finish operator= copy");
+    // puts("Finish operator= copy");
     full_print = false;
     return *this;
   }
@@ -460,7 +460,137 @@ private:
     parallelizer.sync();
     return output;
   }
+  
+  
+  // ######################### print ########################
+  template<typename T>
+  void print_axis0(const Tensor<T> &t, int offset){
+    using std::cout, std::setw;
 
+    // cout.setf(std::ios::scientific);  // 科学计数法
+    cout.precision(PRINT_PRECISION);
+
+    int col = t.col();
+    if(col > MAX_PRINT_COL){
+      if(t.getFullPrintMode() == true){
+        for(int i = 0; i < col; i++){
+          cout << setw(7) << t[offset + i]; if(i != col - 1) cout << ", ";
+        }
+      }
+      else{ // 省略输出模式
+        for(int i = 0; i < SHOW_NUMBER_LEN; i++){
+          cout << setw(7) << t[offset + i] << ", ";
+        }
+        printf(" ..., ");
+        for(int i = col - SHOW_NUMBER_LEN; i < col; i++){
+          cout << setw(7) << t[offset + i]; if(i != col - 1) cout << ", ";
+        }
+      }
+    }
+    else{
+      for(int i = 0; i < col; i++){
+        cout << setw(7) << t[offset + i]; if(i != col - 1) cout << ", ";
+      }
+    }
+  }
+
+  template<typename T>
+  void print_axis1(const Tensor<T> &t, int offset){
+    int row = t.row(), col = t.col(), number = t.number();
+    if(row > MAX_PRINT_ROW){
+      if(t.getFullPrintMode() == true){
+        for(int r = 0; r < row; r++){
+          int row_idx = offset + col * r;
+          if(number > 1 && r != 0) printf(" ");
+          if(r != 0)               printf(" ");
+          printf("[");
+          print_axis0(t, row_idx);
+          printf("]");
+          if(r != row - 1)         printf(",\n");
+        }
+      }
+      else{ // 省略输出模式
+        for(int r = 0; r < SHOW_NUMBER_LEN; r++){
+          int row_idx = offset + col * r;
+          if(number > 1 && r != 0) printf(" ");
+          if(r != 0)               printf("  ");
+          printf("[");
+          print_axis0(t, row_idx);
+          printf("],\n");
+        }
+        if(number > 1) printf("   ...,\n");
+        else           printf("  ...,\n");
+        for(int r = row - SHOW_NUMBER_LEN; r < row; r++){
+          int row_idx = offset + col * r;
+          if(number > 1 && r != 0) printf(" ");
+          printf("  [");
+          print_axis0(t, row_idx);
+          printf("]");
+          if(r != row - 1)         printf(",\n");
+        }
+      }
+    }
+    else{
+      for(int r = 0; r < row; r++){
+        int row_idx = offset + col * r;
+        if(number > 1 && r != 0) printf(" ");
+        if(r != 0)               printf(" ");
+        printf("[");
+        print_axis0(t, row_idx);
+        printf("]");
+        if(r != row - 1)         printf(",\n");
+      }
+    }
+  }
+
+  template<typename T>
+  void print_axis2(const Tensor<T> &t, int offset){
+    int row = t.row(), col = t.col(), channel = t.channel(), number = t.number();
+    if(channel > MAX_PRINT_CHANNEL){
+      if(t.getFullPrintMode() == true){
+        for(int ch = 0; ch < channel; ch++){
+          int ch_offset = offset + ch * row * col;
+          if(number > 1 && ch != 0)  printf(" ");
+          if(ch != 0)                printf(" ");
+          printf("[");
+          print_axis1(t, ch_offset);
+          printf("]");
+          if(ch != channel - 1)      printf(",\n");
+        }
+      }
+      else{
+        for(int ch = 0; ch < SHOW_NUMBER_LEN; ch++){
+          int ch_offset = offset + ch * row * col;
+          if(number > 1 && ch != 0)  printf(" ");
+          if(ch != 0)                printf(" ");
+          printf("[");
+          print_axis1(t, ch_offset);
+          printf("],\n");
+        }
+        if(number > 1) printf("\n  ...,\n\n");
+        else           printf("\n ...,\n\n");
+        for(int ch = channel - SHOW_NUMBER_LEN; ch < channel; ch++){
+          int ch_offset = offset + ch * row * col;
+          if(number > 1 && ch != 0)  printf(" ");
+          printf(" [");
+          print_axis1(t, ch_offset);
+          printf("]");
+          if(ch != channel - 1)      printf(",\n");
+        }
+      }
+    }
+    else{
+      for(int ch = 0; ch < channel; ch++){
+        int ch_offset = offset + ch * row * col;
+        if(number > 1 && ch != 0)  printf(" ");
+        if(ch != 0)                printf(" ");
+        printf("[");
+        print_axis1(t, ch_offset);
+        printf("]");
+        if(ch != channel - 1)      printf(",\n");
+      }
+    }
+  }
 
   template<typename U>
   std::ostream &
@@ -468,136 +598,39 @@ private:
     int row = t.row(), col = t.col(), channel = t.channel(), number = t.number();
     int square = row * col, volume = square * channel;
 
-    // os.setf(std::ios::scientific);  // 科学计数法
-    os.precision(PRINT_PRECISION);
-    if(number > 1){
-      printf("[");
-    }
+    if(number > 1)   printf("[");
     for(int n = 0; n < number; n++){
       int noffset = volume * n;
       if(n != 0) printf(" ");
       if(row == 1 && channel == 1){
         printf("[");
-        if(col > MAX_PRINT_LEN){
-          if(t.getFullPrintMode() == true){
-            for(int i = 0; i < col; i++){
-              os << std::setw(4) << t[noffset + i]; if(i != col - 1) os << ", ";
-            }
-          }
-          else{ // 省略输出模式
-            for(int i = 0; i < SHOW_NUMBER_LEN; i++)
-              os << std::setw(4) << t[noffset + i] << ", ";
-              printf(" ..., ");
-            for(int i = col - SHOW_NUMBER_LEN; i < col; i++){
-              os << std::setw(4) << t[noffset + i]; 
-              if(i != col - 1) os << ", ";
-            }
-          }
-        }
-        else{
-          for(int i = 0; i < col; i++){
-            os << std::setw(4) << t[noffset + i]; if(i != col - 1) os << ", ";
-          }
-        }
-        if(number == 1){
-          printf("]\n");
-        }
-        else if(n != number - 1){
-          printf("],\n");
-        }
-        else if(n == number - 1) printf("]");
+        print_axis0(t, noffset);
+        if(number == 1)            printf("]\n"); 
+        else if(n != number - 1)   printf("],\n");
+        else if(n == number - 1)   printf("]");
       }
       else if(row > 1 && channel == 1){
         printf("[");
-        for(int r = 0; r < row; r++){
-          int row_idx = noffset + col * r;
-          if(number > 1 && r != 0) printf(" ");
-          if(r != 0)             printf(" ");
-          printf("[");
-          if(col > MAX_PRINT_LEN){
-            if(t.getFullPrintMode() == true){
-              for(int c = 0; c < col; c++){
-                os << std::setw(4) << t[row_idx + c]; if(c != col - 1) os << ", ";
-              }
-            }
-            else{ // 省略输出模式
-              for(int c = 0; c < SHOW_NUMBER_LEN; c++)
-                os << std::setw(4) << t[row_idx + c] << ", ";
-              printf(" ..., ");
-              for(int c = col - SHOW_NUMBER_LEN; c < col; c++){
-                os << std::setw(4) << t[row_idx + c]; 
-                if(c != col - 1) os << ", ";
-              }
-            }
-          }
-          else{
-            for(int c = 0; c < col; c++){
-              os << std::setw(4) << t[row_idx + c]; if(c != col - 1) os << ", ";
-            }
-          }
-          printf("]");
-          if(r != row - 1)       printf("\n");
-        }
-        if(number == 1){
-          printf("]\n");
-        }
-        else if(n != number - 1){
-          printf("],\n");
-        }
-        else if(n == number - 1) printf("]");
+        print_axis1(t, noffset);
+        if(number == 1)            printf("]\n"); 
+        else if(n != number - 1)   printf("],\n");
+        else if(n == number - 1)   printf("]");
       }
       else if(channel > 1){
         printf("[");
-        for(int ch = 0; ch < channel; ch++){
-          int ch_offset = noffset + ch * square;
-          if(number > 1 && ch != 0) printf(" ");
-          if(ch != 0)            printf(" ");
-          printf("[");
-          for(int r = 0; r < row; r++){
-            int row_idx = ch_offset + col * r;
-            if(number > 1 && r != 0) printf(" ");
-            if(r != 0)           printf("  ");
-            printf("[");
-            if(col > MAX_PRINT_LEN){
-              if(t.getFullPrintMode() == true){
-                for(int c = 0; c < col; c++){
-                  os << std::setw(4) << t[row_idx + c]; if(c != col - 1) os << ", ";
-                }
-              }
-              else{ // 省略输出模式
-                for(int c = 0; c < SHOW_NUMBER_LEN; c++)
-                  os << std::setw(4) << t[row_idx + c] << ", ";
-                printf(" ..., ");
-                for(int c = col - SHOW_NUMBER_LEN; c < col; c++){
-                  os << std::setw(4) << t[row_idx + c]; 
-                  if(c != col - 1) os << ", ";
-                }
-              }
-            }
-            else{
-              for(int c = 0; c < col; c++){
-                os << std::setw(4) << t[row_idx + c]; if(c != col - 1) os << ", ";
-              }
-            }
-            printf("]");
-            if(r != row - 1)     printf("\n");
-          }
-          printf("]");
-          if(ch != channel - 1)  printf(",\n");
-        }
-        if(number == 1){
-          printf("]\n");
-        }
-        else if(n != number - 1){
-          printf("],\n");
-        }
-        else if(n == number - 1) printf("]"); 
+        print_axis2(t, noffset);
+        if(number == 1)              printf("]\n"); 
+        else if(n != number - 1)     printf("],\n\n");
+        else if(n == number - 1)     printf("]");
       }
     }
     if(number > 1) printf("]");
     puts("");
     return os;
   }
+  // ##################### end print ###########################
+
+
 
   template<typename T=f32>
   std::shared_ptr<Tensor<T>>

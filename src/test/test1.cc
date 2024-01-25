@@ -160,14 +160,19 @@ void copy_test(){
   std::cout << "b:\n" << *b;
 }
 
-#include <opencv2/opencv.hpp>
-void cvMat2Tensor_test(){
-  cv::Mat img = cv::imread("imgs/img2.png");
-  auto tensor = to_Tensor<f32>(img);
-  std::cout << "tensor:\n" << *tensor;
-  std::cout << img.size << std::endl;
-  std::cout << img.channels() << std::endl;
-  tensor->shape();
+// #include <opencv2/opencv.hpp>
+// void cvMat2Tensor_test(){
+//   cv::Mat img = cv::imread("imgs/img2.png");
+//   auto tensor = to_Tensor<f32>(img);
+//   std::cout << "tensor:\n" << *tensor;
+//   std::cout << img.size << std::endl;
+//   std::cout << img.channels() << std::endl;
+//   tensor->shape();
+// }
+
+void print_test(){
+  auto input = std::make_shared<Tensor<f32>>(120, 19, 80, 2);
+  std::cout << "input:\n" << *input;
 }
 
 int main(){
@@ -184,6 +189,7 @@ int main(){
   // matMul_test();       // pass
   // matTranspose_test(); // pass
   // copy_test();         // pass
-  cvMat2Tensor_test();
+  // cvMat2Tensor_test(); // pass
+  // print_test();        // pass
   return 0;
 }
