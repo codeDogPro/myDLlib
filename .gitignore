@@ -3,5 +3,4 @@
 *.pyc
 .vscode/
 build/
-
-asm.txt
+imgs/
