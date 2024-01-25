@@ -14,9 +14,10 @@ namespace dl{
   using i32 = int;
   using i64 = long long;
 
-  const int BOOST_ROW = 1 << 0;
-  const int BOOST_COL = 1 << 0;
+  const int BOOST_ROW = 1 << 2;
+  const int BOOST_COL = 1 << 2;
   const int BOOST_CHANNEL = 1 << 2;
+  const int BOOST_NUMBER = 1 << 2;
   #define NTHREAD_C(ncpu, num) (ncpu * 1 / num)
   #define NTHREAD_R(ncpu, num) (ncpu * 1 / num)
 

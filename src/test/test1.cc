@@ -54,16 +54,6 @@ void plus_test(){
   std::cout << *c << *d << *e << *f;
 }
  
-// copy test
-void copy_test(){
-  Tensor<int> a(2,2,1);
-  Tensor<int> b(a);
-  b.shape();
-  std::cout << a << b;
-  a[1] = 2, b[1] = 4;
-  std::cout << a << b;
-}
-
 void reshape_test(){
   std::vector shape{3, 2, 4};
   Tensor<float> a(2, 3, 5, 4);
@@ -161,15 +151,27 @@ void matTranspose_test(){
   std::cout << "output:\n" << *output;
 }
 
+void copy_test(){
+  auto a = std::make_shared<Tensor<f32>>(5, 19, 2, 1, 0.2);
+  auto b = std::make_shared<Tensor<f32>>(5, 19, 2, 1, 0.3);
+  std::cout << "a:\n" << *a;
+  std::cout << "b:\n" << *b;
+  *b = *a;
+  std::cout << "b:\n" << *b;
+}
+
 #include <opencv2/opencv.hpp>
 void cvMat2Tensor_test(){
-  cv::Mat img = cv::imread("imgs/img1.jpg");
-  std::cout << img.size.dims() << std::endl;
+  cv::Mat img = cv::imread("imgs/img2.png");
+  auto tensor = to_Tensor<f32>(img);
+  std::cout << "tensor:\n" << *tensor;
+  std::cout << img.size << std::endl;
   std::cout << img.channels() << std::endl;
+  tensor->shape();
 }
 
 int main(){
-  plus_test();         // pass
+  // plus_test();         // pass
   // plusequal_test();    // pass
   // smmm_test();         // pass
   // reshape_test();      // pass
@@ -181,6 +183,7 @@ int main(){
   // residual_test();     // pass
   // matMul_test();       // pass
   // matTranspose_test(); // pass
-  // cvMat2Tensor_test();
+  // copy_test();         // pass
+  cvMat2Tensor_test();
   return 0;
 }

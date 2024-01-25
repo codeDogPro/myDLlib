@@ -19,7 +19,8 @@ cpu_number() noexcept {
 
 class Parallelizer {
 public:
-  Parallelizer();
+  Parallelizer() = default;
+
   Parallelizer(size_t pool_size) : _M_pool(pool_size) {
     nthread = cpu_number();
     _M_pool.start(nthread);
@@ -40,14 +41,14 @@ public:
         });
       rets.push_back(std::move(ret));
     }
-    for(int task_begin = align_end; task_begin < output_row; task_begin ++){
-      auto ret = _M_pool.submit(
-        [task_begin, col, offset, &fn, &output, &cargs...]
-        {return std::forward<Fn>(fn) 
-          (task_begin, 1, col, offset, output, std::cref(cargs)...);
-        });
-      rets.push_back(std::move(ret));
-    }
+    // rest of tasks
+    int task_begin = align_end, task_sz = output_row % task_size;
+    auto ret = _M_pool.submit(
+      [task_begin, task_sz, col, offset, &fn, &output, &cargs...]
+      {return std::forward<Fn>(fn) 
+        (task_begin, task_sz, col, offset, output, std::cref(cargs)...);
+      });
+    rets.push_back(std::move(ret));
   }
 
   template<typename Fn, typename Tp, typename... Ts>
@@ -65,14 +66,14 @@ public:
         });
       rets.push_back(std::move(ret));
     }
-    for(int task_begin = align_end; task_begin < output_col; task_begin ++){
-      auto ret = _M_pool.submit(
-        [task_begin, row, offset, &fn, &output, &cargs...]
-        {return std::forward<Fn>(fn) 
-          (task_begin, 1, row, offset, output, std::cref(cargs)...);
-        });
-      rets.push_back(std::move(ret));
-    }
+    // rest of tasks
+    int task_begin = align_end, task_sz = output_col % task_size;
+    auto ret = _M_pool.submit(
+      [task_begin, task_sz, row, offset, &fn, &output, &cargs...]
+      {return std::forward<Fn>(fn) 
+        (task_begin, task_sz, row, offset, output, std::cref(cargs)...);
+      });
+    rets.push_back(std::move(ret));
   }
 
   template<typename Fn, typename Tp, typename... Ts>
@@ -91,14 +92,14 @@ public:
         });
       rets.push_back(std::move(ret));
     }
-    for(int task_begin = align_end; task_begin < output_ch; task_begin ++){
-      auto ret = _M_pool.submit(
-        [task_begin, square, offset, &fn, &output, &cargs...]
-        {return std::forward<Fn>(fn)
-        (task_begin, 1, square, offset, output, std::cref(cargs)...);
-        });
-      rets.push_back(std::move(ret));
-    }
+    // rest of tasks
+    int task_begin = align_end, task_sz = output_ch % task_size;
+    auto ret = _M_pool.submit(
+      [task_begin, task_sz, square, offset, &fn, &output, &cargs...]
+      {return std::forward<Fn>(fn) 
+        (task_begin, task_sz, square, offset, output, std::cref(cargs)...);
+      });
+    rets.push_back(std::move(ret));
   }
 
   template<typename Fn, typename Tp, typename... Ts>
@@ -117,14 +118,14 @@ public:
         });
       rets.push_back(std::move(ret));
     }
-    for(int task_begin = align_end; task_begin < output_num; task_begin ++){
-      auto ret = _M_pool.submit(
-        [task_begin, volume, &fn, &output, &cargs...]
-        {return std::forward<Fn>(fn)
-        (task_begin, 1, volume, 0, output, std::cref(cargs)...);
-        });
-      rets.push_back(std::move(ret));
-    }
+    // rest of tasks
+    int task_begin = align_end, task_sz = output_num % task_size;
+    auto ret = _M_pool.submit(
+      [task_begin, task_sz, volume, &fn, &output, &cargs...]
+      {return std::forward<Fn>(fn)
+      (task_begin, task_sz, volume, 0, output, std::cref(cargs)...);
+      });
+    rets.push_back(std::move(ret));
   }
 
   /*

@@ -65,12 +65,12 @@ public:
   operator=(const Tensor<T>& rhs){
     if(this == &rhs) return *this;
 
-    // puts("invoke operator= copy");
+    puts("invoke operator= copy");
     m_shape.assign(4, 0); m_data.assign(rhs.size(), 0);
     for(int i = 0; int x : rhs.get_cshape()) m_shape[i++] = x;
 
     parallel_copy(rhs);
-    // puts("Finish operator= copy");
+    puts("Finish operator= copy");
     full_print = false;
     return *this;
   }
@@ -202,16 +202,17 @@ private:
   void Tensor<T>::parallel_copy(const Tensor<T> &rhs){
     int row = this->row(), col = this->col();
     int number = this->number(), channel = this->channel();
+    // insure lhs won't be deleted when finish copy
     auto deleter = [](Tensor<T> *tensor){ };
     std::shared_ptr<Tensor<T>> lhs(this, deleter);
-    if(channel >= number * BOOST_CHANNEL){
+    if(number >= BOOST_NUMBER){
+      parallelizer.parallel_number(tensor_copy<T>, lhs, rhs);
+    }
+    else{
       for(int i = 0; i < number; i++){
         int offset = i * row * col * channel;
         parallelizer.parallel_channel(tensor_copy<T>, lhs, offset, rhs);
       }
-    }
-    else {
-      parallelizer.parallel_number(tensor_copy<T>, lhs, rhs);
     }
     parallelizer.sync();
   }
@@ -604,7 +605,12 @@ private:
     cv::MatSize size = data.size;
     int channel = data.channels();
     auto output = std::make_shared<Tensor<T>>(size[0], size[1], channel, 1, 0);
-    parallelizer.parallel_channel(cvMat2Tensor, output, 0, data);
+    /*
+    because the multichannels mat's memory struct, 
+    we need to boost base on row, and each thread
+    handle all the channel.
+    */
+    parallelizer.parallel_row(cvMat2Tensor<T>, output, 0, data);
     parallelizer.sync();
     return output;
   }

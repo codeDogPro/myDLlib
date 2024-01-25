@@ -18,9 +18,26 @@ namespace dl{
   (int task_begin, int task_num, int shape, int offset,  
   std::shared_ptr<Tensor<T>> lhs, const Tensor<T> &rhs){
     int start = offset + task_begin * shape, end = start + task_num * shape;
-    if(end - start >= 8){
-      for(int idx = start; idx < end; idx += 8){
-        //TODO:simd
+    if(rhs.col() >= 16){
+      int align_start = start + 16 - (start % 16);
+      int align_end = end - end % 16;
+      // the start of elem can't use simd
+      for(int i = start; i < align_start; i++){
+        (*lhs)[i] = rhs[i];
+      }
+      // aligned idx, so it can use _mm256_load_ps
+      for(int i = align_start; i < align_end; i += 16){
+        __m256 tmp[2];
+        for(int offset = 0; offset < 2; offset ++){
+          tmp[offset] = _mm256_load_ps(reinterpret_cast<const f32 *>(&rhs[i + 8 * offset]));
+        }
+        for(int offset = 0; offset < 2; offset ++){
+          _mm256_store_ps(reinterpret_cast<f32 *>(&(*lhs)[i + 8 * offset]), tmp[offset]);
+        }
+      }
+      // the rest of elem can't use simd
+      for(int i = align_end; i < end; i++){
+        (*lhs)[i] = rhs[i];
       }
     }
     else{
@@ -35,7 +52,82 @@ namespace dl{
   bool cvMat2Tensor
   (int task_begin, int task_num, int shape, int offset,  
   std::shared_ptr<Tensor<T>> output, const cv::Mat &mat){
+    int col = output->col(), row = output->row(), channel = output->channel();
+    int square = row * col, depth = mat.depth();
     int start = offset + task_begin * shape, end = start + task_num * shape;
+    int o_idx = start;
+    switch(depth){
+      case CV_8U:
+      case CV_8S: // 没有专门的Vec3xxx对应，索性和uchar一起吧
+        if(channel == 3){
+          auto it_start = mat.begin<cv::Vec3b>() + start;
+          auto it_end = mat.begin<cv::Vec3b>() + end;
+          for(auto it = it_start; it != it_end; it++, o_idx ++){
+            for(int ch = 0; ch < channel; ch ++){
+              (*output)[ch * square + o_idx] = static_cast<T>((*it)[ch]);
+            }
+          } 
+        }
+        else if(channel == 1){
+          auto it_start = mat.begin<uchar>() + start;
+          auto it_end = mat.begin<uchar>() + end;
+          for(auto it = it_start; it != it_end; it++, o_idx ++){
+            (*output)[o_idx] = static_cast<T>(*it);
+          } 
+        } break;
+      case CV_16U:
+        if(channel == 3){
+          auto it_start = mat.begin<cv::Vec3w>() + start;
+          auto it_end = mat.begin<cv::Vec3w>() + end;
+          for(auto it = it_start; it != it_end; it++, o_idx ++){
+            for(int ch = 0; ch < channel; ch ++){
+              (*output)[ch * square + o_idx] = static_cast<T>((*it)[ch]);
+            }
+          }
+        }
+        else if(channel == 1){
+          auto it_start = mat.begin<ushort>() + start;
+          auto it_end = mat.begin<ushort>() + end;
+          for(auto it = it_start; it != it_end; it++, o_idx ++){
+            (*output)[o_idx] = static_cast<T>(*it);
+          }
+        } break;
+      case CV_32S:
+        if(channel == 3){
+          auto it_start = mat.begin<cv::Vec3i>() + start;
+          auto it_end = mat.begin<cv::Vec3i>() + end;
+          for(auto it = it_start; it != it_end; it++, o_idx ++){
+            for(int ch = 0; ch < channel; ch ++){
+              (*output)[ch * square + o_idx] = static_cast<T>((*it)[ch]);
+            }
+          } 
+        }
+        else if(channel == 1){
+          auto it_start = mat.begin<int>() + start;
+          auto it_end = mat.begin<int>() + end;
+          for(auto it = it_start; it != it_end; it++, o_idx ++){
+            (*output)[o_idx] = static_cast<T>(*it);
+          } 
+        } break;
+      case CV_32F:
+        if(channel == 3){
+          auto it_start = mat.begin<cv::Vec3f>() + start;
+          auto it_end = mat.begin<cv::Vec3f>() + end;
+          for(auto it = it_start; it != it_end; it++, o_idx ++){
+            for(int ch = 0; ch < channel; ch ++){
+              (*output)[ch * square + o_idx] = static_cast<T>((*it)[ch]);
+            }
+          } 
+        }
+        else if(channel == 1){
+          auto it_start = mat.begin<f32>() + start;
+          auto it_end = mat.begin<f32>() + end;
+          for(auto it = it_start; it != it_end; it++, o_idx ++){
+            (*output)[o_idx] = static_cast<T>(*it);
+          } 
+        } break;
+      default: exit(-1);
+    }
     return true;
   }
 
