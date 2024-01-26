@@ -64,7 +64,7 @@ namespace dl{
           auto it_end = mat.begin<cv::Vec3b>() + end;
           for(auto it = it_start; it != it_end; it++, o_idx ++){
             for(int ch = 0; ch < channel; ch ++){
-              (*output)[ch * square + o_idx] = reinterpret_cast<T>((*it)[ch]);
+              (*output)[ch * square + o_idx] = static_cast<T>((*it)[ch]);
             }
           } 
         }
@@ -72,7 +72,7 @@ namespace dl{
           auto it_start = mat.begin<uchar>() + start;
           auto it_end = mat.begin<uchar>() + end;
           for(auto it = it_start; it != it_end; it++, o_idx ++){
-            (*output)[o_idx] = reinterpret_cast<T>(*it);
+            (*output)[o_idx] = static_cast<T>(*it);
           } 
         } break;
       case CV_16U:
@@ -81,7 +81,7 @@ namespace dl{
           auto it_end = mat.begin<cv::Vec3w>() + end;
           for(auto it = it_start; it != it_end; it++, o_idx ++){
             for(int ch = 0; ch < channel; ch ++){
-              (*output)[ch * square + o_idx] = reinterpret_cast<T>((*it)[ch]);
+              (*output)[ch * square + o_idx] = static_cast<T>((*it)[ch]);
             }
           }
         }
@@ -89,7 +89,7 @@ namespace dl{
           auto it_start = mat.begin<ushort>() + start;
           auto it_end = mat.begin<ushort>() + end;
           for(auto it = it_start; it != it_end; it++, o_idx ++){
-            (*output)[o_idx] = reinterpret_cast<T>(*it);
+            (*output)[o_idx] = static_cast<T>(*it);
           }
         } break;
       case CV_32S:
@@ -98,7 +98,7 @@ namespace dl{
           auto it_end = mat.begin<cv::Vec3i>() + end;
           for(auto it = it_start; it != it_end; it++, o_idx ++){
             for(int ch = 0; ch < channel; ch ++){
-              (*output)[ch * square + o_idx] = reinterpret_cast<T>((*it)[ch]);
+              (*output)[ch * square + o_idx] = static_cast<T>((*it)[ch]);
             }
           } 
         }
@@ -106,7 +106,7 @@ namespace dl{
           auto it_start = mat.begin<int>() + start;
           auto it_end = mat.begin<int>() + end;
           for(auto it = it_start; it != it_end; it++, o_idx ++){
-            (*output)[o_idx] = reinterpret_cast<T>(*it);
+            (*output)[o_idx] = static_cast<T>(*it);
           } 
         } break;
       case CV_32F:
@@ -115,7 +115,7 @@ namespace dl{
           auto it_end = mat.begin<cv::Vec3f>() + end;
           for(auto it = it_start; it != it_end; it++, o_idx ++){
             for(int ch = 0; ch < channel; ch ++){
-              (*output)[ch * square + o_idx] = reinterpret_cast<T>((*it)[ch]);
+              (*output)[ch * square + o_idx] = static_cast<T>((*it)[ch]);
             }
           } 
         }
@@ -123,7 +123,7 @@ namespace dl{
           auto it_start = mat.begin<f32>() + start;
           auto it_end = mat.begin<f32>() + end;
           for(auto it = it_start; it != it_end; it++, o_idx ++){
-            (*output)[o_idx] = reinterpret_cast<T>(*it);
+            (*output)[o_idx] = static_cast<T>(*it);
           } 
         } break;
       default: exit(-1);
