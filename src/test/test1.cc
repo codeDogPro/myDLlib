@@ -44,8 +44,8 @@ void plusequal_test(){
 
 // +-*/ test
 void plus_test(){
-  Tensor<float> a(68, 31, 43, 3, 3.1);  
-  Tensor<float> b(1, 31, 43, 3, 1.2);
+  Tensor<float> a(68, 32, 43, 3, 3.1);  
+  Tensor<float> b(1, 32, 43, 3, 1.2);
   std::cout << a << b;
   auto c = a + b;
   auto d = a - b; 

@@ -351,7 +351,7 @@ namespace dl{
               for(int offset = 0; offset < 2; offset ++){
                 __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
                 __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
-                res[offset] = _mm256_mul_ps(_a, _b);
+                res[offset] = _mm256_div_ps(_a, _b);
               }
               for(int offset = 0; offset < 2; offset ++){
                 _mm256_store_ps(reinterpret_cast<f32 *>(&((*output)[a_i + 8 * offset])), 
