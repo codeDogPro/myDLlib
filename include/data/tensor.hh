@@ -462,49 +462,48 @@ private:
   }
   
   
-  // ######################### print ########################
+  // ######################################### PRINT ##################################################
   template<typename T>
-  void print_axis0(const Tensor<T> &t, int offset){
-    using std::cout, std::setw;
-
-    // cout.setf(std::ios::scientific);  // 科学计数法
-    cout.precision(PRINT_PRECISION);
+  void print_H(std::ostream &os, const Tensor<T> &t, int offset){
+    using std::setw;
+    // os.setf(std::ios::scientific);  // 科学计数法
+    os.precision(PRINT_PRECISION);
 
     int col = t.col();
     if(col > MAX_PRINT_COL){
       if(t.getFullPrintMode() == true){
         for(int i = 0; i < col; i++){
-          cout << setw(7) << t[offset + i]; if(i != col - 1) cout << ", ";
+          os << setw(7) << t[offset + i]; if(i != col - 1) os << ", ";
         }
       }
       else{ // 省略输出模式
         for(int i = 0; i < SHOW_NUMBER_LEN; i++){
-          cout << setw(7) << t[offset + i] << ", ";
+          os << setw(7) << t[offset + i] << ", ";
         }
         printf(" ..., ");
         for(int i = col - SHOW_NUMBER_LEN; i < col; i++){
-          cout << setw(7) << t[offset + i]; if(i != col - 1) cout << ", ";
+          os << setw(7) << t[offset + i]; if(i != col - 1) os << ", ";
         }
       }
     }
     else{
       for(int i = 0; i < col; i++){
-        cout << setw(7) << t[offset + i]; if(i != col - 1) cout << ", ";
+        os << setw(7) << t[offset + i]; if(i != col - 1) os << ", ";
       }
     }
   }
 
   template<typename T>
-  void print_axis1(const Tensor<T> &t, int offset){
+  void print_WxH(std::ostream &os, const Tensor<T> &t, int offset){
     int row = t.row(), col = t.col(), number = t.number();
     if(row > MAX_PRINT_ROW){
       if(t.getFullPrintMode() == true){
         for(int r = 0; r < row; r++){
           int row_idx = offset + col * r;
           if(number > 1 && r != 0) printf(" ");
-          if(r != 0)               printf(" ");
+          if(r != 0)               printf("  ");
           printf("[");
-          print_axis0(t, row_idx);
+          print_H(os, t, row_idx);
           printf("]");
           if(r != row - 1)         printf(",\n");
         }
@@ -515,7 +514,7 @@ private:
           if(number > 1 && r != 0) printf(" ");
           if(r != 0)               printf("  ");
           printf("[");
-          print_axis0(t, row_idx);
+          print_H(os, t, row_idx);
           printf("],\n");
         }
         if(number > 1) printf("   ...,\n");
@@ -524,7 +523,7 @@ private:
           int row_idx = offset + col * r;
           if(number > 1 && r != 0) printf(" ");
           printf("  [");
-          print_axis0(t, row_idx);
+          print_H(os, t, row_idx);
           printf("]");
           if(r != row - 1)         printf(",\n");
         }
@@ -534,9 +533,9 @@ private:
       for(int r = 0; r < row; r++){
         int row_idx = offset + col * r;
         if(number > 1 && r != 0) printf(" ");
-        if(r != 0)               printf(" ");
+        if(r != 0)               printf("  ");
         printf("[");
-        print_axis0(t, row_idx);
+        print_H(os, t, row_idx);
         printf("]");
         if(r != row - 1)         printf(",\n");
       }
@@ -544,7 +543,7 @@ private:
   }
 
   template<typename T>
-  void print_axis2(const Tensor<T> &t, int offset){
+  void print_CxWxH(std::ostream &os, const Tensor<T> &t, int offset){
     int row = t.row(), col = t.col(), channel = t.channel(), number = t.number();
     if(channel > MAX_PRINT_CHANNEL){
       if(t.getFullPrintMode() == true){
@@ -553,18 +552,18 @@ private:
           if(number > 1 && ch != 0)  printf(" ");
           if(ch != 0)                printf(" ");
           printf("[");
-          print_axis1(t, ch_offset);
+          print_WxH(os, t, ch_offset);
           printf("]");
           if(ch != channel - 1)      printf(",\n");
         }
       }
-      else{
+      else{ // 省略输出模式
         for(int ch = 0; ch < SHOW_NUMBER_LEN; ch++){
           int ch_offset = offset + ch * row * col;
           if(number > 1 && ch != 0)  printf(" ");
           if(ch != 0)                printf(" ");
           printf("[");
-          print_axis1(t, ch_offset);
+          print_WxH(os, t, ch_offset);
           printf("],\n");
         }
         if(number > 1) printf("\n  ...,\n\n");
@@ -573,7 +572,7 @@ private:
           int ch_offset = offset + ch * row * col;
           if(number > 1 && ch != 0)  printf(" ");
           printf(" [");
-          print_axis1(t, ch_offset);
+          print_WxH(os, t, ch_offset);
           printf("]");
           if(ch != channel - 1)      printf(",\n");
         }
@@ -585,7 +584,7 @@ private:
         if(number > 1 && ch != 0)  printf(" ");
         if(ch != 0)                printf(" ");
         printf("[");
-        print_axis1(t, ch_offset);
+        print_WxH(os, t, ch_offset);
         printf("]");
         if(ch != channel - 1)      printf(",\n");
       }
@@ -604,31 +603,30 @@ private:
       if(n != 0) printf(" ");
       if(row == 1 && channel == 1){
         printf("[");
-        print_axis0(t, noffset);
+        print_H(os, t, noffset);
         if(number == 1)            printf("]\n"); 
         else if(n != number - 1)   printf("],\n");
         else if(n == number - 1)   printf("]");
       }
       else if(row > 1 && channel == 1){
         printf("[");
-        print_axis1(t, noffset);
+        print_WxH(os, t, noffset);
         if(number == 1)            printf("]\n"); 
         else if(n != number - 1)   printf("],\n");
         else if(n == number - 1)   printf("]");
       }
       else if(channel > 1){
         printf("[");
-        print_axis2(t, noffset);
+        print_CxWxH(os, t, noffset);
         if(number == 1)              printf("]\n"); 
         else if(n != number - 1)     printf("],\n\n");
         else if(n == number - 1)     printf("]");
       }
     }
-    if(number > 1) printf("]");
-    puts("");
+    if(number > 1) printf("]\n\n");
     return os;
   }
-  // ##################### end print ###########################
+  // ########################################### END PRINT ###################################################
 
 
 
