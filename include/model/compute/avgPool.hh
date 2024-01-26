@@ -7,6 +7,8 @@
 #include <parallel/pooling_parallel.hh>
 
 namespace dl{
+ 
+#define POOL_DEBUG
 
 template<typename T=f32>
 class AvgPool2D : public Function<T> {
@@ -15,9 +17,10 @@ public:
   AvgPool2D() = default;
 
   explicit
-  AvgPool2D(int pooling_size=2, int stride=1, int padding=0){
+  AvgPool2D(int pooling_size=2, int padding=0, int stride=-1){
     M_pool_size = pooling_size;
-    M_stride = stride;
+    if(stride == -1) M_stride = pooling_size;
+    else             M_stride = stride;
     M_padding = padding;
   }
 
@@ -43,7 +46,9 @@ private:
         pad_input, offset, input, M_padding);
     }
     parallelizer.sync();
-    // std::cout << "pad_input:\n" << *pad_input << std::endl;
+  #ifdef POOL_DEBUG
+    std::cout << "pad_input:\n" << *pad_input << std::endl;
+  #endif
     return pad_input;
   }
 

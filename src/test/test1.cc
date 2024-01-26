@@ -71,13 +71,13 @@ void conv_test(){
 }
 
 void maxpool_test(){
-  auto input = std::make_shared<Tensor<f32>>(6, 6, 1, 1);
+  auto input = std::make_shared<Tensor<f32>>(7, 7, 3, 2);
   std::cout << "input:\n" << *input;
-  // MaxPool2D maxpool2d(2, 2, 1);
-  AvgPool2D avgpool2d(2, 2, 1);
-  // auto output1 = maxpool2d.forward(input);
+  MaxPool2D maxpool2d(2, 0);
+  AvgPool2D avgpool2d(2, 0);
+  auto output1 = maxpool2d.forward(input);
   auto output2 = avgpool2d.forward(input);
-  // std::cout << "output1:\n" << *output1 << std::endl;
+  std::cout << "output1:\n" << *output1 << std::endl;
   std::cout << "output2:\n" << *output2 << std::endl;
 }
 
@@ -160,22 +160,22 @@ void copy_test(){
   std::cout << "b:\n" << *b;
 }
 
-#include <opencv2/opencv.hpp>
-void cvMat2Tensor_test(){
-  cv::Mat img = cv::imread("imgs/img3.png");
-  auto tensor = to_Tensor<f32>(img);
-  std::cout << "tensor:\n" << *tensor;
-  std::cout << img.size << std::endl;
-  std::cout << img.channels() << std::endl;
-  Conv2D conv_pad(3, 3, 8, 1, 1);
-  MaxPool2D pool1(2);
-  auto output1 = conv_pad.forward(tensor);
-  auto output2 = pool1.forward(output1);
-  std::cout << "output1:\n" << *output2 << std::endl;
-  tensor->shape();
-  output1->shape();
-  output2->shape();
-}
+// #include <opencv2/opencv.hpp>
+// void cvMat2Tensor_test(){
+//   cv::Mat img = cv::imread("imgs/img3.png");
+//   auto tensor = to_Tensor<f32>(img);
+//   std::cout << "tensor:\n" << *tensor;
+//   std::cout << img.size << std::endl;
+//   std::cout << img.channels() << std::endl;
+//   Conv2D conv_pad(3, 3, 8, 1, 1);
+//   MaxPool2D pool1(2);
+//   auto output1 = conv_pad.forward(tensor);
+//   auto output2 = pool1.forward(output1);
+//   std::cout << "output1:\n" << *output2 << std::endl;
+//   tensor->shape();
+//   output1->shape();
+//   output2->shape();
+// }
 
 void print_test(){
   auto input = std::make_shared<Tensor<f32>>(120, 19, 80, 2);
@@ -188,7 +188,7 @@ int main(){
   // smmm_test();         // pass
   // reshape_test();      // pass
   // conv_test();         // pass
-  // maxpool_test();      // pass
+  maxpool_test();      // pass
   // sequential_test();   // pass
   // softmax_test();      // pass
   // linear_test();       // pass
@@ -196,7 +196,7 @@ int main(){
   // matMul_test();       // pass
   // matTranspose_test(); // pass
   // copy_test();         // pass
-  cvMat2Tensor_test(); // pass
+  // cvMat2Tensor_test(); // pass
   // print_test();        // pass
   return 0;
 }
