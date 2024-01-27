@@ -13,8 +13,8 @@ namespace dl{
 template<typename T=f32>
 class AvgPool2D : public Function<T> {
 public:
-  explicit
-  AvgPool2D() = default;
+  explicit AvgPool2D() = default;
+  virtual ~AvgPool2D() = default;
 
   explicit
   AvgPool2D(int pooling_size=2, int padding=0, int stride=-1){

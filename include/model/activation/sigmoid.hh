@@ -9,8 +9,8 @@ namespace dl{
 template<typename T=f32>
 class Sigmoid : public Function<T> {
 public:
-  explicit
-  Sigmoid() = default;
+  explicit Sigmoid() = default;
+  virtual ~Sigmoid() = default;
 
   virtual std::shared_ptr<Tensor<T>> 
   forward(const std::shared_ptr<Tensor<T>> input){

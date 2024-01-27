@@ -42,7 +42,7 @@ public:
   #endif
   }
 
-  virtual ~Conv2D(){};
+  virtual ~Conv2D() = default;
 
   virtual std::shared_ptr<Tensor<T>> 
   forward(const std::shared_ptr<Tensor<T>> input){

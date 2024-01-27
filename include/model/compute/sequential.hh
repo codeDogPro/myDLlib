@@ -19,15 +19,18 @@ public:
     }
   }
   
+  // #define SEQUENTIAL_DEBUG
   virtual std::shared_ptr<Tensor<Tp>> 
   forward(const std::shared_ptr<Tensor<Tp>> input){
     std::shared_ptr<Tensor<Tp>> _input = input;
     std::shared_ptr<Tensor<Tp>> output;
     for(auto &func : functions){
       output = func->forward(_input);
+    #ifdef SEQUENTIAL_DEBUG
       // std::cout << "output:\n" << *output << std::endl;
-      _input = output;
       // std::cout << "input:\n" << *output << std::endl;
+    #endif
+      _input = output;
     }
     return output;
   }

@@ -19,6 +19,7 @@ class Tensor{
 
 public:
   explicit Tensor() = default;
+  ~Tensor() = default;
 
   explicit
   Tensor(int row, int col, int channel=1, int number=1, T val=T(-1)){

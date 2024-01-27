@@ -188,7 +188,7 @@ int main(){
   // smmm_test();         // pass
   // reshape_test();      // pass
   // conv_test();         // pass
-  maxpool_test();      // pass
+  // maxpool_test();      // pass
   // sequential_test();   // pass
   // softmax_test();      // pass
   // linear_test();       // pass

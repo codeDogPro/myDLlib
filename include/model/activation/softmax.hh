@@ -9,10 +9,10 @@ namespace dl{
 template<typename T=f32>
 class Softmax : public Function<T> {
 public:
-  explicit
-  Softmax(int axis=0) {
+  explicit Softmax(int axis=0) {
     M_axis = Axis(axis);
   };
+  virtual ~Softmax() = default;
 
   virtual std::shared_ptr<Tensor<T>> 
   forward(const std::shared_ptr<Tensor<T>> input){

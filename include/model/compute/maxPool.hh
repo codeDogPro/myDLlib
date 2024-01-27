@@ -12,8 +12,8 @@ namespace dl{
 template<typename T=f32>
 class MaxPool2D : public Function<T> {
 public:
-  explicit
-  MaxPool2D() = default;
+  explicit MaxPool2D() = default;
+  virtual ~MaxPool2D() = default;
 
   explicit
   MaxPool2D(int pooling_size=2, int padding=0, int stride=-1){

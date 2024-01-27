@@ -9,8 +9,8 @@ namespace dl{
 template<typename T=f32>
 class Relu : public Function<T> {
 public:
-  explicit
-  Relu() = default;
+  explicit Relu() = default;
+  virtual ~Relu() = default;
 
   virtual std::shared_ptr<Tensor<T>> 
   forward(const std::shared_ptr<Tensor<T>> input){
