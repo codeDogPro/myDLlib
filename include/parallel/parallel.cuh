@@ -2,10 +2,10 @@
 
 // #define BENCH
 #ifdef BENCH
-#include <basic/timer.hh>
+#include <basic/timer.cuh>
 #endif
 
-#include "thread_pool.hh"
+#include "thread_pool.cuh"
 #include <basic/tensor_macro.cuh>
 
 #include <iostream>

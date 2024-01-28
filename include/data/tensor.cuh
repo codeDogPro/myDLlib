@@ -1,9 +1,9 @@
 #pragma once
 
 #include <data/rand_init.cuh>
-#include <data/align_alloc.hh>
-#include <parallel/parallel.hh>
-#include <parallel/tensor_parallel.hh>
+#include <data/align_alloc.cuh>
+#include <parallel/parallel.cuh>
+#include <parallel/tensor_parallel.cuh>
 
 #include <numeric>
 #include <cstdlib>
@@ -56,7 +56,8 @@ public:
   explicit
   Tensor(const Tensor<T>& t){ 
     m_shape.assign(3, 0); m_data.assign(t.size(), 0);
-    for(int i = 0; int x : t.get_cshape()) m_shape[i++] = x;
+    int i = 0; 
+    for(int x : t.get_cshape()) m_shape[i++] = x;
     parallel_copy(t);
     full_print = false;
     m_device = Device::CPU;
@@ -76,7 +77,8 @@ public:
 
     // puts("invoke operator= copy");
     m_shape.assign(4, 0); m_data.assign(rhs.size(), 0);
-    for(int i = 0; int x : rhs.get_cshape()) m_shape[i++] = x;
+    int i = 0; 
+    for(int x : rhs.get_cshape()) m_shape[i++] = x;
 
     parallel_copy(rhs);
     // puts("Finish operator= copy");
@@ -150,8 +152,8 @@ public:
     return tensor_operator(Axis(axis), Operator::MIN, keepdim);
   }
 
-  T * const               data()       const {return m_data.data();} 
-  T * const               data()             {return m_data.data();} 
+  const T *               data()       const { return m_data.data();} 
+  const T *               data()             { return m_data.data();} 
   std::vector<int> &      get_shape ()       { return m_shape;}
   std::vector<int> const& get_cshape() const { return m_shape;}
   std::vector<T, AlignedAllocator<T, 64>> &      

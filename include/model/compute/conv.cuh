@@ -1,7 +1,7 @@
 #pragma once
 
 #include <basic/function.cuh>
-#include <parallel/conv_parallel.hh>
+#include <parallel/conv_parallel.cuh>
 
 
 namespace dl{

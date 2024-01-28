@@ -1,6 +1,6 @@
 #pragma once
 
-#include <basic/type_tool.hh>
+#include <basic/type_tool.cuh>
 
 #include <random>
 #include <ctime>

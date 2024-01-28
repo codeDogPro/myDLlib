@@ -1,7 +1,7 @@
 #pragma once
 
 #include <data/tensor.cuh>
-#include <parallel/matrix_parallel.hh>
+#include <parallel/matrix_parallel.cuh>
 
 namespace dl{
   template<typename T=f32>

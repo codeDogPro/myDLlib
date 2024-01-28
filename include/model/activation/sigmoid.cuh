@@ -1,7 +1,7 @@
 #pragma once
 
 #include <basic/function.cuh>
-#include <parallel/activation_parallel.hh>
+#include <parallel/activation_parallel.cuh>
 
 namespace dl{
   

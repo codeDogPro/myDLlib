@@ -4,7 +4,7 @@
 #include <basic/tensor_macro.cuh>
 
 // for tiled for loop
-#include <parallel/morton.hh>
+#include <parallel/morton.cuh>
 // for simd
 #include <immintrin.h>
 

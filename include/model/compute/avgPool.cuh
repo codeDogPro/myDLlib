@@ -3,8 +3,8 @@
 #include <basic/function.cuh>
 #include <basic/tensor_macro.cuh>
 
-#include <parallel/conv_parallel.hh>
-#include <parallel/pooling_parallel.hh>
+#include <parallel/conv_parallel.cuh>
+#include <parallel/pooling_parallel.cuh>
 
 #include <parallel/conv_cuda.cuh>
 #include <parallel/pooling_cuda.cuh>
