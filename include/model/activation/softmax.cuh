@@ -1,7 +1,6 @@
 #pragma once
 
-#include <basic/function.hh>
-#include <data/tensor.hh>
+#include <basic/function.cuh>
 #include <parallel/activation_parallel.hh>
 
 namespace dl{

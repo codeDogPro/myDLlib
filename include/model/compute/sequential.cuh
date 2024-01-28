@@ -1,6 +1,6 @@
 #pragma once
 
-#include <data/tensor.hh>
+#include <basic/function.cuh>
 
 
 namespace dl{

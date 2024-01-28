@@ -1,6 +1,6 @@
 #pragma once
 
-#include <basic/function.hh>
+#include <basic/function.cuh>
 #include <parallel/conv_parallel.hh>
 
 

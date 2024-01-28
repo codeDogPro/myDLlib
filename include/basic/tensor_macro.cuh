@@ -9,6 +9,8 @@ namespace dl{
 
   enum class Pool{MAX, AVG};
 
+  enum class Device{CPU, CUDA};
+
   using f32 = float;
   using f64 = double;
   using i32 = int;

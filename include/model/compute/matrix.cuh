@@ -1,6 +1,6 @@
 #pragma once
 
-#include <data/tensor.hh>
+#include <data/tensor.cuh>
 #include <parallel/matrix_parallel.hh>
 
 namespace dl{

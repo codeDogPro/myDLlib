@@ -1,7 +1,7 @@
 #pragma once
 
-#include <data/tensor.hh>
-#include <basic/tensor_macro.hh>
+#include <data/tensor.cuh>
+#include <basic/tensor_macro.cuh>
 
 // for simd
 #include <immintrin.h>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "conv.hh"
+#include "conv.cuh"
 
 namespace dl{
 

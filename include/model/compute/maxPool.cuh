@@ -1,7 +1,7 @@
 #pragma once
 
-#include <basic/function.hh>
-#include <basic/tensor_macro.hh>
+#include <basic/function.cuh>
+#include <basic/tensor_macro.cuh>
 #include <parallel/conv_parallel.hh>
 #include <parallel/pooling_parallel.hh>
 

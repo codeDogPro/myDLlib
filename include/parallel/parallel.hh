@@ -6,7 +6,7 @@
 #endif
 
 #include "thread_pool.hh"
-#include <basic/tensor_macro.hh>
+#include <basic/tensor_macro.cuh>
 
 #include <iostream>
 

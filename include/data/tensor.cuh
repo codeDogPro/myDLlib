@@ -1,6 +1,6 @@
 #pragma once
 
-#include <data/rand_init.hh>
+#include <data/rand_init.cuh>
 #include <data/align_alloc.hh>
 #include <parallel/parallel.hh>
 #include <parallel/tensor_parallel.hh>
@@ -11,6 +11,10 @@
 #include <iomanip>
 
 #include <opencv2/core.hpp>
+
+// cuda accleration
+#include <parallel/tensor_cuda.cuh>
+#include <thrust/device_vector.h>
 
 namespace dl{
 
@@ -28,6 +32,7 @@ public:
     m_data.assign(row * col * channel * number, val);
     m_shape.assign({row, col, channel, number});
     full_print = false;
+    m_device = Device::CPU;
     if(val == T(-1)){ rand_init(*this);}
   }
 
@@ -39,6 +44,7 @@ public:
     m_data.assign(size, val);
     m_shape = shape;
     full_print = false;
+    m_device = Device::CPU;
     if(val == T(-1)){ rand_init(*this);}
   }
 
@@ -53,6 +59,7 @@ public:
     for(int i = 0; int x : t.get_cshape()) m_shape[i++] = x;
     parallel_copy(t);
     full_print = false;
+    m_device = Device::CPU;
   }
 
   // move copy ctor
@@ -60,6 +67,7 @@ public:
     m_data  = t.get_data();
     m_shape = t.get_shape();
     full_print = false;
+    m_device = Device::CPU;
   }
 
   Tensor<T> &
@@ -73,6 +81,7 @@ public:
     parallel_copy(rhs);
     // puts("Finish operator= copy");
     full_print = false;
+    m_device = Device::CPU;
     return *this;
   }
 
@@ -84,7 +93,20 @@ public:
     m_data  = std::move(rhs.get_data());
     m_shape = std::move(rhs.get_shape());
     full_print = false;
+    m_device = Device::CPU;
     return *this;
+  }
+
+  void to(Device device){
+    if(device == Device::CPU){
+      m_device = Device::CPU;
+    }
+    else if(device == Device::CUDA){
+      m_device = Device::CUDA;
+    }
+    else {
+
+    }
   }
 
   std::shared_ptr<Tensor<T>> operator+(const Tensor<T>& rhs) { return tensor_calculator(*this, rhs, Calculator::ADD);}
@@ -194,6 +216,10 @@ private:
   std::vector<int> m_shape; // [0]:row [1]:col [2]:channel [3]:number
   std::vector<T, AlignedAllocator<T, 64>> m_data;
   bool full_print;
+
+  thrust::device_vector<T> m_cudaData;
+  thrust::device_vector<T> m_cudaShape;
+  Device m_device;
 }; // class Tensor
 
 
