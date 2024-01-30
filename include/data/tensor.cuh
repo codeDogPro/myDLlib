@@ -2,19 +2,20 @@
 
 #include <data/rand_init.cuh>
 #include <data/align_alloc.cuh>
+#include <basic/tensor_macro.cuh>
 #include <parallel/parallel.cuh>
 #include <parallel/tensor_parallel.cuh>
+// #include <parallel/tensor_cuda.cuh>
 
 #include <numeric>
-#include <cstdlib>
 #include <cstring>
 #include <iomanip>
 
 #include <opencv2/core.hpp>
 
 // cuda accleration
-#include <parallel/tensor_cuda.cuh>
 #include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 
 namespace dl{
 
@@ -29,35 +30,37 @@ public:
   Tensor(int row, int col, int channel=1, int number=1, T val=T(-1)){
     assert(row != 0 && col != 0 && channel != 0 && number != 0);
 
-    m_data.assign(row * col * channel * number, val);
-    m_shape.assign({row, col, channel, number});
+    m_hostData.assign(row * col * channel * number, val);
+    m_hostShape.assign(4, 0);
+    m_hostShape[0] = row, m_hostShape[1] = col;
+    m_hostShape[2] = channel, m_hostShape[3] = number; 
     full_print = false;
     m_device = Device::CPU;
     if(val == T(-1)){ rand_init(*this);}
   }
 
   explicit
-  Tensor(const std::vector<int>& shape, T val=-1){
+  Tensor(const thrust::host_vector<int>& shape, T val=-1){
     assert(shape.size() != 0);
 
     int size = std::reduce(shape.begin(), shape.end(), 1, std::multiplies{});
-    m_data.assign(size, val);
-    m_shape = shape;
+    m_hostData.assign(size, val);
+    m_hostShape = shape;
     full_print = false;
     m_device = Device::CPU;
     if(val == T(-1)){ rand_init(*this);}
   }
 
   explicit
-  Tensor(std::vector<T, AlignedAllocator<T, 64>>& data, std::vector<int>& shape)
-  : m_data(data), m_shape(shape), full_print(false) {}
+  Tensor(thrust::host_vector<T, AlignedAllocator<T, 64>>& data, thrust::host_vector<int>& shape)
+  : m_hostData(data), m_hostShape(shape), full_print(false) {}
 
   // deep copy
   explicit
   Tensor(const Tensor<T>& t){ 
-    m_shape.assign(3, 0); m_data.assign(t.size(), 0);
+    m_hostShape.assign(3, 0); m_hostData.assign(t.size(), 0);
     int i = 0; 
-    for(int x : t.get_cshape()) m_shape[i++] = x;
+    for(int x : t.get_cshape()) m_hostShape[i++] = x;
     parallel_copy(t);
     full_print = false;
     m_device = Device::CPU;
@@ -65,8 +68,8 @@ public:
 
   // move copy ctor
   Tensor(Tensor<T>&& t){ 
-    m_data  = t.get_data();
-    m_shape = t.get_shape();
+    m_hostData  = t.get_data();
+    m_hostShape = t.get_shape();
     full_print = false;
     m_device = Device::CPU;
   }
@@ -76,9 +79,9 @@ public:
     if(this == &rhs) return *this;
 
     // puts("invoke operator= copy");
-    m_shape.assign(4, 0); m_data.assign(rhs.size(), 0);
+    m_hostShape.assign(4, 0); m_hostData.assign(rhs.size(), 0);
     int i = 0; 
-    for(int x : rhs.get_cshape()) m_shape[i++] = x;
+    for(int x : rhs.get_cshape()) m_hostShape[i++] = x;
 
     parallel_copy(rhs);
     // puts("Finish operator= copy");
@@ -92,131 +95,133 @@ public:
     if(this == &rhs) return *this;
 
     puts("invoke operator= move");
-    m_data  = std::move(rhs.get_data());
-    m_shape = std::move(rhs.get_shape());
+    m_hostData  = std::move(rhs.get_data());
+    m_hostShape = std::move(rhs.get_shape());
     full_print = false;
     m_device = Device::CPU;
     return *this;
   }
 
   void to(Device device){
+    if(device == m_device) return ;
+
     if(device == Device::CPU){
+      m_hostData = m_cudaData;
+      m_hostShape = m_cudaShape;
       m_device = Device::CPU;
     }
     else if(device == Device::CUDA){
+      m_cudaData = m_hostData;
+      m_cudaShape = m_hostShape;
       m_device = Device::CUDA;
     }
     else {
-
+      fprintf(stderr, "only support cpu and cuda\n");
+      exit(-1);
     }
   }
 
-  std::shared_ptr<Tensor<T>> operator+(const Tensor<T>& rhs) { return tensor_calculator(*this, rhs, Calculator::ADD);}
-  std::shared_ptr<Tensor<T>> operator-(const Tensor<T>& rhs) { return tensor_calculator(*this, rhs, Calculator::SUB);}
-  std::shared_ptr<Tensor<T>> operator*(const Tensor<T>& rhs) { return tensor_calculator(*this, rhs, Calculator::MUL);}
-  std::shared_ptr<Tensor<T>> operator/(const Tensor<T>& rhs) { return tensor_calculator(*this, rhs, Calculator::DIV);}
-  std::shared_ptr<Tensor<T>> operator+(T x) { Tensor<T> rhs(m_shape, x); return *this + rhs; }
-  std::shared_ptr<Tensor<T>> operator-(T x) { Tensor<T> rhs(m_shape, x); return *this - rhs; }
-  std::shared_ptr<Tensor<T>> operator*(T x) { Tensor<T> rhs(m_shape, x); return *this * rhs; }
-  std::shared_ptr<Tensor<T>> operator/(T x) { Tensor<T> rhs(m_shape, x); return *this / rhs; }
 
+  std::shared_ptr<Tensor<T>> operator+(const Tensor<T>& rhs);
+  std::shared_ptr<Tensor<T>> operator-(const Tensor<T>& rhs);
+  std::shared_ptr<Tensor<T>> operator*(const Tensor<T>& rhs);
+  std::shared_ptr<Tensor<T>> operator/(const Tensor<T>& rhs);
+  std::shared_ptr<Tensor<T>> operator+(T x);
+  std::shared_ptr<Tensor<T>> operator-(T x);
+  std::shared_ptr<Tensor<T>> operator*(T x);
+  std::shared_ptr<Tensor<T>> operator/(T x);
+
+  void operator+=(T x);
+  void operator-=(T x);
+  void operator*=(T x);
+  void operator/=(T x);
   void operator+=(const Tensor<T>& rhs) { *this = *(*this + rhs); }
   void operator-=(const Tensor<T>& rhs) { *this = *(*this - rhs); }
   void operator*=(const Tensor<T>& rhs) { *this = *(*this * rhs); }
   void operator/=(const Tensor<T>& rhs) { *this = *(*this / rhs); }
-  void operator+=(T x) { Tensor<T> rhs(m_shape, x); *this += rhs; }
-  void operator-=(T x) { Tensor<T> rhs(m_shape, x); *this -= rhs; }
-  void operator*=(T x) { Tensor<T> rhs(m_shape, x); *this *= rhs; }
-  void operator/=(T x) { Tensor<T> rhs(m_shape, x); *this /= rhs; }
 
-        T& operator[](size_t idx)       { return m_data[idx];}
-  const T& operator[](size_t idx) const { return m_data[idx];}
+        T& operator[](size_t idx)       { return m_hostData[idx];}
+  const T& operator[](size_t idx) const { return m_hostData[idx];}
 
   template<typename U>
   friend std::ostream & operator<<(std::ostream &os, const Tensor<U> &t);
 
-  std::shared_ptr<Tensor<T>>
-  sum(int axis=0, bool keepdim=false){ 
-    return tensor_operator(Axis(axis), Operator::SUM, keepdim);
-  }
-  std::shared_ptr<Tensor<T>>
-  mean(int axis=0, bool keepdim=false){
-    return tensor_operator(Axis(axis), Operator::MEAN, keepdim);
-  }
-  std::shared_ptr<Tensor<T>>
-  max(int axis=0, bool keepdim=false){
-    return tensor_operator(Axis(axis), Operator::MAX, keepdim);
-  }
-  std::shared_ptr<Tensor<T>>
-  min(int axis=0, bool keepdim=false){ 
-    return tensor_operator(Axis(axis), Operator::MIN, keepdim);
-  }
+  std::shared_ptr<Tensor<T>> sum (int axis=0, bool keepdim=false);
+  std::shared_ptr<Tensor<T>> mean(int axis=0, bool keepdim=false);
+  std::shared_ptr<Tensor<T>> max (int axis=0, bool keepdim=false);
+  std::shared_ptr<Tensor<T>> min (int axis=0, bool keepdim=false);
 
-  const T *               data()       const { return m_data.data();} 
-  const T *               data()             { return m_data.data();} 
-  std::vector<int> &      get_shape ()       { return m_shape;}
-  std::vector<int> const& get_cshape() const { return m_shape;}
-  std::vector<T, AlignedAllocator<T, 64>> &      
-  get_data ()       { return m_data; }
-  std::vector<T, AlignedAllocator<T, 64>> const& 
-  get_cdata() const { return m_data; }
+  const T * data() const { return m_hostData.data();} 
+  const T * data()       { return m_hostData.data();} 
+  thrust::host_vector<int> &      get_shape ()       { return m_hostShape;}
+  thrust::host_vector<int> const& get_cshape() const { return m_hostShape;}
+  thrust::host_vector<T, AlignedAllocator<T, 64>> &       get_data()      {return m_hostData;}
+  thrust::host_vector<T, AlignedAllocator<T, 64>> const& get_cdata()const{return m_hostData;}
 
-  bool reshape(const std::vector<int>& shape){ 
+  bool reshape(const thrust::host_vector<int>& shape){ 
     size_t size = std::reduce(shape.begin(), shape.end(), 1, std::multiplies{});
-    if(size != m_data.size()){
+    if(size != m_hostData.size()){
       fprintf(stderr, "New size:%ld isn't equal to the data size:%ld\n",
-      size, m_data.size());
+      size, m_hostData.size());
       exit(-1);
     }
-    m_shape = shape;
+    m_hostShape = shape;
     return true;
   } 
   bool reshape(int row, int col, int channel, int number=1){
     size_t size = row * col * channel * number;
-    if(size != m_data.size()){
+    if(size != m_hostData.size()){
       fprintf(stderr, "New size:%ld isn't equal to the data size:%ld\n",
-      size, m_data.size());
+      size, m_hostData.size());
       exit(-1);
     }
-    m_shape[0] = row, m_shape[1] = col, m_shape[2] = channel, m_shape[3] = number;
+    m_hostShape[0] = row, m_hostShape[1] = col, m_hostShape[2] = channel, m_hostShape[3] = number;
     return true;
   } 
 
 
-  size_t size()       { return m_data.size(); }
-  size_t size() const { return m_data.size(); }
+  size_t size()       { return m_hostData.size(); }
+  size_t size() const { return m_hostData.size(); }
 
-  int row()           { return m_shape[0]; }
-  int col()           { return m_shape[1]; }
-  int channel()       { return m_shape[2]; }  
-  int number()        { return m_shape[3]; }
-  int row()     const { return m_shape[0]; }
-  int col()     const { return m_shape[1]; }
-  int channel() const { return m_shape[2]; }  
-  int number()  const { return m_shape[3]; }
+  int row()           { return m_hostShape[0]; }
+  int col()           { return m_hostShape[1]; }
+  int channel()       { return m_hostShape[2]; }  
+  int number()        { return m_hostShape[3]; }
+  int row()     const { return m_hostShape[0]; }
+  int col()     const { return m_hostShape[1]; }
+  int channel() const { return m_hostShape[2]; }  
+  int number()  const { return m_hostShape[3]; }
 
   void shape(){
     printf("shape:[");
-    for(int i = 0; i < m_shape.size(); i++) {
-      std::cout << m_shape[i];
-      if(i != m_shape.size() - 1) printf(", ");
+    for(int i = 0; i < m_hostShape.size(); i++) {
+      std::cout << m_hostShape[i];
+      if(i != m_hostShape.size() - 1) printf(", ");
     }
     printf("]\n");
   }
 
-  void setFullPrintMode(bool mode)       { full_print = mode;}
-  void setFullPrintMode(bool mode) const { full_print = mode;}
-  bool getFullPrintMode()       { return full_print;}
-  bool getFullPrintMode() const { return full_print;}
+  void setFullPrintMode(bool mode)       { full_print = mode; }
+  void setFullPrintMode(bool mode) const { full_print = mode; }
+  bool getFullPrintMode()       { return full_print; }
+  bool getFullPrintMode() const { return full_print; }
+  Device device()       { return m_device; }
+  Device device() const { return m_device; }
 
 protected:
   void parallel_copy(const Tensor<T> &rhs);
-  std::shared_ptr<Tensor<T>> tensor_calculator(const Tensor<T>& lhs, const Tensor<T>& rhs, Calculator mode);
-  std::shared_ptr<Tensor<T>> tensor_operator(Axis axis, Operator mode, bool keepdim);
+  std::shared_ptr<Tensor<T>> 
+  tensor_calculator(const Tensor<T>& lhs, const Tensor<T>& rhs, Calculator mode);
+  std::shared_ptr<Tensor<T>> 
+  tensor_operator(Axis axis, Operator mode, bool keepdim);
+  std::shared_ptr<Tensor<T>> 
+  tensor_calculator_cuda(const Tensor<T>& lhs, const Tensor<T>& rhs, Calculator mode);
+  std::shared_ptr<Tensor<T>> 
+  tensor_operator_cuda(Axis axis, Operator mode, bool keepdim);
 
 private:
-  std::vector<int> m_shape; // [0]:row [1]:col [2]:channel [3]:number
-  std::vector<T, AlignedAllocator<T, 64>> m_data;
+  thrust::host_vector<int> m_hostShape; // [0]:row [1]:col [2]:channel [3]:number
+  thrust::host_vector<T, AlignedAllocator<T, 64>> m_hostData;
   bool full_print;
 
   thrust::device_vector<T> m_cudaData;
@@ -228,7 +233,148 @@ private:
 //################### Tensor::member functions' implementation ###################
 
   template<typename T>
-  void Tensor<T>::parallel_copy(const Tensor<T> &rhs){
+  std::shared_ptr<Tensor<T>> 
+  Tensor<T>::operator+(const Tensor<T>& rhs) { 
+    if(this->m_device == Device::CPU)
+      return tensor_calculator(*this, rhs, Calculator::ADD);
+    else
+      return tensor_calculator_cuda(*this, rhs, Calculator::ADD);
+  }
+
+  template<typename T>
+  std::shared_ptr<Tensor<T>> 
+  Tensor<T>::operator-(const Tensor<T>& rhs) { 
+    if(this->m_device == Device::CPU)
+      return tensor_calculator(*this, rhs, Calculator::SUB);
+    else
+      return tensor_calculator_cuda(*this, rhs, Calculator::SUB);
+  }
+
+  template<typename T>
+  std::shared_ptr<Tensor<T>> 
+  Tensor<T>::operator*(const Tensor<T>& rhs) { 
+    if(this->m_device == Device::CPU)
+      return tensor_calculator(*this, rhs, Calculator::MUL);
+    else
+      return tensor_calculator_cuda(*this, rhs, Calculator::MUL);
+  }
+
+  template<typename T>
+  std::shared_ptr<Tensor<T>> 
+  Tensor<T>::operator/(const Tensor<T>& rhs) { 
+    if(this->m_device == Device::CPU)
+      return tensor_calculator(*this, rhs, Calculator::DIV);
+    else
+      return tensor_calculator_cuda(*this, rhs, Calculator::DIV);
+  }
+
+  template<typename T>
+  std::shared_ptr<Tensor<T>> 
+  Tensor<T>::operator+(T x) { 
+    Tensor<T> rhs(this->m_hostShape, x); 
+    if(m_device == Device::CUDA){
+      rhs.to(Device::CUDA);
+    }
+    return *this + rhs; 
+  }
+
+  template<typename T>
+  std::shared_ptr<Tensor<T>> 
+  Tensor<T>::operator-(T x) { 
+    Tensor<T> rhs(this->m_hostShape, x); 
+    if(m_device == Device::CUDA){
+      rhs.to(Device::CUDA);
+    }
+    return *this - rhs; 
+  }
+
+  template<typename T>
+  std::shared_ptr<Tensor<T>> 
+  Tensor<T>::operator*(T x) { 
+    Tensor<T> rhs(this->m_hostShape, x); 
+    if(m_device == Device::CUDA){
+      rhs.to(Device::CUDA);
+    }
+    return *this * rhs; 
+  }
+
+  template<typename T>
+  std::shared_ptr<Tensor<T>> 
+  Tensor<T>::operator/(T x) { 
+    Tensor<T> rhs(this->m_hostShape, x); 
+    if(m_device == Device::CUDA){
+      rhs.to(Device::CUDA);
+    }
+    return *this / rhs; 
+  }
+
+  template<typename T>
+  void 
+  Tensor<T>::operator+=(T x) {
+    Tensor<T> rhs(this->m_hostShape, x);
+    if(this->m_device == Device::CUDA){
+      rhs.to(Device::CUDA);
+    }
+    *this += rhs;
+  }
+
+  template<typename T>
+  void 
+  Tensor<T>::operator-=(T x) {
+    Tensor<T> rhs(this->m_hostShape, x);
+    if(this->m_device == Device::CUDA){
+      rhs.to(Device::CUDA);
+    }
+    *this -= rhs;
+  }
+
+  template<typename T>
+  void 
+  Tensor<T>::operator*=(T x) {
+    Tensor<T> rhs(this->m_hostShape, x);
+    if(this->m_device == Device::CUDA){
+      rhs.to(Device::CUDA);
+    }
+    *this *= rhs;
+  }
+
+  template<typename T>
+  void 
+  Tensor<T>::operator/=(T x) {
+    Tensor<T> rhs(this->m_hostShape, x);
+    if(this->m_device == Device::CUDA){
+      rhs.to(Device::CUDA);
+    }
+    *this /= rhs;
+  }
+
+  template<typename T>
+  std::shared_ptr<Tensor<T>>
+  Tensor<T>::sum(int axis, bool keepdim){ 
+    return tensor_operator(Axis(axis), Operator::SUM, keepdim);
+  }
+
+  template<typename T>
+  std::shared_ptr<Tensor<T>>
+  Tensor<T>::mean(int axis, bool keepdim){
+    return tensor_operator(Axis(axis), Operator::MEAN, keepdim);
+  }
+
+  template<typename T>
+  std::shared_ptr<Tensor<T>>
+  Tensor<T>::max(int axis, bool keepdim){
+    return tensor_operator(Axis(axis), Operator::MAX, keepdim);
+  }
+
+  template<typename T>
+  std::shared_ptr<Tensor<T>>
+  Tensor<T>::min(int axis, bool keepdim){ 
+    return tensor_operator(Axis(axis), Operator::MIN, keepdim);
+  }
+
+  template<typename T>
+  void 
+  Tensor<T>::parallel_copy(const Tensor<T> &rhs){
     int row = this->row(), col = this->col();
     int number = this->number(), channel = this->channel();
     // insure lhs won't be deleted when finish copy
@@ -490,7 +636,19 @@ private:
     return output;
   }
   
+  template<typename T>
+  std::shared_ptr<Tensor<T>>
+  Tensor<T>::tensor_calculator_cuda
+  (const Tensor<T>& lhs, const Tensor<T>& rhs, Calculator mode){
+    return nullptr;
+  }
   
+  template<typename T>
+  std::shared_ptr<Tensor<T>>
+  Tensor<T>::tensor_operator_cuda(Axis axis, Operator mode, bool keepdim){
+    return nullptr;
+  }
+
   // ######################################### PRINT ##################################################
   template<typename T>
   void print_H(std::ostream &os, const Tensor<T> &t, int offset){
@@ -623,6 +781,10 @@ private:
   template<typename U>
   std::ostream &
   operator<<(std::ostream& os, const Tensor<U>& t){
+    // insure the Tensor's data are in CPU memory
+    if(t.device() == Device::CUDA){
+      t.to(Device::CPU);
+    }
     int row = t.row(), col = t.col(), channel = t.channel(), number = t.number();
     int square = row * col, volume = square * channel;
 
