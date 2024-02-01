@@ -19,7 +19,7 @@ public:
     }
   }
   
-  // #define SEQUENTIAL_DEBUG
+  #define SEQUENTIAL_DEBUG
   virtual std::shared_ptr<Tensor<Tp>> 
   forward(const std::shared_ptr<Tensor<Tp>> input){
     std::shared_ptr<Tensor<Tp>> _input = input;
