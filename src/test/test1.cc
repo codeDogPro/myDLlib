@@ -285,8 +285,10 @@ void resnet50_test(){
     group4_1, group4_2, group4_3, maxPool_4, relu5
   );
 
-  auto output = resnet50.forward(input);
-
+  {
+    Timer timer_compute;
+    auto output = resnet50.forward(input);
+  }
   // std::cout << "output:\n" << *output << std::endl;
 }
 
@@ -306,6 +308,7 @@ int main(){
   // cvMat2Tensor_test(); // pass
   // print_test();        // pass
   // sequential_test();   // pass
+  Timer total;
   resnet50_test();
   return 0;
 }
