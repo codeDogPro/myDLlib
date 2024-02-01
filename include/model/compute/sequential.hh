@@ -13,12 +13,10 @@ public:
     _add_fn(args...);
   }
 
-  virtual ~Sequential() //= default;
-  {
+  virtual ~Sequential() {
     for(auto &func : functions){
       delete func;
     }
-    functions.~vector();
   }
   
   #define SEQUENTIAL_DEBUG

@@ -42,12 +42,7 @@ public:
   #endif
   }
 
-  virtual ~Conv2D()
-  {
-    puts("invoke ~Conv2D dtor");
-    M_weight.~Tensor();
-    M_bias.~Tensor();
-  }
+  virtual ~Conv2D() = default;
 
   virtual std::shared_ptr<Tensor<T>> 
   forward(const std::shared_ptr<Tensor<T>> input){

@@ -187,8 +187,11 @@ void resnet50_test(){
   auto input = std::make_shared<Tensor<f32>>(224, 224, 3, 1);
   std::cout << "input:\n" << *input;
   auto conv7x7 = new Conv2D(7, 3, 16, 2, 3);
-  auto maxPool_k3s2 = new MaxPool2D(3, 1, 2);
-  auto relu = new Relu();
+  auto maxPool_1 = new MaxPool2D(3, 1, 2), maxPool_2 = new MaxPool2D(3, 1, 2);
+  auto maxPool_3 = new MaxPool2D(3, 1, 2), maxPool_4 = new MaxPool2D(3, 1, 2);
+  auto relu1 = new Relu(), relu2 = new Relu();
+  auto relu3 = new Relu(), relu4 = new Relu();
+  auto relu5 = new Relu();
 
   auto group1_1 = new Sequential(
     new ResidualBlock_bottle(16, 16, 64),
@@ -274,16 +277,17 @@ void resnet50_test(){
     new ResidualBlock_bottle(512, 128, 512)
   );
   
-  auto resnet50 = new Sequential(
-    conv7x7, relu,
-    group1_1, group1_2, group1_3, maxPool_k3s2, relu,
-    group2_1, group2_2, group2_3, group2_4, maxPool_k3s2, relu,
-    group3_1, group3_2, group3_3, group3_4, group3_5, group3_6, maxPool_k3s2, relu,
-    group4_1, group4_2, group4_3, maxPool_k3s2, relu
+  Sequential resnet50(
+    conv7x7, relu1,
+    group1_1, group1_2, group1_3, maxPool_1, relu2,
+    group2_1, group2_2, group2_3, group2_4, maxPool_2, relu3,
+    group3_1, group3_2, group3_3, group3_4, group3_5, group3_6, maxPool_3, relu4,
+    group4_1, group4_2, group4_3, maxPool_4, relu5
   );
 
-  auto output = resnet50->forward(input);
-  std::cout << "output:\n" << *output << std::endl;
+  auto output = resnet50.forward(input);
+
+  // std::cout << "output:\n" << *output << std::endl;
 }
 
 int main(){

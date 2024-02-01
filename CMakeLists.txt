@@ -17,12 +17,12 @@ target_include_directories(test PUBLIC include)
 target_link_libraries(test ${OpenCV_LIBS})
 
 #在Debug模式下启用ASan
-# if(CMAKE_BUILD_TYPE MATCHES "Debug")
-#   set(
-#     CMAKE_C_FLAGS
-#     "${CMAKE_C_FLAGS} -fsanitize=undefined -fsanitize=address"
-#   )
-#   target_link_options(test
-#     BEFORE PUBLIC -fsanitize=undefined PUBLIC -fsanitize=address
-#   )
-# endif()
+if(CMAKE_BUILD_TYPE MATCHES "Debug")
+  set(
+    CMAKE_C_FLAGS
+    "${CMAKE_C_FLAGS} -fsanitize=undefined -fsanitize=address"
+  )
+  target_link_options(test
+    BEFORE PUBLIC -fsanitize=undefined PUBLIC -fsanitize=address
+  )
+endif()
