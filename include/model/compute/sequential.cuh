@@ -13,13 +13,13 @@ public:
     _add_fn(args...);
   }
 
-  ~Sequential(){
+  virtual ~Sequential(){
     for(auto &func : functions){
       delete func;
     }
   }
   
-  // #define SEQUENTIAL_DEBUG
+  #define SEQUENTIAL_DEBUG
   virtual std::shared_ptr<Tensor<Tp>> 
   forward(const std::shared_ptr<Tensor<Tp>> input){
     std::shared_ptr<Tensor<Tp>> _input = input;
@@ -27,6 +27,7 @@ public:
     for(auto &func : functions){
       output = func->forward(_input);
     #ifdef SEQUENTIAL_DEBUG
+      output->shape();
       // std::cout << "output:\n" << *output << std::endl;
       // std::cout << "input:\n" << *output << std::endl;
     #endif

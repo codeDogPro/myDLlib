@@ -1,7 +1,9 @@
 #pragma once
 
 #include <data/tensor.cuh>
-#include <parallel/matrix_parallel.cuh>
+
+#include <parallel/matrix_cpu.cuh>
+#include <parallel/matrix_cuda.cuh>
 
 namespace dl{
   template<typename T=f32>

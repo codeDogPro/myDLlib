@@ -17,10 +17,12 @@ public:
     }
   }
 
-  ~ResidualBlock(){
+  virtual ~ResidualBlock(){
     delete input_layer;
     delete output_layer;
-    delete pad_layer;
+    if(!same_shape){
+      delete pad_layer;
+    }
   }
 
   virtual std::shared_ptr<Tensor<T>> 
@@ -60,11 +62,13 @@ public:
     }
   }
 
-  ~ResidualBlock_bottle(){
+  virtual ~ResidualBlock_bottle(){
     delete input_layer;
     delete neck_layer;
     delete output_layer;
-    delete pad_layer;
+    if(!same_shape){
+      delete pad_layer;
+    }
   }
 
   virtual std::shared_ptr<Tensor<T>> 

@@ -1,18 +1,21 @@
 #pragma once
 
 #include <basic/function.cuh>
-#include <parallel/conv_parallel.cuh>
+
+#include <parallel/conv_cpu.cuh>
+#include <parallel/conv_cuda.cuh>
 
 
 namespace dl{
 
-#define CONV_DEBUG
 
 template<typename T=f32>
 class Conv1D : public Function<T> {
 
 };
 
+
+// #define CONV_DEBUG
 
 template<typename T=f32>
 class Conv2D : public Function<T> {

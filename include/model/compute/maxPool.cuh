@@ -2,12 +2,16 @@
 
 #include <basic/function.cuh>
 #include <basic/tensor_macro.cuh>
-#include <parallel/conv_parallel.cuh>
-#include <parallel/pooling_parallel.cuh>
+
+#include <parallel/conv_cpu.cuh>
+#include <parallel/conv_cuda.cuh>
+
+#include <parallel/pooling_cpu.cuh>
+#include <parallel/pooling_cuda.cuh>
 
 namespace dl{
 
-#define POOL_DEBUG
+// #define POOL_DEBUG
 
 template<typename T=f32>
 class MaxPool2D : public Function<T> {

@@ -108,7 +108,7 @@ namespace dl{
                 (*output)[o_idx] += (*input)[input_idx + kc] * weight[weight_idx + kc];
               } // kernel col loop
             } // kernel row loop
-            o_idx += stride, i_idx += stride;
+            o_idx ++, i_idx += stride;
           } // stride x loop
           i_idx += (stride - 1) * icol + kcol - 1;
         } // stride y loop
@@ -129,7 +129,6 @@ namespace dl{
     int ooffset = ochannel * ioffset / ichannel;
     // xx_start：表示内层循环的起始，需要与偏移相加得到最终的索引xxx_idx
     int o_start = ooffset + task_begin * square;
-    int k_start = task_begin * kchannel;
 
     // bias add
     for(int ch = task_begin; ch < task_begin + task_num; ch++){
@@ -147,7 +146,7 @@ namespace dl{
         for(int y_idx = 0; y_idx < row; y_idx += stride){
           for(int x_idx = 0; x_idx < col; x_idx += stride){
             (*output)[o_idx] += (*input)[i_idx] * weight[w_idx];
-            o_idx += stride, i_idx += stride;
+            o_idx ++, i_idx += stride;
           } // stride x loop
           i_idx += (stride - 1) * col;
         } // stride y loop

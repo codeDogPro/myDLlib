@@ -4,8 +4,9 @@
 #include <data/align_alloc.cuh>
 #include <basic/tensor_macro.cuh>
 #include <parallel/parallel.cuh>
-#include <parallel/tensor_parallel.cuh>
-// #include <parallel/tensor_cuda.cuh>
+
+#include <parallel/tensor_cpu.cuh>
+#include <parallel/tensor_cuda.cuh>
 
 #include <numeric>
 #include <cstring>
@@ -24,6 +25,7 @@ class Tensor{
 
 public:
   explicit Tensor() = default;
+
   ~Tensor() = default;
 
   explicit
@@ -144,7 +146,7 @@ public:
   const T& operator[](size_t idx) const { return m_hostData[idx];}
 
   template<typename U>
-  friend std::ostream & operator<<(std::ostream &os, const Tensor<U> &t);
+  friend std::ostream & operator<<(std::ostream &os, Tensor<U> &t);
 
   std::shared_ptr<Tensor<T>> sum (int axis=0, bool keepdim=false);
   std::shared_ptr<Tensor<T>> mean(int axis=0, bool keepdim=false);
@@ -780,7 +782,7 @@ private:
 
   template<typename U>
   std::ostream &
-  operator<<(std::ostream& os, const Tensor<U>& t){
+  operator<<(std::ostream& os, Tensor<U>& t){
     // insure the Tensor's data are in CPU memory
     if(t.device() == Device::CUDA){
       t.to(Device::CPU);
