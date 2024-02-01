@@ -19,7 +19,13 @@ class Tensor{
 
 public:
   explicit Tensor() = default;
+
   ~Tensor() = default;
+  // {
+  //   puts("invoke ~Tensor dtor");
+  //   m_data.~vector();
+  //   m_shape.~vector();
+  // }
 
   explicit
   Tensor(int row, int col, int channel=1, int number=1, T val=T(-1)){

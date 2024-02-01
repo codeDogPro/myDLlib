@@ -7,7 +7,7 @@
 
 namespace dl{
 
-#define POOL_DEBUG
+// #define POOL_DEBUG
 
 template<typename T=f32>
 class MaxPool2D : public Function<T> {

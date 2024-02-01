@@ -8,7 +8,6 @@
 
 namespace dl{
  
-#define POOL_DEBUG
 
 template<typename T=f32>
 class AvgPool2D : public Function<T> {

@@ -10,6 +10,7 @@
 // https://stackoverflow.com/questions/12942548/making-stdvector-allocate-aligned-memory
 namespace detail {
     void* allocate_aligned_memory(size_t align, size_t size) {
+        size += align - size % align;
         return std::aligned_alloc(align, size);
     }
     void deallocate_aligned_memory(void* ptr) noexcept {
@@ -72,7 +73,7 @@ public:
     pointer
     allocate(size_type n, typename AlignedAllocator<void, Align>::const_pointer = 0)
     {
-        const size_type alignment = static_cast<size_type>( Align );
+        const size_type alignment = static_cast<size_type>(Align);
         void* ptr = detail::allocate_aligned_memory(alignment , n * sizeof(T));
         if (ptr == nullptr) {
             throw std::bad_alloc();

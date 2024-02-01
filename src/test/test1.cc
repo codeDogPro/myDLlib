@@ -81,17 +81,6 @@ void maxpool_test(){
   std::cout << "output2:\n" << *output2 << std::endl;
 }
 
-void sequential_test(){
-  auto input = std::make_shared<Tensor<f32>>(8, 8, 3, 1);
-  std::cout << "input:\n" << *input;
-  auto conv2d_1 = new Conv2D(3, 3, 8, 1, 1);
-  auto maxpool = new MaxPool2D(2);
-  auto relu = new Relu();
-  auto conv2d_2 = new Conv2D(3, 8, 16, 1, 1);
-  Sequential seq(conv2d_1, maxpool, relu, conv2d_2, maxpool, relu);
-  auto output = seq.forward(input);
-  // std::cout << "output:\n" << *output << std::endl;
-}
 
 void softmax_test(){
   auto input = std::make_shared<Tensor<f32>>(4, 4, 3, 1);
@@ -182,6 +171,121 @@ void print_test(){
   std::cout << "input:\n" << *input;
 }
 
+void sequential_test(){
+  auto input = std::make_shared<Tensor<f32>>(8, 8, 3, 1);
+  std::cout << "input:\n" << *input;
+  auto conv2d_1 = new Conv2D(3, 3, 8, 2, 1);
+  auto maxpool = new MaxPool2D(2);
+  auto relu = new Relu();
+  auto conv2d_2 = new Conv2D(3, 8, 16, 2, 1);
+  Sequential seq(conv2d_1, maxpool, relu, conv2d_2, maxpool, relu);
+  auto output = seq.forward(input);
+  std::cout << "output:\n" << *output << std::endl;
+}
+
+void resnet50_test(){
+  auto input = std::make_shared<Tensor<f32>>(224, 224, 3, 1);
+  std::cout << "input:\n" << *input;
+  auto conv7x7 = new Conv2D(7, 3, 16, 2, 3);
+  auto maxPool_k3s2 = new MaxPool2D(3, 1, 2);
+  auto relu = new Relu();
+
+  auto group1_1 = new Sequential(
+    new ResidualBlock_bottle(16, 16, 64),
+    new ResidualBlock_bottle(64, 16, 64),
+    new ResidualBlock_bottle(64, 16, 64)
+  );
+  auto group1_2 = new Sequential(
+    new ResidualBlock_bottle(64, 16, 64),
+    new ResidualBlock_bottle(64, 16, 64),
+    new ResidualBlock_bottle(64, 16, 64)
+  );
+  auto group1_3 = new Sequential(
+    new ResidualBlock_bottle(64, 16, 64),
+    new ResidualBlock_bottle(64, 16, 64),
+    new ResidualBlock_bottle(64, 16, 64)
+  );
+
+  auto group2_1 = new Sequential(
+    new ResidualBlock_bottle(64, 32, 128),
+    new ResidualBlock_bottle(128, 32, 128),
+    new ResidualBlock_bottle(128, 32, 128)
+  );
+  auto group2_2 = new Sequential(
+    new ResidualBlock_bottle(128, 32, 128),
+    new ResidualBlock_bottle(128, 32, 128),
+    new ResidualBlock_bottle(128, 32, 128)
+  );
+  auto group2_3 = new Sequential(
+    new ResidualBlock_bottle(128, 32, 128),
+    new ResidualBlock_bottle(128, 32, 128),
+    new ResidualBlock_bottle(128, 32, 128)
+  );
+  auto group2_4 = new Sequential(
+    new ResidualBlock_bottle(128, 32, 128),
+    new ResidualBlock_bottle(128, 32, 128),
+    new ResidualBlock_bottle(128, 32, 128)
+  );
+
+  auto group3_1 = new Sequential(
+    new ResidualBlock_bottle(128, 64, 256),
+    new ResidualBlock_bottle(256, 64, 256),
+    new ResidualBlock_bottle(256, 64, 256)
+  );
+  auto group3_2 = new Sequential(
+    new ResidualBlock_bottle(256, 64, 256),
+    new ResidualBlock_bottle(256, 64, 256),
+    new ResidualBlock_bottle(256, 64, 256)
+  );
+  auto group3_3 = new Sequential(
+    new ResidualBlock_bottle(256, 64, 256),
+    new ResidualBlock_bottle(256, 64, 256),
+    new ResidualBlock_bottle(256, 64, 256)
+  );
+  auto group3_4 = new Sequential(
+    new ResidualBlock_bottle(256, 64, 256),
+    new ResidualBlock_bottle(256, 64, 256),
+    new ResidualBlock_bottle(256, 64, 256)
+  );
+  auto group3_5 = new Sequential(
+    new ResidualBlock_bottle(256, 64, 256),
+    new ResidualBlock_bottle(256, 64, 256),
+    new ResidualBlock_bottle(256, 64, 256)
+  );
+  auto group3_6 = new Sequential(
+    new ResidualBlock_bottle(256, 64, 256),
+    new ResidualBlock_bottle(256, 64, 256),
+    new ResidualBlock_bottle(256, 64, 256)
+  );
+
+  auto group4_1 = new Sequential(
+    new ResidualBlock_bottle(256, 128, 512),
+    new ResidualBlock_bottle(512, 128, 512),
+    new ResidualBlock_bottle(512, 128, 512)
+  );
+  auto group4_2 = new Sequential(
+    new ResidualBlock_bottle(512, 128, 512),
+    new ResidualBlock_bottle(512, 128, 512),
+    new ResidualBlock_bottle(512, 128, 512)
+  );
+  auto group4_3 = new Sequential(
+    new ResidualBlock_bottle(512, 128, 512),
+    new ResidualBlock_bottle(512, 128, 512),
+    new ResidualBlock_bottle(512, 128, 512)
+  );
+  
+  auto resnet50 = new Sequential(
+    conv7x7, relu,
+    group1_1, group1_2, group1_3, maxPool_k3s2, relu,
+    group2_1, group2_2, group2_3, group2_4, maxPool_k3s2, relu,
+    group3_1, group3_2, group3_3, group3_4, group3_5, group3_6, maxPool_k3s2, relu,
+    group4_1, group4_2, group4_3, maxPool_k3s2, relu
+  );
+
+  auto output = resnet50->forward(input);
+  std::cout << "output:\n" << *output << std::endl;
+}
+
 int main(){
   // plus_test();         // pass
   // plusequal_test();    // pass
@@ -189,7 +293,6 @@ int main(){
   // reshape_test();      // pass
   // conv_test();         // pass
   // maxpool_test();      // pass
-  // sequential_test();   // pass
   // softmax_test();      // pass
   // linear_test();       // pass
   // residual_test();     // pass
@@ -198,5 +301,7 @@ int main(){
   // copy_test();         // pass
   // cvMat2Tensor_test(); // pass
   // print_test();        // pass
+  // sequential_test();   // pass
+  resnet50_test();
   return 0;
 }

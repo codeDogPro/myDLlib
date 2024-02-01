@@ -6,7 +6,7 @@
 
 namespace dl{
 
-#define CONV_DEBUG
+// #define CONV_DEBUG
 
 template<typename T=f32>
 class Conv1D : public Function<T> {
@@ -42,7 +42,12 @@ public:
   #endif
   }
 
-  virtual ~Conv2D() = default;
+  virtual ~Conv2D()
+  {
+    puts("invoke ~Conv2D dtor");
+    M_weight.~Tensor();
+    M_bias.~Tensor();
+  }
 
   virtual std::shared_ptr<Tensor<T>> 
   forward(const std::shared_ptr<Tensor<T>> input){
