@@ -153,8 +153,8 @@ void calculator_test(){
   Tensor<f32> a(320, 302, 8, 4, 3.1);  
   Tensor<f32> b(320, 302, 8, 4, 1.2);
   std::cout << a << b;
-  a.to(Device::CUDA);
-  b.to(Device::CUDA);
+  // a.to(Device::CUDA);
+  // b.to(Device::CUDA);
   auto c = a + b;
   auto d = a - b; 
   auto e = a * b; 

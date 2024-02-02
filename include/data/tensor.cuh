@@ -441,73 +441,33 @@ private:
     // col and channel and number must be the same.
     assert(lhs.col() == rhs.col() && lhs.channel() == rhs.channel() &&
            lhs.number() == rhs.number());
-    int lrow = lhs.row(), rrow = rhs.row(); 
-    int col = lhs.col(), channel = lhs.channel(), number = lhs.number();
-    // TODO: change ops api, just parse Tensor's data to function
-    std::shared_ptr<Tensor<T>> output;
-    if(lrow > rrow){
-      if(rrow == 1){
-        int volume = lrow * col * channel;
-        output = std::make_shared<Tensor<T>>(lhs.get_cshape(), 0);
-        if(channel >= number * BOOST_CHANNEL){
-          for(int i = 0; i < number; i++){
-            int offset = i * volume;
-            switch(mode){
-              case Calculator::ADD:
-                parallelizer.parallel_channel(
-                  vec_add_single<T>, output, offset, lhs, rhs); break;
-              case Calculator::SUB:
-                parallelizer.parallel_channel(
-                  vec_sub_single<T>, output, offset, lhs, rhs); break;
-              case Calculator::MUL:
-                parallelizer.parallel_channel(
-                  vec_mul_single<T>, output, offset, lhs, rhs); break;
-              case Calculator::DIV:
-                parallelizer.parallel_channel(
-                  vec_div_single<T>, output, offset, lhs, rhs); break;
-              default: assert(0); 
-            }
-          }
-        }
-        else{
-          switch(mode){
-            case Calculator::ADD:
-              parallelizer.parallel_number(
-                vec_add_single<T>, output, lhs, rhs); break;
-            case Calculator::SUB:
-              parallelizer.parallel_number(
-                vec_sub_single<T>, output, lhs, rhs); break;
-            case Calculator::MUL:
-              parallelizer.parallel_number(
-                vec_mul_single<T>, output, lhs, rhs); break;
-            case Calculator::DIV:
-              parallelizer.parallel_number(
-                vec_div_single<T>, output, lhs, rhs); break;
-            default: assert(0); 
-          }
-        }
-      }
-      else goto erro;
-    }
-    else if(lrow == rrow){
-      int volume = lrow * col * channel;
-      output = std::make_shared<Tensor<T>>(lhs.get_cshape(), 0);
+    int lrow = lhs.row(), rrow = rhs.row(), col = lhs.col();
+    int channel = lhs.channel(), number = lhs.number();
+    int orow = std::max(lrow, rrow);
+    puts("In cpu calculator");
+
+    auto output = std::make_shared<Tensor<T>>(orow, col, channel, number, 0);
+    int volume = orow * col * channel;
+    const T *_lhs, *_rhs;
+    if(lrow == rrow){
+      _lhs = lhs.data(), _rhs = rhs.data();
+
       if(channel >= number * BOOST_CHANNEL){
         for(int i = 0; i < number; i++){
           int offset = i * volume;
           switch(mode){
             case Calculator::ADD:
               parallelizer.parallel_channel(
-                vec_add_full<T>, output, offset, lhs, rhs); break;
+                vec_add_full<T>, output, offset, _lhs, _rhs); break;
             case Calculator::SUB:
               parallelizer.parallel_channel(
-                vec_sub_full<T>, output, offset, lhs, rhs); break;
+                vec_sub_full<T>, output, offset, _lhs, _rhs); break;
             case Calculator::MUL:
               parallelizer.parallel_channel(
-                vec_mul_full<T>, output, offset, lhs, rhs); break;
+                vec_mul_full<T>, output, offset, _lhs, _rhs); break;
             case Calculator::DIV:
               parallelizer.parallel_channel(
-                vec_div_full<T>, output, offset, lhs, rhs); break;
+                vec_div_full<T>, output, offset, _lhs, _rhs); break;
             default: assert(0); 
           }
         }
@@ -516,64 +476,69 @@ private:
         switch(mode){
           case Calculator::ADD:
             parallelizer.parallel_number(
-              vec_add_full<T>, output, lhs, rhs); break;
+              vec_add_full<T>, output, _lhs, _rhs); break;
           case Calculator::SUB:
             parallelizer.parallel_number(
-              vec_sub_full<T>, output, lhs, rhs); break;
+              vec_sub_full<T>, output, _lhs, _rhs); break;
           case Calculator::MUL:
             parallelizer.parallel_number(
-              vec_mul_full<T>, output, lhs, rhs); break;
+              vec_mul_full<T>, output, _lhs, _rhs); break;
           case Calculator::DIV:
             parallelizer.parallel_number(
-              vec_div_full<T>, output, lhs, rhs); break;
+              vec_div_full<T>, output, _lhs, _rhs); break;
           default: assert(0); 
         }
       }
     }
-    else{ // lhs.row < rhs.row
-      if(lrow == 1){
-        // puts("lhs row == 1");
-        int volume = rrow * col * channel;
-        output = std::make_shared<Tensor<T>>(rhs.get_cshape(), 0);
-        if(channel >= number * BOOST_CHANNEL){
-          for(int i = 0; i < number; i++){
-            int offset = i * volume;
-            switch(mode){
-              case Calculator::ADD:
-                parallelizer.parallel_channel(
-                  vec_add_single<T>, output, offset, rhs, *this); break;
-              case Calculator::SUB:
-                parallelizer.parallel_channel(
-                  vec_sub_single<T>, output, offset, rhs, *this); break;
-              case Calculator::MUL:
-                parallelizer.parallel_channel(
-                  vec_mul_single<T>, output, offset, rhs, *this); break;
-              case Calculator::DIV:
-                parallelizer.parallel_channel(
-                  vec_div_single<T>, output, offset, rhs, *this); break;
-              default: assert(0); 
-            }
-          }
-        }
-        else{
+    else{ // lhs.row != rhs.row
+      if(lrow < rrow){
+        if(lrow == 1)
+          _lhs = rhs.data(), _rhs = lhs.data();
+        else goto erro;
+      }
+      else{ // lrow > rrow
+        if(rrow == 1)
+          _lhs = lhs.data(), _rhs = rhs.data();
+        else goto erro;
+      }
+
+      if(channel >= number * BOOST_CHANNEL){
+        for(int i = 0; i < number; i++){
+          int offset = i * volume;
           switch(mode){
             case Calculator::ADD:
-              parallelizer.parallel_number(
-                vec_add_single<T>, output, rhs, *this); break;
+              parallelizer.parallel_channel(
+                vec_add_single<T>, output, offset, _lhs, _rhs); break;
             case Calculator::SUB:
-              parallelizer.parallel_number(
-                vec_sub_single<T>, output, rhs, *this); break;
+              parallelizer.parallel_channel(
+                vec_sub_single<T>, output, offset, _lhs, _rhs); break;
             case Calculator::MUL:
-              parallelizer.parallel_number(
-                vec_mul_single<T>, output, rhs, *this); break;
+              parallelizer.parallel_channel(
+                vec_mul_single<T>, output, offset, _lhs, _rhs); break;
             case Calculator::DIV:
-              parallelizer.parallel_number(
-                vec_div_single<T>, output, rhs, *this); break;
+              parallelizer.parallel_channel(
+                vec_div_single<T>, output, offset, _lhs, _rhs); break;
             default: assert(0); 
           }
         }
       }
-      else goto erro;
+      else{
+        switch(mode){
+          case Calculator::ADD:
+            parallelizer.parallel_number(
+              vec_add_single<T>, output, _lhs, _rhs); break;
+          case Calculator::SUB:
+            parallelizer.parallel_number(
+              vec_sub_single<T>, output, _lhs, _rhs); break;
+          case Calculator::MUL:
+            parallelizer.parallel_number(
+              vec_mul_single<T>, output, _lhs, _rhs); break;
+          case Calculator::DIV:
+            parallelizer.parallel_number(
+              vec_div_single<T>, output, _lhs, _rhs); break;
+          default: assert(0); 
+        }
+      }
     }
     parallelizer.sync();
     return output;
@@ -752,6 +717,9 @@ private:
     return nullptr;
   }
 
+
+//##################################################################################################
+//##################################################################################################
 //######################################### PRINT ##################################################
   template<typename T>
   void print_H(std::ostream &os, const Tensor<T> &t, int offset){
@@ -920,7 +888,9 @@ private:
     if(number > 1) printf("]\n\n");
     return os;
   }
-  // ########################################### END PRINT ###################################################
+//########################################### END PRINT ###################################################
+//##################################################################################################
+//##################################################################################################
 
 
 
