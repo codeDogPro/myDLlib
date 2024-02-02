@@ -294,7 +294,7 @@ void resnet50_test(){
 }
 
 int main(){
-  // plus_test();         // pass
+  plus_test();         // pass
   // plusequal_test();    // pass
   // smmm_test();         // pass
   // reshape_test();      // pass
@@ -309,7 +309,6 @@ int main(){
   // cvMat2Tensor_test(); // pass
   // print_test();        // pass
   // sequential_test();   // pass
-  Timer total;
-  resnet50_test();
+  // resnet50_test();     // pass
   return 0;
 }

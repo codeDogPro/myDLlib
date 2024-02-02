@@ -3,9 +3,6 @@
 #include <basic/tensor_macro.hh>
 #include <data/tensor.hh>
 
-#include <vector>
-#include <iostream>
-
 // for simd
 #include <immintrin.h>
 // for opencv
@@ -134,8 +131,8 @@ namespace dl{
   template<typename T>
   bool vec_add_single
   (int task_begin, int task_num, int shape, int offset, 
-  std::shared_ptr<Tensor<T>> output, const Tensor<T> &a, const Tensor<T> &b) {
-    int arow = a.row(), col = a.col();
+  std::shared_ptr<Tensor<T>> output, const T *a, const T *b) {
+    int arow = output->row(), col = output->col();
     int astart = offset + task_begin * shape, aend = astart + shape;
     int bstart = offset / arow + task_begin * col, bend = bstart + col; 
     if(col >= 16){
@@ -145,8 +142,8 @@ namespace dl{
             for(int b_i = bstart; b_i < bend; a_i += 16, b_i += 16){
               __m256 res[2];
               for(int offset = 0; offset < 2; offset ++){
-                __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
-                __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
+                __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(a+a_i+8*offset));
+                __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(b+b_i+8*offset));
                 res[offset] = _mm256_add_ps(_a, _b);
               }
               for(int offset = 0; offset < 2; offset ++){
@@ -166,8 +163,8 @@ namespace dl{
             for(int b_i = bstart; b_i < align_bend; a_i += 16, b_i += 16){
               __m256 res[2];
               for(int offset = 0; offset < 2; offset ++){
-                __m256 _a = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
-                __m256 _b = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
+                __m256 _a = _mm256_loadu_ps(reinterpret_cast<const f32 *>(a+a_i+8*offset));
+                __m256 _b = _mm256_loadu_ps(reinterpret_cast<const f32 *>(b+b_i+8*offset));
                 res[offset] = _mm256_add_ps(_a, _b);
               }
               for(int offset = 0; offset < 2; offset ++){
@@ -202,8 +199,8 @@ namespace dl{
   template<typename T>
   bool vec_sub_single
   (int task_begin, int task_num, int shape, int offset, 
-  std::shared_ptr<Tensor<T>> output, const Tensor<T> &a, const Tensor<T> &b) {
-    int arow = a.row(), col = a.col();
+  std::shared_ptr<Tensor<T>> output, const T *a, const T *b) {
+    int arow = output->row(), col = output->col();
     int astart = offset + task_begin * shape, aend = astart + shape;
     int bstart = offset / arow + task_begin * col, bend = bstart + col; 
     if(col >= 16){
@@ -213,8 +210,8 @@ namespace dl{
             for(int b_i = bstart; b_i < bend; a_i += 16, b_i += 16){
               __m256 res[2];
               for(int offset = 0; offset < 2; offset ++){
-                __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
-                __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
+                __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(a+a_i+8*offset));
+                __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(b+b_i+8*offset));
                 res[offset] = _mm256_sub_ps(_a, _b);
               }
               for(int offset = 0; offset < 2; offset ++){
@@ -234,8 +231,8 @@ namespace dl{
             for(int b_i = bstart; b_i < align_bend; a_i += 16, b_i += 16){
               __m256 res[2];
               for(int offset = 0; offset < 2; offset ++){
-                __m256 _a = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
-                __m256 _b = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
+                __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(a+a_i+8*offset));
+                __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(b+b_i+8*offset));
                 res[offset] = _mm256_sub_ps(_a, _b);
               }
               for(int offset = 0; offset < 2; offset ++){
@@ -270,8 +267,8 @@ namespace dl{
   template<typename T>
   bool vec_mul_single
   (int task_begin, int task_num, int shape, int offset, 
-  std::shared_ptr<Tensor<T>> output, const Tensor<T> &a, const Tensor<T> &b) {
-    int arow = a.row(), col = a.col();
+  std::shared_ptr<Tensor<T>> output, const T *a, const T *b) {
+    int arow = output->row(), col = output->col();
     int astart = offset + task_begin * shape, aend = astart + shape;
     int bstart = offset / arow + task_begin * col, bend = bstart + col; 
     if(col >= 16){
@@ -281,8 +278,8 @@ namespace dl{
             for(int b_i = bstart; b_i < bend; a_i += 16, b_i += 16){
               __m256 res[2];
               for(int offset = 0; offset < 2; offset ++){
-                __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
-                __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
+                __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(a+a_i+8*offset));
+                __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(b+b_i+8*offset));
                 res[offset] = _mm256_mul_ps(_a, _b);
               }
               for(int offset = 0; offset < 2; offset ++){
@@ -302,8 +299,8 @@ namespace dl{
             for(int b_i = bstart; b_i < align_bend; a_i += 16, b_i += 16){
               __m256 res[2];
               for(int offset = 0; offset < 2; offset ++){
-                __m256 _a = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
-                __m256 _b = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
+                __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(a+a_i+8*offset));
+                __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(b+b_i+8*offset));
                 res[offset] = _mm256_mul_ps(_a, _b);
               }
               for(int offset = 0; offset < 2; offset ++){
@@ -338,8 +335,8 @@ namespace dl{
   template<typename T>
   bool vec_div_single
   (int task_begin, int task_num, int shape, int offset, 
-  std::shared_ptr<Tensor<T>> output, const Tensor<T> &a, const Tensor<T> &b) {
-    int arow = a.row(), col = a.col();
+  std::shared_ptr<Tensor<T>> output, const T *a, const T *b) {
+    int arow = output->row(), col = output->col();
     int astart = offset + task_begin * shape, aend = astart + shape;
     int bstart = offset / arow + task_begin * col, bend = bstart + col; 
     if(col >= 16){
@@ -349,8 +346,8 @@ namespace dl{
             for(int b_i = bstart; b_i < bend; a_i += 16, b_i += 16){
               __m256 res[2];
               for(int offset = 0; offset < 2; offset ++){
-                __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
-                __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
+                __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(a+a_i+8*offset));
+                __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(b+b_i+8*offset));
                 res[offset] = _mm256_div_ps(_a, _b);
               }
               for(int offset = 0; offset < 2; offset ++){
@@ -370,8 +367,8 @@ namespace dl{
             for(int b_i = bstart; b_i < align_bend; a_i += 16, b_i += 16){
               __m256 res[2];
               for(int offset = 0; offset < 2; offset ++){
-                __m256 _a = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&a[a_i + 8 * offset]));
-                __m256 _b = _mm256_loadu_ps(reinterpret_cast<const f32 *>(&b[b_i + 8 * offset]));
+                __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(a+a_i+8*offset));
+                __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(b+b_i+8*offset));
                 res[offset] = _mm256_div_ps(_a, _b);
               }
               for(int offset = 0; offset < 2; offset ++){
@@ -406,9 +403,9 @@ namespace dl{
   template<typename T>
   bool vec_add_full
   (int task_begin, int task_num, int shape, int offset,
-   std::shared_ptr<Tensor<T>> output, const Tensor<T> &a, const Tensor<T> &b) {
+   std::shared_ptr<Tensor<T>> output, const T *a, const T *b) {
     int start = offset + task_begin * shape, end = start + task_num * shape;
-    if(a.col() >= 16){
+    if(output->col() >= 16){
       int align_start = start + 16 - (start % 16);
       int align_end = end - end % 16;
       // the start of elem can't use simd
@@ -419,8 +416,8 @@ namespace dl{
       for(int i = align_start; i < align_end; i += 16){
         __m256 res[2];
         for(int offset = 0; offset < 2; offset ++){
-          __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[i + 8 * offset]));
-          __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[i + 8 * offset]));
+          __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(a+ i + 8 * offset));
+          __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(b+ i + 8 * offset));
           res[offset] = _mm256_add_ps(_a, _b);
         }
         for(int offset = 0; offset < 2; offset ++){
@@ -445,9 +442,9 @@ namespace dl{
   template<typename T>
   bool vec_sub_full
   (int task_begin, int task_num, int shape, int offset,
-   std::shared_ptr<Tensor<T>> output, const Tensor<T> &a, const Tensor<T> &b) {
+   std::shared_ptr<Tensor<T>> output, const T *a, const T *b) {
     int start = offset + task_begin * shape, end = start + task_num * shape;
-    if(a.col() >= 16){
+    if(output->col() >= 16){
       int align_start = start + 16 - (start % 16);
       int align_end = end - end % 16;
       // the start of elem can't use simd
@@ -458,8 +455,8 @@ namespace dl{
       for(int i = align_start; i < align_end; i += 16){
         __m256 res[2];
         for(int offset = 0; offset < 2; offset ++){
-          __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[i + 8 * offset]));
-          __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[i + 8 * offset]));
+          __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(a+ i + 8 * offset));
+          __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(b+ i + 8 * offset));
           res[offset] = _mm256_sub_ps(_a, _b);
         }
         for(int offset = 0; offset < 2; offset ++){
@@ -484,9 +481,9 @@ namespace dl{
   template<typename T>
   bool vec_mul_full
   (int task_begin, int task_num, int shape, int offset,
-   std::shared_ptr<Tensor<T>> output, const Tensor<T> &a, const Tensor<T> &b) {
+   std::shared_ptr<Tensor<T>> output, const T *a, const T *b) {
     int start = offset + task_begin * shape, end = start + task_num * shape;
-    if(a.col() >= 16){
+    if(output->col() >= 16){
       int align_start = start + 16 - (start % 16);
       int align_end = end - end % 16;
       // the start of elem can't use simd
@@ -497,8 +494,8 @@ namespace dl{
       for(int i = align_start; i < align_end; i += 16){
         __m256 res[2];
         for(int offset = 0; offset < 2; offset ++){
-          __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[i + 8 * offset]));
-          __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[i + 8 * offset]));
+          __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(a+ i + 8 * offset));
+          __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(b+ i + 8 * offset));
           res[offset] = _mm256_mul_ps(_a, _b);
         }
         for(int offset = 0; offset < 2; offset ++){
@@ -523,9 +520,9 @@ namespace dl{
   template<typename T>
   bool vec_div_full
   (int task_begin, int task_num, int shape, int offset,
-   std::shared_ptr<Tensor<T>> output, const Tensor<T> &a, const Tensor<T> &b) {
+   std::shared_ptr<Tensor<T>> output, const T *a, const T *b) {
     int start = offset + task_begin * shape, end = start + task_num * shape;
-    if(a.col() >= 16){
+    if(output->col() >= 16){
       int align_start = start + 16 - (start % 16);
       int align_end = end - end % 16;
       // the start of elem can't use simd
@@ -536,8 +533,8 @@ namespace dl{
       for(int i = align_start; i < align_end; i += 16){
         __m256 res[2];
         for(int offset = 0; offset < 2; offset ++){
-          __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(&a[i + 8 * offset]));
-          __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(&b[i + 8 * offset]));
+          __m256 _a = _mm256_load_ps(reinterpret_cast<const f32 *>(a+ i + 8 * offset));
+          __m256 _b = _mm256_load_ps(reinterpret_cast<const f32 *>(b+ i + 8 * offset));
           res[offset] = _mm256_div_ps(_a, _b);
         }
         for(int offset = 0; offset < 2; offset ++){
