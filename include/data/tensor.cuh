@@ -110,17 +110,21 @@ public:
     return *this;
   }
 
-  void to(Device device){
+  void to(Device device, bool changed=true){
     if(device == m_device) return ;
 
     if(device == Device::CPU){
-      m_hostData = m_cudaData;
-      m_hostShape = m_cudaShape;
+      if(changed == true){
+        m_hostData = m_cudaData;
+        m_hostShape = m_cudaShape;
+      }
       m_device = Device::CPU;
     }
     else if(device == Device::CUDA){
-      m_cudaData = m_hostData;
-      m_cudaShape = m_hostShape;
+      if(changed == true){
+        m_cudaData = m_hostData;
+        m_cudaShape = m_hostShape;
+      }
       m_device = Device::CUDA;
     }
     else {
@@ -439,7 +443,7 @@ private:
            lhs.number() == rhs.number());
     int lrow = lhs.row(), rrow = rhs.row(); 
     int col = lhs.col(), channel = lhs.channel(), number = lhs.number();
-
+    // TODO: change ops api, just parse Tensor's data to function
     std::shared_ptr<Tensor<T>> output;
     if(lrow > rrow){
       if(rrow == 1){
@@ -683,10 +687,10 @@ private:
     int channel = lhs.channel(), number = lhs.number();
     int orow = std::max(lrow, rrow);
 
-    auto output = std::make_shared<Tensor<T>>(
-      orow, col, channel, number, 0, Device::CUDA);
+    auto output = std::make_shared<Tensor<T>>
+      (orow, col, channel, number, 0, Device::CUDA);
     int size = output->size();
-    int block_size = 128, grid_size = size / block_size;
+    int block_size = 128, grid_size = (size + block_size - 1) / block_size; //上取整
 
     if(lrow == rrow){
       switch(mode){
@@ -706,23 +710,39 @@ private:
       } 
     }
     else{
-      // switch(mode){
-      //   case Calculator::ADD:
-      //     cuda_add_single<<<1, 128>>>
-      //       (lhs.data(), rhs.data(), output->data(), lhs.get_cshape_gpu()); break;
-      //   case Calculator::SUB:
-      //     cuda_sub_single<<<1, 128>>>
-      //       (lhs.data(), rhs.data(), output->data(), lhs.get_cshape_gpu()); break;
-      //   case Calculator::MUL:
-      //     cuda_mul_single<<<1, 128>>>
-      //       (lhs.data(), rhs.data(), output->data(), lhs.get_cshape_gpu()); break;
-      //   case Calculator::DIV:
-      //     cuda_div_single<<<1, 128>>>
-      //       (lhs.data(), rhs.data(), output->data(), lhs.get_cshape_gpu()); break;
-      //   default: exit(-1);
-      // } 
+      thrust::device_ptr<const T> _lhs, _rhs;
+      if(lrow < rrow){
+        if(lrow == 1)
+          _lhs = rhs.data_gpu(), _rhs = lhs.data_gpu();
+        else goto erro;
+      }
+      else {
+        if(rrow == 1)
+          _lhs = lhs.data_gpu(), _rhs = rhs.data_gpu();
+        else goto erro;
+      }
+      switch(mode){
+        case Calculator::ADD:
+          cuda_add_single<<<grid_size, block_size>>>
+            (_lhs, _rhs, output->data_gpu(), size); break;
+        case Calculator::SUB:
+          cuda_sub_single<<<grid_size, block_size>>>
+            (_lhs, _rhs, output->data_gpu(), size); break;
+        case Calculator::MUL:
+          cuda_mul_single<<<grid_size, block_size>>>
+            (_lhs, _rhs, output->data_gpu(), size); break;
+        case Calculator::DIV:
+          cuda_div_single<<<grid_size, block_size>>>
+            (_lhs, _rhs, output->data_gpu(), size); break;
+        default: exit(-1);
+      } 
     }
     return output;
+
+  erro:
+    fprintf(stderr, "The size of tensor lhs:(%d) must match the size of \
+    tensor rhs:(%d) at non-singleton dimension 0\n", lhs.row(), rhs.row());
+    exit(-1);
   }
   
   template<typename T>

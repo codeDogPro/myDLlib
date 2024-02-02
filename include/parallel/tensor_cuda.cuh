@@ -50,4 +50,32 @@ namespace dl{
       output[i] = lhs[i] / rhs[i];
     }
   }
+
+  template<typename T=f32>
+  __global__ void 
+  cuda_add_single(thrust::device_ptr<const T> lhs, thrust::device_ptr<const T> rhs, 
+   thrust::device_ptr<T> output, int n){
+
+  }
+
+  template<typename T=f32>
+  __global__ void 
+  cuda_sub_single(thrust::device_ptr<const T> lhs, thrust::device_ptr<const T> rhs, 
+   thrust::device_ptr<T> output, int n){
+
+  }
+
+  template<typename T=f32>
+  __global__ void 
+  cuda_mul_single(thrust::device_ptr<const T> lhs, thrust::device_ptr<const T> rhs, 
+   thrust::device_ptr<T> output, int n){
+
+  }
+
+  template<typename T=f32>
+  __global__ void 
+  cuda_div_single(thrust::device_ptr<const T> lhs, thrust::device_ptr<const T> rhs, 
+   thrust::device_ptr<T> output, int n){
+
+  }
 }

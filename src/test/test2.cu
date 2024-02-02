@@ -119,46 +119,53 @@ void print_test(){
   std::cout << "input:\n" << *input;
 }
 
-void plus_cuda_test(){
-  Tensor<f32> a(32, 32, 8, 3, 3.1);  
-  Tensor<f32> b(32, 32, 8, 3, 1.2);
+void calculator_benchmark(int n){
+  Tensor<f32> a(320, 302, 80, 8, 3.1);  
+  Tensor<f32> b(320, 302, 80, 8, 1.2);
   // std::cout << a << b;
+  {
+    Timer t;
+    a.to(Device::CUDA);
+    b.to(Device::CUDA);
+    for(int i = 0; i < n; i++){
+      auto c = a + b;
+      auto d = a - b; 
+      auto e = a * b; 
+      auto f = a / b; 
+    }
+  }
 
+  a.to(Device::CPU, false);
+  b.to(Device::CPU, false);
+  {
+    Timer t;
+    for(int i = 0; i < n; i++){
+      auto c = a + b;
+      auto d = a - b; 
+      auto e = a * b; 
+      auto f = a / b; 
+    }
+  }
+  // std::cout << *c << *d << *e << *f;
+}
+
+void calculator_test(){
+  Tensor<f32> a(320, 302, 8, 4, 3.1);  
+  Tensor<f32> b(320, 302, 8, 4, 1.2);
+  std::cout << a << b;
   a.to(Device::CUDA);
   b.to(Device::CUDA);
   auto c = a + b;
   auto d = a - b; 
   auto e = a * b; 
   auto f = a / b; 
-  // std::cout << *c << *d << *e << *f;
+  std::cout << *c << *d << *e << *f;
 }
-
-void plus_test(){
-  Tensor<f32> a(32, 32, 8, 3, 3.1);  
-  Tensor<f32> b(32, 32, 8, 3, 1.2);
-  // std::cout << a << b;
-
-  auto c = a + b;
-  auto d = a - b; 
-  auto e = a * b; 
-  auto f = a / b; 
-  // std::cout << *c << *d << *e << *f;
-}
-
 
 
 int main(){
   // print_test();     // pass
   // resnet50_test();  // pass
-  {
-    Timer t;
-    for(int i = 0; i < 100; i++)
-      plus_test();
-  }
-
-  {
-    Timer t;
-    for(int i = 0; i < 100; i++)
-      plus_cuda_test();
-  }
+  // calculator_benchmark(500); // gpu 2.1x faster than cpu(with parallel and simd)
+  calculator_test();
 }
