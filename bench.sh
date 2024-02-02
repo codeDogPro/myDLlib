@@ -1,0 +1,1 @@
+cmake -B build && cmake --build build && sudo nvprof ./build/cuda_test

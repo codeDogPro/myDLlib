@@ -121,7 +121,7 @@ void print_test(){
 
 void calculator_benchmark(int n){
   Tensor<f32> a(320, 302, 80, 8, 3.1);  
-  Tensor<f32> b(320, 302, 80, 8, 1.2);
+  Tensor<f32> b(1, 302, 80, 8, 1.2);
   // std::cout << a << b;
   {
     Timer t;
@@ -151,7 +151,7 @@ void calculator_benchmark(int n){
 
 void calculator_test(){
   Tensor<f32> a(320, 302, 8, 4, 3.1);  
-  Tensor<f32> b(320, 302, 8, 4, 1.2);
+  Tensor<f32> b(1, 302, 8, 4, 1.2);
   std::cout << a << b;
   // a.to(Device::CUDA);
   // b.to(Device::CUDA);
@@ -166,6 +166,6 @@ void calculator_test(){
 int main(){
   // print_test();     // pass
   // resnet50_test();  // pass
-  // calculator_benchmark(500); // gpu 2.1x faster than cpu(with parallel and simd)
-  calculator_test();
+  calculator_benchmark(100); // gpu 2.1x faster than cpu(with parallel and simd)
+  // calculator_test();
 }

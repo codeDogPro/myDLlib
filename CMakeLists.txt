@@ -4,14 +4,18 @@ cmake_minimum_required(VERSION 3.21)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CUDA_STANDARD 20)
 set(CMAKE_BUILD_TYPE Release)
+# set(CMAKE_BUILD_TYPE Debug)
 
 project(cuda_tests LANGUAGES CXX CUDA)
 
-# 设置CUDA安装路径
+# Set CUDA path
 set(CMAKE_CUDA_COMPILER /usr/local/cuda-11.8/bin/nvcc)
 set(CMAKE_CUDA_COMPILER_ENV_VAR CUDA_PATH)
 set(CMAKE_CUDA_COMPILER_VERSION 11.8)
 set(CMAKE_CUDA_ARCHITECTURES 61)
+
+# Set the host compiler for nvcc
+set(CMAKE_CUDA_HOST_COMPILER "/usr/bin/g++")
 
 # 开启avx2
 add_definitions(-mavx2)

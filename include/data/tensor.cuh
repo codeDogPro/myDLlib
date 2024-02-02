@@ -1,8 +1,6 @@
 #pragma once
 
 #include <data/rand_init.cuh>
-#include <data/align_alloc.cuh>
-
 #include <parallel/parallel.cuh>
 #include <parallel/tensor_cpu.cuh>
 #include <parallel/tensor_cuda.cuh>
@@ -12,9 +10,6 @@
 #include <iomanip>
 
 #include <opencv2/core.hpp>
-
-// cuda accleration
-#include <thrust/host_vector.h>
 
 namespace dl{
 
@@ -29,10 +24,11 @@ public:
   explicit
   Tensor(int row, int col, int ch=1, int num=1, T val=T(-1),
    Device device=Device::CPU){
-    assert(row != 0 && col != 0 && cha != 0 && num != 0);
+    assert(row != 0 && col != 0 && ch != 0 && num != 0);
 
     if(device == Device::CPU){
       m_hostData.assign(row * col * ch * num, val);
+      if(val == T(-1)){ rand_init_cpu<T>(m_hostData);}
     }
     else if(device == Device::CUDA){
       m_cudaData.assign(row * col * ch * num, val);
@@ -44,7 +40,6 @@ public:
 
     full_print = false;
     m_device = device;
-    if(val == T(-1)){ rand_init(*this);}
   }
 
   explicit
@@ -53,15 +48,20 @@ public:
 
     int size = std::reduce(shape.begin(), shape.end(), 1, std::multiplies{});
     m_hostData.assign(size, val);
+    if(val == T(-1)){ rand_init_cpu<T>(m_hostData);}
+
     m_hostShape = shape;
     full_print = false;
     m_device = Device::CPU;
-    if(val == T(-1)){ rand_init(*this);}
   }
 
   explicit
-  Tensor(thrust::host_vector<T, AlignedAllocator<T, 64>>& data, thrust::host_vector<int>& shape)
-  : m_hostData(data), m_hostShape(shape), full_print(false) {}
+  Tensor(thrust::host_vector<T, AlignedAllocator<T, 64>>& data,
+         thrust::host_vector<int>& shape)
+  : m_hostData(data), m_hostShape(shape), full_print(false)
+  {
+    m_device = Device::CPU;
+  }
 
   // deep copy
   explicit
@@ -86,15 +86,17 @@ public:
   operator=(const Tensor<T>& rhs){
     if(this == &rhs) return *this;
 
-    // puts("invoke operator= copy");
-    m_hostShape.assign(4, 0); m_hostData.assign(rhs.size(), 0);
-    int i = 0; 
-    for(int x : rhs.get_cshape()) m_hostShape[i++] = x;
+    if(rhs.device() == Device::CPU){
+      // puts("invoke operator= copy");
+      m_hostShape.assign(4, 0); m_hostData.assign(rhs.size(), 0);
+      int i = 0; 
+      for(int x : rhs.get_cshape()) m_hostShape[i++] = x;
 
-    parallel_copy(rhs);
-    // puts("Finish operator= copy");
-    full_print = false;
-    m_device = Device::CPU;
+      parallel_copy(rhs);
+      // puts("Finish operator= copy");
+      full_print = false;
+      m_device = Device::CPU;
+    }
     return *this;
   }
 
@@ -102,11 +104,13 @@ public:
   operator=(Tensor<T>&& rhs){
     if(this == &rhs) return *this;
 
-    puts("invoke operator= move");
-    m_hostData  = std::move(rhs.get_data());
-    m_hostShape = std::move(rhs.get_shape());
-    full_print = false;
-    m_device = Device::CPU;
+    if(rhs.device() == Device::CPU){
+      // puts("invoke operator= move");
+      m_hostData  = std::move(rhs.get_data());
+      m_hostShape = std::move(rhs.get_shape());
+      full_print = false;
+      m_device = Device::CPU;
+    }
     return *this;
   }
 
@@ -444,7 +448,6 @@ private:
     int lrow = lhs.row(), rrow = rhs.row(), col = lhs.col();
     int channel = lhs.channel(), number = lhs.number();
     int orow = std::max(lrow, rrow);
-    puts("In cpu calculator");
 
     auto output = std::make_shared<Tensor<T>>(orow, col, channel, number, 0);
     int volume = orow * col * channel;
@@ -655,27 +658,29 @@ private:
     auto output = std::make_shared<Tensor<T>>
       (orow, col, channel, number, 0, Device::CUDA);
     int size = output->size();
-    int block_size = 128, grid_size = (size + block_size - 1) / block_size; //上取整
+    int block_size = 128, grid_size = 64;
 
+    thrust::device_ptr<const T> _lhs, _rhs;
+    thrust::device_ptr<T> _output = output->data_gpu();
     if(lrow == rrow){
+      _lhs = lhs.data_gpu(), _rhs = rhs.data_gpu();
       switch(mode){
         case Calculator::ADD:
-          cuda_add_full<<<grid_size, block_size>>>
-            (lhs.data_gpu(), rhs.data_gpu(), output->data_gpu(), size); break;
+          cuda_add_full<T><<<grid_size, block_size>>>
+            (_lhs, _rhs, _output, size); break;
         case Calculator::SUB:
-          cuda_sub_full<<<grid_size, block_size>>>
-            (lhs.data_gpu(), rhs.data_gpu(), output->data_gpu(), size); break;
+          cuda_sub_full<T><<<grid_size, block_size>>>
+            (_lhs, _rhs, _output, size); break;
         case Calculator::MUL:
-          cuda_mul_full<<<grid_size, block_size>>>
-            (lhs.data_gpu(), rhs.data_gpu(), output->data_gpu(), size); break;
+          cuda_mul_full<T><<<grid_size, block_size>>>
+            (_lhs, _rhs, _output, size); break;
         case Calculator::DIV:
-          cuda_div_full<<<grid_size, block_size>>>
-            (lhs.data_gpu(), rhs.data_gpu(), output->data_gpu(), size); break;
+          cuda_div_full<T><<<grid_size, block_size>>>
+            (_lhs, _rhs, _output, size); break;
         default: exit(-1);
       } 
     }
     else{
-      thrust::device_ptr<const T> _lhs, _rhs;
       if(lrow < rrow){
         if(lrow == 1)
           _lhs = rhs.data_gpu(), _rhs = lhs.data_gpu();
@@ -688,17 +693,17 @@ private:
       }
       switch(mode){
         case Calculator::ADD:
-          cuda_add_single<<<grid_size, block_size>>>
-            (_lhs, _rhs, output->data_gpu(), size); break;
+          cuda_add_single<T><<<grid_size, block_size>>>
+            (_lhs, _rhs, _output, size, orow, col); break;
         case Calculator::SUB:
-          cuda_sub_single<<<grid_size, block_size>>>
-            (_lhs, _rhs, output->data_gpu(), size); break;
+          cuda_sub_single<T><<<grid_size, block_size>>>
+            (_lhs, _rhs, _output, size, orow, col); break;
         case Calculator::MUL:
-          cuda_mul_single<<<grid_size, block_size>>>
-            (_lhs, _rhs, output->data_gpu(), size); break;
+          cuda_mul_single<T><<<grid_size, block_size>>>
+            (_lhs, _rhs, _output, size, orow, col); break;
         case Calculator::DIV:
-          cuda_div_single<<<grid_size, block_size>>>
-            (_lhs, _rhs, output->data_gpu(), size); break;
+          cuda_div_single<T><<<grid_size, block_size>>>
+            (_lhs, _rhs, _output, size, orow, col); break;
         default: exit(-1);
       } 
     }
