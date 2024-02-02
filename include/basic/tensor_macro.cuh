@@ -29,8 +29,9 @@ namespace dl{
   // PRINT MACRO
   const int PRINT_PRECISION = 4;
   const int MAX_PRINT_COL = 12;
-  const int MAX_PRINT_ROW = 60;
-  const int MAX_PRINT_CHANNEL = 40;
+  const int MAX_PRINT_ROW = 30;
+  const int MAX_PRINT_CHANNEL = 20;
+
   const int SHOW_NUMBER_LEN = 3;
 
   const f32 eps = 1e-8;

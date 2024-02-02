@@ -2,7 +2,10 @@
 
 #include <data/rand_init.cuh>
 #include <data/align_alloc.cuh>
-#include <basic/tensor_macro.cuh>
+
+#include <parallel/parallel.cuh>
+#include <parallel/tensor_cpu.cuh>
+#include <parallel/tensor_cuda.cuh>
 
 #include <numeric>
 #include <cstring>
@@ -11,9 +14,7 @@
 #include <opencv2/core.hpp>
 
 // cuda accleration
-#include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
-#include <thrust/device_ptr.h>
 
 namespace dl{
 
@@ -32,16 +33,15 @@ public:
 
     if(device == Device::CPU){
       m_hostData.assign(row * col * ch * num, val);
-      m_hostShape.assign(4, 0);
-      m_hostShape[0] = row, m_hostShape[1] = col;
-      m_hostShape[2] = ch, m_hostShape[3] = num; 
     }
     else if(device == Device::CUDA){
       m_cudaData.assign(row * col * ch * num, val);
-      m_cudaShape.assign(4, 0);
-      m_cudaShape[0] = row, m_cudaShape[1] = col;
-      m_cudaShape[2] = ch, m_cudaShape[3] = num; 
     }
+    m_hostShape.assign(4, 0);
+    m_hostShape[0] = row, m_hostShape[1] = col;
+    m_hostShape[2] = ch, m_hostShape[3] = num; 
+    m_cudaShape = m_hostShape;
+
     full_print = false;
     m_device = device;
     if(val == T(-1)){ rand_init(*this);}
@@ -165,16 +165,16 @@ public:
   std::shared_ptr<Tensor<T>> min (int axis=0, bool keepdim=false);
 
   // for cpu to call
-  const T * data() const { return m_hostData.data();} 
-  const T * data()       { return m_hostData.data();} 
+        T *data()       { return m_hostData.data(); }
+  const T *data() const { return m_hostData.data(); }
   thrust::host_vector<int> &      get_shape ()       { return m_hostShape;}
   thrust::host_vector<int> const& get_cshape() const { return m_hostShape;}
   thrust::host_vector<T, AlignedAllocator<T, 64>> &      get_data()      {return m_hostData;}
   thrust::host_vector<T, AlignedAllocator<T, 64>> const& get_cdata()const{return m_hostData;}
 
   // for gpu kernel to call
-  const T * data_gpu() const { return m_cudaData.data();} 
-  const T * data_gpu()       { return m_cudaData.data();} 
+  thrust::device_ptr<T>       data_gpu()       { return m_cudaData.data(); } 
+  thrust::device_ptr<const T> data_gpu() const { return m_cudaData.data(); } 
   thrust::device_vector<int>      & get_shape_gpu ()       { return m_cudaShape;}
   thrust::device_vector<int> const& get_cshape_gpu() const { return m_cudaShape;}
   thrust::device_vector<T>        & get_data_gpu()         { return m_cudaData;}
@@ -210,26 +210,11 @@ public:
     return true;
   } 
 
-
   size_t size() {
-    size_t size = 1;
-    for(int x : m_hostShape) size *= x;
-    return size;
+    return std::reduce(m_hostShape.begin(), m_hostShape.end(), 1, std::multiplies{});
   }
   size_t size() const {
-    size_t size = 1;
-    for(int x : m_hostShape) size *= x;
-    return size;
-  }
-  size_t size_gpu() {
-    size_t size = 1;
-    for(int x : m_cudaShape) size *= x;
-    return size;
-  }
-  size_t size_gpu() const {
-    size_t size = 1;
-    for(int x : m_cudaShape) size *= x;
-    return size;
+    return std::reduce(m_hostShape.begin(), m_hostShape.end(), 1, std::multiplies{});
   }
 
   // for cpu kernel to call [most common]
@@ -241,15 +226,6 @@ public:
   int col()     const { return m_hostShape[1]; }
   int channel() const { return m_hostShape[2]; }  
   int number()  const { return m_hostShape[3]; }
-  // // for gpu kernel to call [most common]
-  // int row_gpu()           { return m_cudaShape[0]; }
-  // int col_gpu()           { return m_cudaShape[1]; }
-  // int channel_gpu()       { return m_cudaShape[2]; }  
-  // int number_gpu()        { return m_cudaShape[3]; }
-  // int row_gpu()     const { return m_cudaShape[0]; }
-  // int col_gpu()     const { return m_cudaShape[1]; }
-  // int channel_gpu() const { return m_cudaShape[2]; }  
-  // int number_gpu()  const { return m_cudaShape[3]; }
 
   void shape(){
     printf("shape:[");
@@ -282,18 +258,16 @@ protected:
 private:
   thrust::host_vector<int> m_hostShape; // [0]:row [1]:col [2]:channel [3]:number
   thrust::host_vector<T, AlignedAllocator<T, 64>> m_hostData;
-  bool full_print;
 
   thrust::device_vector<T> m_cudaData;
-  thrust::device_vector<T> m_cudaShape;
+  thrust::device_vector<int> m_cudaShape;
+
   Device m_device;
+  bool full_print;
 }; // class Tensor
 
 
 //################### Tensor::member functions' implementation ###################
-#include <parallel/parallel.cuh>
-#include <parallel/tensor_cpu.cuh>
-#include <parallel/tensor_cuda.cuh>
 
   template<typename T>
   std::shared_ptr<Tensor<T>> 
@@ -705,41 +679,50 @@ private:
   (const Tensor<T>& lhs, const Tensor<T>& rhs, Calculator mode){
     assert(lhs.col() == rhs.col() && lhs.channel() == rhs.channel() &&
            lhs.number() == rhs.number());
-    int lrow = lhs.row_gpu(), lcol = lhs.col_gpu();
-    int rrow = rhs.row_gpu(), rcol = rhs.col_gpu();
-    int channel = lhs.channel_gpu(), number = lhs.number_gpu();
+    int lrow = lhs.row(), col = lhs.col(), rrow = rhs.row();
+    int channel = lhs.channel(), number = lhs.number();
     int orow = std::max(lrow, rrow);
 
     auto output = std::make_shared<Tensor<T>>(
       orow, col, channel, number, 0, Device::CUDA);
+    int size = output->size();
+    int block_size = 128, grid_size = size / block_size;
 
     if(lrow == rrow){
       switch(mode){
         case Calculator::ADD:
-          cuda_add_full<<<1, 128>>>(lhs, rhs, output); break;
+          cuda_add_full<<<grid_size, block_size>>>
+            (lhs.data_gpu(), rhs.data_gpu(), output->data_gpu(), size); break;
         case Calculator::SUB:
-          cuda_sub_full<<<1, 128>>>(lhs, rhs, output); break;
+          cuda_sub_full<<<grid_size, block_size>>>
+            (lhs.data_gpu(), rhs.data_gpu(), output->data_gpu(), size); break;
         case Calculator::MUL:
-          cuda_mul_full<<<1, 128>>>(lhs, rhs, output); break;
+          cuda_mul_full<<<grid_size, block_size>>>
+            (lhs.data_gpu(), rhs.data_gpu(), output->data_gpu(), size); break;
         case Calculator::DIV:
-          cuda_div_full<<<1, 128>>>(lhs, rhs, output); break;
+          cuda_div_full<<<grid_size, block_size>>>
+            (lhs.data_gpu(), rhs.data_gpu(), output->data_gpu(), size); break;
         default: exit(-1);
       } 
     }
     else{
-      switch(mode){
-        case Calculator::ADD:
-          cuda_add_single<<<1, 128>>>(lhs, rhs, output); break;
-        case Calculator::SUB:
-          cuda_sub_single<<<1, 128>>>(lhs, rhs, output); break;
-        case Calculator::MUL:
-          cuda_mul_single<<<1, 128>>>(lhs, rhs, output); break;
-        case Calculator::DIV:
-          cuda_div_single<<<1, 128>>>(lhs, rhs, output); break;
-        default: exit(-1);
-      } 
+      // switch(mode){
+      //   case Calculator::ADD:
+      //     cuda_add_single<<<1, 128>>>
+      //       (lhs.data(), rhs.data(), output->data(), lhs.get_cshape_gpu()); break;
+      //   case Calculator::SUB:
+      //     cuda_sub_single<<<1, 128>>>
+      //       (lhs.data(), rhs.data(), output->data(), lhs.get_cshape_gpu()); break;
+      //   case Calculator::MUL:
+      //     cuda_mul_single<<<1, 128>>>
+      //       (lhs.data(), rhs.data(), output->data(), lhs.get_cshape_gpu()); break;
+      //   case Calculator::DIV:
+      //     cuda_div_single<<<1, 128>>>
+      //       (lhs.data(), rhs.data(), output->data(), lhs.get_cshape_gpu()); break;
+      //   default: exit(-1);
+      // } 
     }
-    return nullptr;
+    return output;
   }
   
   template<typename T>

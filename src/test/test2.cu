@@ -2,24 +2,6 @@
 
 using namespace dl;
 
-void print_test(){
-  auto input = std::make_shared<Tensor<f32>>(120, 19, 80, 2);
-  input->to(Device::CUDA);
-  input->to(Device::CPU);
-  std::cout << "input:\n" << *input;
-}
-
-void plus_test(){
-  Tensor<float> a(68, 32, 43, 3, 3.1);  
-  Tensor<float> b(1, 32, 43, 3, 1.2);
-  std::cout << a << b;
-  auto c = a + b;
-  auto d = a - b; 
-  auto e = a * b; 
-  auto f = a / b; 
-  std::cout << *c << *d << *e << *f;
-}
-
 void resnet50_test(){
   auto input = std::make_shared<Tensor<f32>>(224, 224, 3, 1);
   std::cout << "input:\n" << *input;
@@ -130,8 +112,53 @@ void resnet50_test(){
   // std::cout << "output:\n" << *output << std::endl;
 }
 
+void print_test(){
+  auto input = std::make_shared<Tensor<f32>>(120, 19, 80, 2);
+  input->to(Device::CUDA);
+  input->to(Device::CPU);
+  std::cout << "input:\n" << *input;
+}
+
+void plus_cuda_test(){
+  Tensor<f32> a(32, 32, 8, 3, 3.1);  
+  Tensor<f32> b(32, 32, 8, 3, 1.2);
+  // std::cout << a << b;
+
+  a.to(Device::CUDA);
+  b.to(Device::CUDA);
+  auto c = a + b;
+  auto d = a - b; 
+  auto e = a * b; 
+  auto f = a / b; 
+  // std::cout << *c << *d << *e << *f;
+}
+
+void plus_test(){
+  Tensor<f32> a(32, 32, 8, 3, 3.1);  
+  Tensor<f32> b(32, 32, 8, 3, 1.2);
+  // std::cout << a << b;
+
+  auto c = a + b;
+  auto d = a - b; 
+  auto e = a * b; 
+  auto f = a / b; 
+  // std::cout << *c << *d << *e << *f;
+}
+
+
+
 int main(){
-  // print_test();
-  plus_test();
-  // resnet50_test();
+  // print_test();     // pass
+  // resnet50_test();  // pass
+  {
+    Timer t;
+    for(int i = 0; i < 100; i++)
+      plus_test();
+  }
+
+  {
+    Timer t;
+    for(int i = 0; i < 100; i++)
+      plus_cuda_test();
+  }
 }
