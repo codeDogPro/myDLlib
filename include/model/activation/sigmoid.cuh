@@ -15,6 +15,17 @@ public:
 
   virtual std::shared_ptr<Tensor<T>> 
   forward(const std::shared_ptr<Tensor<T>> input){
+    if(input->device() == Device::CPU){
+      return forward_cpu(input);
+    }
+    else{
+      return forward_cuda(input);
+    }
+  }
+
+private:
+  std::shared_ptr<Tensor<T>> 
+  forward_cpu(const std::shared_ptr<Tensor<T>> input){
     auto output = std::make_shared<Tensor<T>>(input->get_cshape(), 0);
     int row = input->row(), col = input->col(), channel = input->channel();
     int number = input->number(), volume = row * col * channel;
@@ -32,6 +43,19 @@ public:
           sigmoid_parallel<T>, output, 0, input);
     }
     parallelizer.sync();
+    return output;
+  }
+
+  std::shared_ptr<Tensor<T>> 
+  forward_cuda(const std::shared_ptr<Tensor<T>> input){
+    auto output = std::make_shared<Tensor<T>>(
+      input->get_cshape(), 0, Device::CUDA);
+
+    int gride_size = 64, block_size = 128;
+    int size = output->size();
+    sigmoid_cuda<T><<<gride_size, block_size>>>
+    (input->data_gpu(), output->data_gpu(), size);
+
     return output;
   }
 };

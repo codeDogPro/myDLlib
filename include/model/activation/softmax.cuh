@@ -17,6 +17,17 @@ public:
 
   virtual std::shared_ptr<Tensor<T>> 
   forward(const std::shared_ptr<Tensor<T>> input){
+    if(input->device() == Device::CPU){
+      return forward_cpu(input);
+    }
+    else{
+      return forward_cuda(input);
+    }
+  }
+
+private:
+  std::shared_ptr<Tensor<T>> 
+  forward_cpu(const std::shared_ptr<Tensor<T>> input){
     auto output = std::make_shared<Tensor<T>>(input->get_cshape(), 0);
     int row = input->row(), col = input->col(), channel = input->channel();
     int number = input->number(), volume = row * col * channel;
@@ -58,7 +69,11 @@ public:
     return output;
   }
 
-private:
+  std::shared_ptr<Tensor<T>> 
+  forward_cuda(const std::shared_ptr<Tensor<T>> input){
+    return nullptr;
+  }
+
   Axis M_axis;
 };
 }

@@ -9,7 +9,6 @@
 #include <cstring>
 #include <iomanip>
 
-#include <opencv2/core.hpp>
 
 namespace dl{
 
@@ -23,7 +22,8 @@ public:
 
   explicit
   Tensor(int row, int col, int ch=1, int num=1, T val=T(-1),
-   Device device=Device::CPU){
+         Device device=Device::CPU)
+  {
     assert(row != 0 && col != 0 && ch != 0 && num != 0);
 
     if(device == Device::CPU){
@@ -32,6 +32,7 @@ public:
     }
     else if(device == Device::CUDA){
       m_cudaData.assign(row * col * ch * num, val);
+      // if(val == T(-1)) rand_init_cuda<T>(m_cudaData);
     }
     m_hostShape.assign(4, 0);
     m_hostShape[0] = row, m_hostShape[1] = col;
@@ -43,16 +44,22 @@ public:
   }
 
   explicit
-  Tensor(const thrust::host_vector<int>& shape, T val=-1){
-    assert(shape.size() != 0);
+  Tensor(const thrust::host_vector<int>& shape, T val=-1, 
+         Device device=Device::CPU)
+  { assert(shape.size() != 0);
 
-    int size = std::reduce(shape.begin(), shape.end(), 1, std::multiplies{});
-    m_hostData.assign(size, val);
-    if(val == T(-1)){ rand_init_cpu<T>(m_hostData);}
-
-    m_hostShape = shape;
+    int size = std::reduce(shape.begin(), shape.end(), 1, std::multiplies<T>{});
+    if(device == Device::CPU) {
+      m_hostData.assign(size, val);
+      if(val == T(-1)) rand_init_cpu<T>(m_hostData);
+    }
+    else if(device == Device::CUDA) {
+      m_cudaData.assign(size, val);
+      // if(val == T(-1)) rand_init_cuda<T>(m_cudaData);
+    }
+    m_cudaShape = m_hostShape = shape;
+    m_device = device;
     full_print = false;
-    m_device = Device::CPU;
   }
 
   explicit
@@ -189,7 +196,7 @@ public:
   thrust::device_vector<T>   const& get_cdata_gpu()  const { return m_cudaData;}
 
   bool reshape(const thrust::host_vector<int>& shape){ 
-    size_t size = std::reduce(shape.begin(), shape.end(), 1, std::multiplies{});
+    size_t size = std::reduce(shape.begin(), shape.end(), 1, std::multiplies<T>{});
     if(size != m_hostData.size()){
       fprintf(stderr, "New size:%ld isn't equal to the data size:%ld\n",
       size, m_hostData.size());
@@ -218,10 +225,10 @@ public:
     return true;
   } 
 
-  size_t size() {
+  int size() {
     return std::reduce(m_hostShape.begin(), m_hostShape.end(), 1, std::multiplies{});
   }
-  size_t size() const {
+  int size() const {
     return std::reduce(m_hostShape.begin(), m_hostShape.end(), 1, std::multiplies{});
   }
 
@@ -246,7 +253,6 @@ public:
   
   // only print in cpu
   void setFullPrintMode(bool mode)       { full_print = mode; }
-  void setFullPrintMode(bool mode) const { full_print = mode; }
   bool getFullPrintMode()       { return full_print; }
   bool getFullPrintMode() const { return full_print; }
   Device device()       { return m_device; }
