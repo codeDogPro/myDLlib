@@ -11,10 +11,7 @@ namespace dl{
     int begin = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = blockDim.x * gridDim.x;
     for(int i = begin; i < n; i += stride){
-      if(input[i] > 0)
-        output[i] = input[i];
-      else
-        output[i] = 0;
+      output[i] = (input[i] > static_cast<T>(0)) ? input[i] : static_cast<T>(0);
     }
   }
 

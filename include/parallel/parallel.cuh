@@ -7,6 +7,7 @@
 
 #include "thread_pool.cuh"
 #include <basic/tensor_macro.cuh>
+#include <data/tensor.cuh>
 
 #include <iostream>
 
@@ -19,7 +20,7 @@ cpu_number() noexcept {
 
 class Parallelizer {
 public:
-  Parallelizer() = default;
+  Parallelizer() = delete;
 
   Parallelizer(size_t pool_size) : _M_pool(pool_size) {
     nthread = cpu_number();
