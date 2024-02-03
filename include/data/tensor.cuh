@@ -737,12 +737,23 @@ private:
     using std::setw;
     // os.setf(std::ios::scientific);  // 科学计数法
     os.precision(PRINT_PRECISION);
+    int channel = t.channel(), number = t.number();
 
     int col = t.col();
     if(col > MAX_PRINT_COL){
       if(t.getFullPrintMode() == true){
+        int num_cnt = 0;
         for(int i = 0; i < col; i++){
-          os << setw(7) << t[offset + i]; if(i != col - 1) os << ", ";
+          os << setw(7) << t[offset + i];
+          if(i != col - 1) os << ", ";
+          if(++num_cnt == MAX_NUM_LINE){
+            if(number > 1)    os << "\n    ";
+            else {
+              if(channel > 1) os << "\n   ";
+              else            os << "\n  ";
+            }
+            num_cnt = 0;
+          }
         }
       }
       else{ // 省略输出模式
@@ -756,8 +767,18 @@ private:
       }
     }
     else{
+      int num_cnt = 0;
       for(int i = 0; i < col; i++){
-        os << setw(7) << t[offset + i]; if(i != col - 1) os << ", ";
+        os << setw(7) << t[offset + i];
+        if(i != col - 1) os << ", ";
+        if(++num_cnt == MAX_NUM_LINE){
+          if(number > 1)    os << "\n    ";
+          else {
+            if(channel > 1) os << "\n   ";
+            else            os << "\n  ";
+          }
+          num_cnt = 0;
+        }
       }
     }
   }
@@ -769,8 +790,12 @@ private:
       if(t.getFullPrintMode() == true){
         for(int r = 0; r < row; r++){
           int row_idx = offset + col * r;
-          if(number > 1 && r != 0) printf(" ");
-          if(r != 0)               printf("  ");
+          if(number > 1){
+            if(r != 0) printf("   "); 
+          }
+          else{
+            if(r != 0) printf("  "); 
+          }
           printf("[");
           print_H(os, t, row_idx);
           printf("]");
@@ -801,8 +826,12 @@ private:
     else{
       for(int r = 0; r < row; r++){
         int row_idx = offset + col * r;
-        if(number > 1 && r != 0) printf(" ");
-        if(r != 0)               printf("  ");
+        if(number > 1){
+          if(r != 0) printf("   "); 
+        }
+        else{
+          if(r != 0) printf("  "); 
+        }
         printf("[");
         print_H(os, t, row_idx);
         printf("]");

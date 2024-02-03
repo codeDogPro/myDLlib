@@ -117,9 +117,9 @@ void resnet50_test(){
 }
 
 void print_test(){
-  auto input = std::make_shared<Tensor<f32>>(120, 19, 80, 2);
-  input->to(Device::CUDA);
-  input->to(Device::CPU);
+  auto input = std::make_shared<Tensor<f32>>(9, 20, 2, 2);
+  // input->to(Device::CUDA);
+  // input->to(Device::CPU);
   std::cout << "input:\n" << *input;
 }
 
@@ -187,9 +187,9 @@ void activation_test(){
 
 
 int main(){
-  // print_test();          // pass
-  // resnet50_test<f32>();  // pass
+  print_test();            // pass
+  // resnet50_test<f32>();    // pass
   // calculator_benchmark(100); // gpu 2.1x faster than cpu(with parallel and simd)
-  // calculator_test();     // pass
-  activation_test<f32>(); 
+  // calculator_test();       // pass
+  // activation_test<f32>();  // pass 
 }
