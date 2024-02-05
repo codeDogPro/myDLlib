@@ -139,8 +139,8 @@ void calculator_benchmark(int n){
     }
   }
 
-  a.to(Device::CPU, false);
-  b.to(Device::CPU, false);
+  a.to(Device::CPU);
+  b.to(Device::CPU);
   {
     Timer t;
     for(int i = 0; i < n; i++){
@@ -168,7 +168,7 @@ void calculator_test(){
 
 template <typename T>
 void activation_test(){
-  auto input = std::make_shared<Tensor<T>>(8, 8, 4, 2);
+  auto input = std::make_shared<Tensor<T>>(8, 20, 4, 2);
   std::cout << "input:\n" << *input;
   input->to(Device::CUDA);
 
@@ -191,5 +191,5 @@ int main(){
   // resnet50_test<f32>();    // pass
   // calculator_benchmark(100); // gpu 2.1x faster than cpu(with parallel and simd)
   // calculator_test();       // pass
-  // activation_test<f32>();  // pass 
+  activation_test<f32>();  // pass 
 }
