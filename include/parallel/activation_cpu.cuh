@@ -12,7 +12,7 @@ namespace dl{
    std::shared_ptr<Tensor<T>> output, const std::shared_ptr<Tensor<T>> input){ 
     int start = offset + shape * task_begin, end = start + shape * task_num;
     for(int i = start; i < end; i++){
-      (*output)[i] = (*input)[i] > 0 ? (*input)[i] : 0;
+      (*output)[i] = (*input)[i] > static_cast<T>(0) ? (*input)[i] : static_cast<T>(0);
     }
     return true;
   }

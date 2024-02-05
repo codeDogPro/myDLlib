@@ -28,8 +28,11 @@ namespace dl{
 
   // PRINT MACRO
   const int PRINT_PRECISION = 4;
-  const int MAX_PRINT_COL = 25;
+  // if tensor col greater than it, then use ignored mode
+  const int MAX_PRINT_COL = 25;    
+  // if tensor row greater than it, then use ignored mode
   const int MAX_PRINT_ROW = 30;
+  // if tensor channel greater than it, then use ignored mode
   const int MAX_PRINT_CHANNEL = 20;
   const int MAX_NUM_LINE = 6;      // max data/line
 
