@@ -253,7 +253,10 @@ protected:
 
 private:
   // [0]:row [1]:col [2]:channel [3]:number
-  // shape is only stored in cpu memory
+  /*shape is only stored in cpu memory,
+    so we should give the tensor shape as 
+    parameter to cuda kernel instead just 
+    access the shape in kernel; */
   std::vector<int> m_shape;
 
   thrust::host_vector<T, AlignedAllocator<T, 64>> m_hostData;

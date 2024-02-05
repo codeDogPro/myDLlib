@@ -49,7 +49,8 @@ private:
       }
     }
     parallelizer.sync();
-    std::cout << "input:\n" << *input << std::endl;
+
+    // then get softmax
     for(int i = 0; i < number; i++){
       int offset = i * volume;
       if(M_axis == Axis::COL){
@@ -71,7 +72,25 @@ private:
 
   std::shared_ptr<Tensor<T>> 
   forward_cuda(const std::shared_ptr<Tensor<T>> input){
-    return nullptr;
+    auto output = std::make_shared<Tensor<T>>(input->get_cshape(), 0);
+    int row = input->row(), col = input->col(), channel = input->channel();
+    int size = output->size();
+
+    auto _input = input->data_gpu(), _output = output->data_gpu();
+    expf_cuda(_input, _output, size);
+    if(M_axis == Axis::COL){
+      int gride_size = 64, block_size = 128;
+      softmax_axis0_cuda(_input, _output, size, row, col);
+    }
+    else if(M_axis == Axis::ROW){
+      int gride_size = 64, block_size = 128;
+      softmax_axis1_cuda(_input, _output, size);
+    }
+    else if(M_axis == Axis::CHANNEL){
+      int gride_size = 64, block_size = 128;
+      softmax_axis2_cuda(_input, _output, size);
+    }
+    return output;
   }
 
   Axis M_axis;

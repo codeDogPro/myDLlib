@@ -27,6 +27,16 @@ namespace dl{
 
   template <typename T=f32>
   __global__ void 
+  expf_cuda(thrust::device_ptr<const T> input, thrust::device_ptr<T> output, int n){
+    int begin = blockIdx.x * blockDim.x + threadIdx.x;
+    int stride = blockDim.x * gridDim.x;
+    for(int i = begin; i < n; i += stride){
+      output[i] = expf(input[i]);
+    }
+  }
+
+  template <typename T=f32>
+  __global__ void 
   softmax_axis0_cuda(thrust::device_ptr<const T> input, thrust::device_ptr<T> output,
                      int n, int row, int col) {
     int bid = blockIdx.x, tid = threadIdx.x;
@@ -42,6 +52,17 @@ namespace dl{
   template <typename T=f32>
   __global__ void 
   softmax_axis1_cuda(thrust::device_ptr<const T> input, thrust::device_ptr<T> output,
+                     int n, int row, int col, int channel) {
+    int begin = blockIdx.x * blockDim.x + threadIdx.x;
+    int stride = blockDim.x * gridDim.x;
+    // TODO: use shared memory
+    for(int i = begin; i < n; i += stride){
+    }
+  }
+
+  template <typename T=f32>
+  __global__ void 
+  softmax_axis2_cuda(thrust::device_ptr<const T> input, thrust::device_ptr<T> output,
                      int n, int row, int col, int channel) {
     int begin = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = blockDim.x * gridDim.x;
