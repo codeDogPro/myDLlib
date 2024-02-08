@@ -185,11 +185,24 @@ void activation_test(){
   // std::cout << "output3:\n" << *output3;
 }
 
+template<typename T>
+void softmax_cuda_test(){
+  auto input = std::make_shared<Tensor<T>>(8, 20, 4, 2);
+  std::cout << "input:\n" << *input;
+  input->to(Device::CUDA);
+
+  Softmax<T> softmax(0);  // COL
+  auto output1 = softmax.forward(input);
+  std::cout << "output1:\n" << *output1;
+  input->shape();
+  output1->shape();
+}
 
 int main(){
   // print_test();            // pass
   // resnet50_test<f32>();    // pass
   // calculator_benchmark(100); // gpu 2.1x faster than cpu(with parallel and simd)
   // calculator_test();       // pass
-  activation_test<f32>();  // pass 
+  // activation_test<f32>();  // pass 
+  softmax_cuda_test<f32>();
 }

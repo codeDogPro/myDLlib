@@ -699,6 +699,7 @@ private:
         default: exit(-1);
       } 
     }
+    cudaDeviceSynchronize();
     return output;
 
   erro:
