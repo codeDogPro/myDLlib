@@ -109,4 +109,6 @@ namespace dl{
       output[i] = lhs[i] / rhs[rhs_idx];
     }
   }
+
+
 }

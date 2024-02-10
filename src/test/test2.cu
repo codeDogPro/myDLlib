@@ -1,3 +1,4 @@
+#include "basic/tensor_macro.cuh"
 #include <dl.cuh>
 #include <iterator>
 #include <memory>
@@ -187,15 +188,39 @@ void activation_test(){
 
 template<typename T>
 void softmax_cuda_test(){
-  auto input = std::make_shared<Tensor<T>>(8, 20, 4, 2);
+  auto input = std::make_shared<Tensor<T>>(64, 4 * 64, 10, 3);
   std::cout << "input:\n" << *input;
   input->to(Device::CUDA);
 
   Softmax<T> softmax(0);  // COL
   auto output1 = softmax.forward(input);
+  // output1->setFullPrintMode(true);
   std::cout << "output1:\n" << *output1;
-  input->shape();
-  output1->shape();
+  auto sum = output1->sum(0, true);
+  // sum->setFullPrintMode(true);
+  std::cout << "sum:\n" << *sum;
+}
+
+template<typename T>
+void softmax_benchmark(int n){
+  auto input = std::make_shared<Tensor<T>>(2 * 79, 2 * 67, 49, 18);
+  Softmax<T> softmax(0);  // COL
+  // cpu
+  {
+    Timer t;
+    for(int i = 0; i < n; i++){
+      auto output = softmax(input);
+    }
+  }
+
+  // gpu
+  input->to(Device::CUDA);
+  {
+    Timer t;
+    for(int i = 0; i < n; i++){
+      auto output = softmax(input);
+    }
+  }
 }
 
 int main(){
@@ -205,4 +230,5 @@ int main(){
   // calculator_test();       // pass
   // activation_test<f32>();  // pass 
   softmax_cuda_test<f32>();
+  // softmax_benchmark<f32>(100); // gpu 1.4x faster than cpu (why so slow?)
 }

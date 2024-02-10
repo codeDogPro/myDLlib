@@ -40,39 +40,39 @@ namespace dl{
   constexpr int _TILE_X = 32;
   template <typename T=f32>
   __global__ void 
-  softmax_axis0_cuda(thrust::device_ptr<T> exp, thrust::device_ptr<T> exp_sum, 
-                     thrust::device_ptr<T> output, int n, int col) {
-    // TODO: fix bug! result is not right
-    // calculate every row's sum
+  reduce4D_axis0_cuda(thrust::device_ptr<T> input, thrust::device_ptr<T> output, 
+                int n, int col){
     __shared__ T sums[_TILE_Y][_TILE_X];
     int by = blockIdx.y, bx = blockIdx.x;
     int ty = threadIdx.y, tx = threadIdx.x;
     int idx_x = bx * _TILE_X + tx;
     int idx = by * col * _TILE_Y + ty * col + idx_x;
 
-    sums[ty][tx] = (idx_x < col && idx < n) ? exp[idx] : static_cast<T>(0);
+    sums[ty][tx] = (idx_x < col && idx < n) ? input[idx] : static_cast<T>(0);
     __syncthreads();
 
     for(int offset = 16; offset > 0; offset >>= 1){
       if(tx < offset){
-        sums[ty][tx] += sums[ty][tx + 16];
+        sums[ty][tx] += sums[ty][tx + offset];
       }
       __syncthreads();  // could change to __syncwarp()?
     }
 
     int oidx = by * _TILE_Y + ty;
-    T *addr = exp_sum.get() + oidx;
-    if(tx == 0 && oidx < n / col){
-      atomicAdd(addr, sums[ty][0]);
+    if(tx == 0 && oidx < (n / col)){
+      atomicAdd(output.get() + oidx, sums[ty][0]);
     }
-    // reduce finished
+  }
 
-    //calculate the softmax
-    __syncthreads();
-    if(idx < n){
-      output[idx] = exp[idx] / exp_sum[oidx];
+  template <typename T=f32>
+  __global__ void 
+  softmax_axis0_cuda(thrust::device_ptr<T> exp, thrust::device_ptr<T> exp_sum, 
+                     thrust::device_ptr<T> output, int n, int col) {
+    int begin = blockIdx.x * blockDim.x + threadIdx.x;
+    int stride = blockDim.x * gridDim.x;
+    for(int i = begin; i < n; i += stride){
+      output[i] = exp[i] / exp_sum[i / col];
     }
-    // softmax finished
   }
 
   template <typename T=f32>

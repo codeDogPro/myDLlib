@@ -11,7 +11,10 @@ namespace dl{
 template<typename T=f32>
 class Softmax : public Function<T> {
 public:
-  explicit Softmax(int axis=0) {
+  explicit Softmax() = default;
+
+  explicit 
+  Softmax(int axis=0) {
     M_axis = Axis(axis);
   };
   virtual ~Softmax() = default;
@@ -24,6 +27,11 @@ public:
     else{
       return forward_cuda(input);
     }
+  }
+
+  std::shared_ptr<Tensor<T>> 
+  operator()(const std::shared_ptr<Tensor<T>> input){
+    return forward(input);
   }
 
 private:
@@ -74,24 +82,27 @@ private:
   std::shared_ptr<Tensor<T>> 
   forward_cuda(const std::shared_ptr<Tensor<T>> input){
     auto exp_input = std::make_shared<Tensor<T>>(input->get_cshape(), 0, Device::CUDA);
-    int row = input->row(), col = input->col(), channel = input->channel();
-    int number = input->number(), size = input->size();
+    int row = input->row(), col = input->col(), ch = input->channel();
+    int num = input->number(), size = input->size();
 
     auto _input = input->data_gpu(), _exp = exp_input->data_gpu();
     // calculate exp(input) first
     exp_cuda<T><<<64, 128>>>(_input, _exp, size);
     cudaDeviceSynchronize();
-    std::cout << "exp_input:\n" << *exp_input;
-    exp_input->to(Device::CUDA);
-    auto exp_sum = std::make_shared<Tensor<T>>(row, 1, channel, number, 0, Device::CUDA);
+    auto exp_sum = std::make_shared<Tensor<T>>(row, 1, ch, num, 0, Device::CUDA);
     auto output = std::make_shared<Tensor<T>>(input->get_cshape(), 0, Device::CUDA);
+
     auto _output = output->data_gpu(), _exp_sum = exp_sum->data_gpu();
     if(M_axis == Axis::COL){
-      int tile_x = 32, tile_y = 32;
-      int grid_y = size / col / tile_y;
-      int grid_x = (row / tile_x) > 0 ? row / tile_x : 1;
+      constexpr int tile_x = 32, tile_y = 32;
+      int grid_y = (size / col + tile_y - 1) / tile_y;
+      int grid_x = (col + tile_x - 1) / tile_x;
+      // printf("grid_y: %d grid_x:%d\n", grid_y, grid_x);
       dim3 grid_size(grid_x, grid_y), block_size(tile_x, tile_y);
-      softmax_axis0_cuda<T><<<grid_size, block_size>>>
+      reduce4D_axis0_cuda<<<grid_size, block_size>>>
+        (_exp, _exp_sum, size, col);
+      cudaDeviceSynchronize();
+      softmax_axis0_cuda<T><<<64, 128>>>
         (_exp, _exp_sum, _output, size, col);
     }
     else if(M_axis == Axis::ROW){
