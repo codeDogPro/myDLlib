@@ -230,5 +230,5 @@ int main(){
   // calculator_test();       // pass
   // activation_test<f32>();  // pass 
   // softmax_cuda_test<f32>();
-  softmax_benchmark<f32>(10); // gpu 1.4x faster than cpu (why so slow?)
+  softmax_benchmark<f32>(27); // gpu 2.0x faster than cpu (why so slow?)
 }

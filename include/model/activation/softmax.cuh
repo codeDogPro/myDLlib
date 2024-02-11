@@ -81,15 +81,14 @@ private:
 
   std::shared_ptr<Tensor<T>> 
   forward_cuda(const std::shared_ptr<Tensor<T>> input){
-    auto exp_input = std::make_shared<Tensor<T>>(input->get_cshape(), 0, Device::CUDA);
+    auto output = std::make_shared<Tensor<T>>(input->get_cshape(), 0, Device::CUDA);
     int row = input->row(), col = input->col(), ch = input->channel();
     int num = input->number(), size = input->size();
 
-    auto _input = input->data_gpu(), _exp = exp_input->data_gpu();
+    auto _input = input->data_gpu(), _exp = output->data_gpu();;
     // calculate exp(input) first
     exp_cuda<T><<<64, 128>>>(_input, _exp, size);
     cudaDeviceSynchronize();
-    auto output = std::make_shared<Tensor<T>>(input->get_cshape(), 0, Device::CUDA);
 
     if(M_axis == Axis::COL){
       auto exp_sum = std::make_shared<Tensor<T>>(row, 1, ch, num, 0, Device::CUDA);
