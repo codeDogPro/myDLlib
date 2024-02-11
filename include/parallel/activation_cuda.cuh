@@ -55,7 +55,7 @@ namespace dl{
       if(tx < offset){
         sums[ty][tx] += sums[ty][tx + offset];
       }
-      __syncthreads();  // could change to __syncwarp()?
+      __syncwarp();  // could change to __syncwarp()?
     }
 
     int oidx = by * _TILE_Y + ty;

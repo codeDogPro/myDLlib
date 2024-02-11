@@ -188,7 +188,7 @@ void activation_test(){
 
 template<typename T>
 void softmax_cuda_test(){
-  auto input = std::make_shared<Tensor<T>>(64, 4 * 64, 10, 3);
+  auto input = std::make_shared<Tensor<T>>(64, 4 * 64, 3, 2);
   std::cout << "input:\n" << *input;
   input->to(Device::CUDA);
 
@@ -197,7 +197,7 @@ void softmax_cuda_test(){
   // output1->setFullPrintMode(true);
   std::cout << "output1:\n" << *output1;
   auto sum = output1->sum(0, true);
-  // sum->setFullPrintMode(true);
+  sum->setFullPrintMode(true);
   std::cout << "sum:\n" << *sum;
 }
 
@@ -229,6 +229,6 @@ int main(){
   // calculator_benchmark(100); // gpu 2.1x faster than cpu(with parallel and simd)
   // calculator_test();       // pass
   // activation_test<f32>();  // pass 
-  softmax_cuda_test<f32>();
-  // softmax_benchmark<f32>(100); // gpu 1.4x faster than cpu (why so slow?)
+  // softmax_cuda_test<f32>();
+  softmax_benchmark<f32>(10); // gpu 1.4x faster than cpu (why so slow?)
 }

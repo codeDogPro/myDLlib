@@ -89,11 +89,11 @@ private:
     // calculate exp(input) first
     exp_cuda<T><<<64, 128>>>(_input, _exp, size);
     cudaDeviceSynchronize();
-    auto exp_sum = std::make_shared<Tensor<T>>(row, 1, ch, num, 0, Device::CUDA);
     auto output = std::make_shared<Tensor<T>>(input->get_cshape(), 0, Device::CUDA);
 
-    auto _output = output->data_gpu(), _exp_sum = exp_sum->data_gpu();
     if(M_axis == Axis::COL){
+      auto exp_sum = std::make_shared<Tensor<T>>(row, 1, ch, num, 0, Device::CUDA);
+      auto _output = output->data_gpu(), _exp_sum = exp_sum->data_gpu();
       constexpr int tile_x = 32, tile_y = 32;
       int grid_y = (size / col + tile_y - 1) / tile_y;
       int grid_x = (col + tile_x - 1) / tile_x;
