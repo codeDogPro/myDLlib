@@ -223,6 +223,17 @@ void softmax_benchmark(int n){
   }
 }
 
+template<typename T>
+void operator_cuda_test(){
+  auto input = std::make_shared<Tensor<T>>(64, 4 * 64, 3, 2, 2.1f);
+  std::cout << "input:\n" << *input;
+  input->to(Device::CUDA);
+  auto sum0 = input->sum(0, true);
+  auto mean0 = input->mean(0, true);
+  std::cout << "sum:\n" << *sum0;
+  std::cout << "mean:\n" << *mean0;
+}
+
 int main(){
   // print_test();            // pass
   // resnet50_test<f32>();    // pass
@@ -230,5 +241,6 @@ int main(){
   // calculator_test();       // pass
   // activation_test<f32>();  // pass 
   // softmax_cuda_test<f32>();
-  softmax_benchmark<f32>(27); // gpu 2.0x faster than cpu (why so slow?)
+  // softmax_benchmark<f32>(27); // gpu 2.0x faster than cpu (why so slow?)
+  operator_cuda_test<f32>();
 }

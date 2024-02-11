@@ -111,4 +111,14 @@ namespace dl{
   }
 
 
+  template <typename T = f32>
+  __global__ void
+  mean_axis0_cuda(thrust::device_ptr<T> input, thrust::device_ptr<T> output,
+                  int n, int col){
+    int begin = blockIdx.x * blockDim.x + threadIdx.x;
+    int stride = blockDim.x * gridDim.x;
+    for(int i = begin; i < n; i += stride){
+      output[i] = input[i] / col;
+    }
+  }
 }

@@ -1,9 +1,11 @@
 #pragma once
 
+#include <cuda_device_runtime_api.h>
 #include <data/rand_init.cuh>
 #include <parallel/parallel.cuh>
 #include <parallel/tensor_cpu.cuh>
 #include <parallel/tensor_cuda.cuh>
+#include <parallel/basic_cuda.cuh>
 
 #include <numeric>
 #include <cstring>
@@ -711,8 +713,45 @@ private:
   template<typename T>
   std::shared_ptr<Tensor<T>>
   Tensor<T>::tensor_operator_cuda(Axis axis, Operator mode, bool keepdim){
-    // TODO: implement it
-    return nullptr;
+    int row = this->row(), col = this->col(), ch = this->channel();
+    int num = this->number(), size = this->size();
+    std::shared_ptr<Tensor<T>> output;
+    if(axis == Axis::COL){
+      if(keepdim == true){
+        output = std::make_shared<Tensor<T>>(row, 1, ch, num, 0, Device::CUDA);
+      }
+      else{
+        output = std::make_shared<Tensor<T>>(1, row, ch, num, 0, Device::CUDA);
+      }
+      auto _input = this->data_gpu(), _output = output->data_gpu();
+      constexpr int tile_x = 32, tile_y = 32;
+      int grid_y = (size / col + tile_y - 1) / tile_y;
+      int grid_x = (col + tile_x - 1) / tile_x;
+      // printf("grid_y: %d grid_x:%d\n", grid_y, grid_x);
+      dim3 grid_size(grid_x, grid_y), block_size(tile_x, tile_y);
+      switch(mode){
+        case Operator::SUM:
+          reduce4D_axis0_cuda<<<grid_size, block_size>>>
+            (_input, _output, size, col);
+          break;
+        case Operator::MEAN:
+          reduce4D_axis0_cuda<<<grid_size, block_size>>>
+            (_input, _output, size, col); 
+          cudaDeviceSynchronize();
+          mean_axis0_cuda<<<64, 128>>>
+            (_output, _output, size, col);
+          break;
+        case Operator::MAX:
+        case Operator::MIN:
+        default: exit(-1);
+      }
+    }
+    else if(axis == Axis::ROW){
+    }
+    else if(axis == Axis::CHANNEL){
+    }
+    cudaDeviceSynchronize();
+    return output;
   }
 
 

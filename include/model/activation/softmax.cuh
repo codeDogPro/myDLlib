@@ -2,7 +2,7 @@
 
 #include <basic/function.cuh>
 
-#include <cuda_device_runtime_api.h>
+#include <parallel/basic_cuda.cuh>
 #include <parallel/activation_cpu.cuh>
 #include <parallel/activation_cuda.cuh>
 
