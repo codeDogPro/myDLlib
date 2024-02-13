@@ -23,6 +23,10 @@ namespace dl{
   #define NTHREAD_C(ncpu, num) (ncpu * 1 / num)
   #define NTHREAD_R(ncpu, num) (ncpu * 1 / num)
 
+  // gpu tiled size
+  constexpr int TILE_Y = 32;
+  constexpr int TILE_X = 32;
+
   // 循环分块的块大小
   const int BLOCK_SIZE = 64;
 

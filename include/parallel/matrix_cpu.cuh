@@ -10,7 +10,7 @@
 
 namespace dl{
   template<typename T>
-  bool matMul_channel_parallel(int task_begin, int task_num, int shape, int offset,
+  bool matMul_channel_cpu(int task_begin, int task_num, int shape, int offset,
    std::shared_ptr<Tensor<T>> output,
    const std::shared_ptr<Tensor<T>> a, const std::shared_ptr<Tensor<T>> b){
     int arow = a->row(), acol = a->col(), channel = a->channel();
@@ -71,7 +71,7 @@ namespace dl{
   }
 
   template<typename T>
-  bool matMul_row_parallel(int task_begin, int task_num, int shape, int offset,
+  bool matMul_row_cpu(int task_begin, int task_num, int shape, int offset,
    std::shared_ptr<Tensor<T>> output,
    const std::shared_ptr<Tensor<T>> a, const std::shared_ptr<Tensor<T>> b){
     int arow = a->row(), acol = a->col(), channel = a->channel();
@@ -120,12 +120,11 @@ namespace dl{
 
   // channel base
   template<typename T>
-  bool matTranspose_parallel(
+  bool matTranspose_cpu(
     int task_begin, int task_num, int shape, int offset,
     std::shared_ptr<Tensor<T>> output, const std::shared_ptr<Tensor<T>> input){
     int row = input->row(), col = input->col(), channel = input->channel();
     if(row >= BLOCK_SIZE){
-      puts("tiled ");
       i32 *output_addr = reinterpret_cast<i32 *>(&(*output)[0]);
       int align_row = row - row % BLOCK_SIZE;
       int align_col = col - col % BLOCK_SIZE;

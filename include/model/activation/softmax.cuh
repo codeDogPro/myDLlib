@@ -1,6 +1,7 @@
 #pragma once
 
 #include <basic/function.cuh>
+#include <basic/tensor_macro.cuh>
 
 #include <parallel/basic_cuda.cuh>
 #include <parallel/activation_cpu.cuh>
@@ -93,11 +94,10 @@ private:
     if(M_axis == Axis::COL){
       auto exp_sum = std::make_shared<Tensor<T>>(row, 1, ch, num, 0, Device::CUDA);
       auto _output = output->data_gpu(), _exp_sum = exp_sum->data_gpu();
-      constexpr int tile_x = 32, tile_y = 32;
-      int grid_y = (size / col + tile_y - 1) / tile_y;
-      int grid_x = (col + tile_x - 1) / tile_x;
+      int grid_y = (size / col + TILE_Y - 1) / TILE_Y;
+      int grid_x = (col + TILE_X - 1) / TILE_X;
       // printf("grid_y: %d grid_x:%d\n", grid_y, grid_x);
-      dim3 grid_size(grid_x, grid_y), block_size(tile_x, tile_y);
+      dim3 grid_size(grid_x, grid_y), block_size(TILE_X, TILE_Y);
       reduce4D_axis0_cuda<<<grid_size, block_size>>>
         (_exp, _exp_sum, size, col);
       cudaDeviceSynchronize();
