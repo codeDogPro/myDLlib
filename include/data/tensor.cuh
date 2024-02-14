@@ -34,7 +34,7 @@ public:
     }
     else if(device == Device::CUDA){
       m_cudaData.assign(row * col * ch * num, val);
-      // if(val == T(-1)) rand_init_cuda<T>(m_cudaData);
+      if(val == T(-1)) rand_init_cuda<T>(m_cudaData);
     }
     m_shape = {row, col, ch, num};
     full_print = false;
@@ -52,7 +52,7 @@ public:
     }
     else if(device == Device::CUDA) {
       m_cudaData.assign(size, val);
-      // if(val == T(-1)) rand_init_cuda<T>(m_cudaData);
+      if(val == T(-1)) rand_init_cuda<T>(m_cudaData);
     }
     m_shape = shape;
     m_device = device;
@@ -70,8 +70,7 @@ public:
   explicit
   Tensor(const Tensor<T>& t){ 
     m_shape.assign(4, 0); m_hostData.assign(t.size(), 0);
-    int i = 0; 
-    for(int x : t.get_cshape()) m_shape[i++] = x;
+    for(int i = 0; int x : t.get_cshape()) m_shape[i++] = x;
     parallel_copy(t);
     full_print = false;
     m_device = Device::CPU;
@@ -79,10 +78,12 @@ public:
 
   // move copy ctor
   Tensor(Tensor<T>&& t){ 
-    m_hostData  = t.get_data();
-    m_shape = t.get_shape();
-    full_print = false;
-    m_device = Device::CPU;
+    if(t.device() == Device::CPU){
+      m_hostData  = t.get_data();
+      m_shape = t.get_shape();
+      full_print = false;
+      m_device = Device::CPU;
+    }
   }
 
   Tensor<T> &
@@ -92,8 +93,7 @@ public:
     if(rhs.device() == Device::CPU){
       // puts("invoke operator= copy");
       m_shape.assign(4, 0); m_hostData.assign(rhs.size(), 0);
-      int i = 0; 
-      for(int x : rhs.get_cshape()) m_shape[i++] = x;
+      for(int i = 0; int x : rhs.get_cshape()) m_shape[i++] = x;
 
       parallel_copy(rhs);
       // puts("Finish operator= copy");
@@ -123,10 +123,12 @@ public:
     if(device == Device::CPU){
       m_hostData = m_cudaData;
       m_device = Device::CPU;
+      printf("cudaData size: %ld\n", m_cudaData.size());
     }
     else if(device == Device::CUDA){
       m_cudaData = m_hostData;
       m_device = Device::CUDA;
+      printf("hostData size: %ld\n", m_hostData.size());
     }
     else {
       fprintf(stderr, "only support cpu and cuda\n");

@@ -18,22 +18,22 @@ namespace dl{
 
   template<typename T=f32>
   void rand_init_cpu(thrust::host_vector<T, AlignedAllocator<T, 64>> &data){
-    static std::default_random_engine engine(time(0));
+    static std::default_random_engine _engine(time(0));
     std::string name = type_name<T>();
     if(name.compare("int") == 0){
       std::uniform_int_distribution<int> random(-1 << 3, 1 << 3);
       for(T &x : data){ 
-        x = random(engine); 
+        x = random(_engine); 
       #ifdef DEBUG_INIT
         std::cout << x << ' ';
       #endif
       }
     }
-    if(name.compare("float") == 0 || name.compare("double") == 0){
-      std::uniform_real_distribution<float> random(-1.5f, 1.5f);
+    else if(name.compare("float") == 0){
+      std::normal_distribution<float> random(0.0f, 1.0f);
       for(T &x : data){ 
-        x = random(engine);
-        x = x > 0 ? x + 0.1f : x - 0.1f;
+        x = random(_engine);
+        x = x > 0.0f ? x + 0.1f : x - 0.1f;
       #ifdef DEBUG_INIT
         std::cout << x << ' ';
       #endif
@@ -46,6 +46,12 @@ namespace dl{
 
   template<typename T=f32>
   void rand_init_cuda(thrust::device_vector<T> &data){
+    std::string name = type_name<T>();
+    if(name.compare("int") == 0){
 
+    }
+    else if(name.compare("float") == 0){
+
+    }
   }
 }

@@ -10,6 +10,7 @@ set(CMAKE_CUDA_ARCHITECTURES 61)
 set(CMAKE_CXX_COMPILER "clang++")
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CUDA_STANDARD 20)
 
 set(CMAKE_BUILD_TYPE Release)
 # set(CMAKE_BUILD_TYPE Debug)
@@ -18,10 +19,10 @@ project(cuda_tests LANGUAGES CXX CUDA)
 
 # 设置cuda编译参数
 if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
-  set(NVCC_FLAGS -O3 -Wno-deprecated-gpu-targets)
+  set(NVCC_FLAGS -O3 -Wno-deprecated-gpu-targets )
   message(STATUS "${PROJECT_NAME}: compile cuda code in release mode")
 else()
-  set(NVCC_FLAGS -G -Wno-deprecated-gpu-targets)
+  set(NVCC_FLAGS -G -Wno-deprecated-gpu-targets )
   message(STATUS "${PROJECT_NAME}: compile cuda code in debug mode")
 endif()
 

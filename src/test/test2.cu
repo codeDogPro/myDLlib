@@ -234,6 +234,11 @@ void operator_cuda_test(){
   std::cout << "mean:\n" << *mean0;
 }
 
+void init_test(){
+  auto input = std::make_shared<Tensor<f32>>(4, 4, 3, 2);
+  std::cout << *input;
+}
+
 int main(){
   // print_test();            // pass
   // resnet50_test<f32>();    // pass
@@ -242,5 +247,6 @@ int main(){
   // activation_test<f32>();  // pass 
   // softmax_cuda_test<f32>();
   // softmax_benchmark<f32>(27); // gpu 2.0x faster than cpu (why so slow?)
-  operator_cuda_test<f32>();
+  // operator_cuda_test<f32>(); // pass 2/12
+  init_test();
 }
