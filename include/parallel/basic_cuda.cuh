@@ -31,14 +31,4 @@ namespace dl{
     }
   }
 
-  /*tensor initialization kernel for defferent data type*/
-  __global__ void 
-  tensor_init_i32(thrust::device_ptr<i32> data){
-
-  }
-
-  __global__ void 
-  tensor_init_f32(thrust::device_ptr<f32> data){
-
-  }
 }

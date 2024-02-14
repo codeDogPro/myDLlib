@@ -237,6 +237,8 @@ void operator_cuda_test(){
 void init_test(){
   auto input = std::make_shared<Tensor<f32>>(4, 4, 3, 2);
   std::cout << *input;
+  auto input_cuda = std::make_shared<Tensor<f32>>(4, 4, 3, 2, -1, Device::CUDA);
+  std::cout << *input << *input_cuda;
 }
 
 int main(){

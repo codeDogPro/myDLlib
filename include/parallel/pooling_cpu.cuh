@@ -1,11 +1,12 @@
 #pragma once
 
 #include <basic/tensor_macro.cuh>
+#include <data/tensor.cuh>
 
 namespace dl{
 
   template<typename T>
-  bool maxPooling_parallel
+  bool maxPool2D_cpu
   (int task_begin, int task_num, int shape, int ioffset,
    std::shared_ptr<Tensor<T>> output, const std::shared_ptr<Tensor<T>> input,
    int pool_size, int stride){
@@ -36,7 +37,7 @@ namespace dl{
   }
 
   template<typename T>
-  bool avgPooling_parallel
+  bool avgPool2D_cpu
   (int task_begin, int task_num, int shape, int ioffset,
    std::shared_ptr<Tensor<T>> output, const std::shared_ptr<Tensor<T>> input,
    int pool_size, int stride){

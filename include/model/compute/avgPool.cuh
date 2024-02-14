@@ -12,8 +12,8 @@
 namespace dl{
  
 
-template<typename T=f32>
-class AvgPool2D : public Function<T> {
+  template<typename T=f32>
+  class AvgPool2D : public Function<T> {
 public:
   explicit AvgPool2D() = default;
   virtual ~AvgPool2D() = default;
@@ -28,29 +28,46 @@ public:
 
   virtual std::shared_ptr<Tensor<T>>
   forward(const std::shared_ptr<Tensor<T>> input){
-    if(M_padding){
-      auto pad_input = padding(input);
-      return pool_boost(pad_input);
+    if(input->device() == Device::CPU){
+      return forward_cpu(input);
     }
-    return pool_boost(input);
+    else{
+      return forward_cuda(input);
+    }
   }
 
 private:
   std::shared_ptr<Tensor<T>>
-  padding(const std::shared_ptr<Tensor<T>> input){
+  forward_cuda(const std::shared_ptr<Tensor<T>> input){
+    int irow = input->row(), icol = input->col();
+    int ch = input->channel(), num = input->number();
+    int orow = res_row(irow), ocol = res_col(icol);
+    auto output = std::make_shared<Tensor<T>>(orow, ocol, ch, num, 0, Device::CUDA);
+    // xxxxx cuda kernel
+    return output; 
+  }
+
+  std::shared_ptr<Tensor<T>>
+  forward_cpu(const std::shared_ptr<Tensor<T>> input){
+    if(M_padding){
+      auto pad_input = pad_cpu(input);
+      return pool_cpu(pad_input);
+    }
+    return pool_cpu(input);
+  }
+
+  std::shared_ptr<Tensor<T>>
+  pad_cpu(const std::shared_ptr<Tensor<T>> input){
     int row = input->row(), col = input->col();
-    int channel = input->channel(), number = input->number();
+    int ch = input->channel(), num = input->number();
     auto pad_input = std::make_shared<Tensor<T>>
-    (row + 2 * M_padding, col + 2 * M_padding, channel, number, 0);
-    for(int i = 0; i < number; i++){
-      int offset = i * number;
-      parallelizer.parallel_channel(padding_parallel<T>,
+    (row + 2 * M_padding, col + 2 * M_padding, ch, num, 0);
+    for(int i = 0; i < num; i++){
+      int offset = i * num;
+      parallelizer.parallel_channel(padding_cpu<T>,
         pad_input, offset, input, M_padding);
     }
     parallelizer.sync();
-  #ifdef POOL_DEBUG
-    std::cout << "pad_input:\n" << *pad_input << std::endl;
-  #endif
     return pad_input;
   }
 
@@ -58,15 +75,15 @@ private:
   int res_col(int col){return (col - M_pool_size) / M_stride + 1;}
 
   std::shared_ptr<Tensor<T>>
-  pool_boost(const std::shared_ptr<Tensor<T>> input){
+  pool_cpu(const std::shared_ptr<Tensor<T>> input){
     int irow = input->row(), icol = input->col();
-    int channel = input->channel(), number = input->number();
+    int ch = input->channel(), num = input->number();
     int orow = res_row(irow), ocol = res_col(icol);
-    auto output = std::make_shared<Tensor<T>>(orow, ocol, channel, number, 0);
-    for(int i = 0; i < number; i++){
-      int offset = i * irow * icol * channel;
+    auto output = std::make_shared<Tensor<T>>(orow, ocol, ch, num, 0);
+    for(int i = 0; i < num; i++){
+      int offset = i * irow * icol * ch;
       parallelizer.parallel_channel(
-        avgPooling_parallel<T>, output, offset,
+        avgPool2D_cpu<T>, output, offset,
         input, M_pool_size, M_stride);
     }
     parallelizer.sync();
@@ -79,4 +96,43 @@ private:
   int M_padding;
   };
 
+  template<typename T=f32>
+  class globalAvgPool2D : public Function<T> {
+public:
+  explicit globalAvgPool2D() = default;
+  virtual ~globalAvgPool2D() = default;
+
+  virtual std::shared_ptr<Tensor<T>>
+  forward(const std::shared_ptr<Tensor<T>> input){
+    if(input->device() == Device::CPU){
+      return forward_cpu(input);
+    }
+    else{
+      return forward_cuda(input);
+    }
+  }
+
+private:
+  std::shared_ptr<Tensor<T>>
+  forward_cuda(const std::shared_ptr<Tensor<T>> input){
+    int row = input->row(), col = input->col();
+    int size = input->size(), square = row * col;
+    int ch = input->channel(), num = input->number();
+    auto output = std::make_shared<Tensor<T>>(1, 1, ch, num, 0, Device::CUDA);
+
+    auto _input = input->data_gpu(), _output = output->data_gpu();
+    dim3 grid_size((square + 127)/128, num * ch), block_size(128);
+    globalAvgPool2D_cuda<<<grid_size, block_size>>>
+      (_input, _output, size, square);
+    return output; 
+  }
+
+  std::shared_ptr<Tensor<T>>
+  forward_cpu(const std::shared_ptr<Tensor<T>> input){
+    int ch = input->channel(), num = input->number();
+    // TODO: implement it
+    auto output = std::make_shared<Tensor<T>>(1, 1, ch, num, 0);
+  }
+
+  };
 }

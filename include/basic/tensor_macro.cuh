@@ -14,7 +14,8 @@ namespace dl{
   using f32 = float;
   using f64 = double;
   using i32 = int;
-  using i64 = long long;
+  using ui32 = unsigned int;
+  using ui64 = unsigned long long;
 
   const int BOOST_ROW = 1 << 2;
   const int BOOST_COL = 1 << 2;

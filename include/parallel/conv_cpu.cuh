@@ -9,7 +9,7 @@
 namespace dl{
 
   template<typename T>
-  bool padding_parallel
+  bool padding_cpu
   (int task_begin, int task_num, int shape, int ioffset,
    std::shared_ptr<Tensor<T>> output, const std::shared_ptr<Tensor<T>> input, 
    int npaddle){
@@ -73,7 +73,7 @@ namespace dl{
   }
 
   template<typename T=f32>
-  bool conv2d_parallel
+  bool conv2d_cpu
   (int task_begin, int task_num, int shape, int ioffset,
    std::shared_ptr<Tensor<T>> output, const std::shared_ptr<Tensor<T>> input,
     const Tensor<T> &weight, const Tensor<T> &bias, int stride) {
@@ -119,7 +119,7 @@ namespace dl{
   }
 
   template<typename T=f32>
-  bool conv2d_1x1_parallel
+  bool conv2d_1x1_cpu
   (int task_begin, int task_num, int shape, int ioffset,
    std::shared_ptr<Tensor<T>> output, const std::shared_ptr<Tensor<T>> input,
     const Tensor<T> &weight, const Tensor<T> &bias, int stride) {

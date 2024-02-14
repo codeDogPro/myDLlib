@@ -69,37 +69,51 @@ public:
   // deep copy
   explicit
   Tensor(const Tensor<T>& t){ 
-    m_shape.assign(4, 0); m_hostData.assign(t.size(), 0);
-    for(int i = 0; int x : t.get_cshape()) m_shape[i++] = x;
-    parallel_copy(t);
+    m_shape = t.get_cshape();
+    if(t.device() == Device::CPU){
+      m_hostData.assign(t.size(), 0);
+      parallel_copy(t);
+      m_device = Device::CPU;
+    }
+    else{
+      m_cudaData.assign(t.size(), 0);
+      //TODO:CUDA copy
+      m_device = Device::CUDA;
+    }
     full_print = false;
-    m_device = Device::CPU;
   }
 
   // move copy ctor
   Tensor(Tensor<T>&& t){ 
     if(t.device() == Device::CPU){
-      m_hostData  = t.get_data();
-      m_shape = t.get_shape();
-      full_print = false;
+      m_hostData  = std::move(t.get_data());
       m_device = Device::CPU;
     }
+    else{
+      m_device = Device::CUDA;
+    }
+    m_shape = std::move(t.get_shape());
+    full_print = false;
   }
 
   Tensor<T> &
   operator=(const Tensor<T>& rhs){
     if(this == &rhs) return *this;
 
+    // puts("invoke operator= copy");
     if(rhs.device() == Device::CPU){
-      // puts("invoke operator= copy");
-      m_shape.assign(4, 0); m_hostData.assign(rhs.size(), 0);
-      for(int i = 0; int x : rhs.get_cshape()) m_shape[i++] = x;
-
+      m_hostData.assign(rhs.size(), 0);
       parallel_copy(rhs);
-      // puts("Finish operator= copy");
-      full_print = false;
       m_device = Device::CPU;
     }
+    else {
+      m_cudaData.assign(rhs.size(), 0);
+      //TODO: cuda copy xxxx
+      m_device = Device::CUDA;
+    }
+    m_shape = rhs.get_cshape();
+    full_print = false;
+    // puts("Finish operator= copy");
     return *this;
   }
 
@@ -107,13 +121,17 @@ public:
   operator=(Tensor<T>&& rhs){
     if(this == &rhs) return *this;
 
+    // puts("invoke operator= move");
     if(rhs.device() == Device::CPU){
-      // puts("invoke operator= move");
       m_hostData  = std::move(rhs.get_data());
-      m_shape = std::move(rhs.get_shape());
-      full_print = false;
       m_device = Device::CPU;
     }
+    else{
+      //TODO: cuda move copy
+      m_device = Device::CUDA;
+    }
+    m_shape = std::move(rhs.get_shape());
+    full_print = false;
     return *this;
   }
 
@@ -123,12 +141,12 @@ public:
     if(device == Device::CPU){
       m_hostData = m_cudaData;
       m_device = Device::CPU;
-      printf("cudaData size: %ld\n", m_cudaData.size());
+      m_cudaData.clear();
     }
     else if(device == Device::CUDA){
       m_cudaData = m_hostData;
       m_device = Device::CUDA;
-      printf("hostData size: %ld\n", m_hostData.size());
+      m_hostData.clear();
     }
     else {
       fprintf(stderr, "only support cpu and cuda\n");
@@ -772,7 +790,7 @@ private:
       if(t.getFullPrintMode() == true){
         int num_cnt = 0;
         for(int i = 0; i < col; i++){
-          os << setw(7) << t[offset + i];
+          os << setw(8) << t[offset + i];
           if(i != col - 1) os << ", ";
           if(++num_cnt == MAX_NUM_LINE){
             if(number > 1)    os << "\n    ";
@@ -786,18 +804,18 @@ private:
       }
       else{ // 省略输出模式
         for(int i = 0; i < SHOW_NUMBER_LEN; i++){
-          os << setw(7) << t[offset + i] << ", ";
+          os << setw(8) << t[offset + i] << ", ";
         }
         printf(" ..., ");
         for(int i = col - SHOW_NUMBER_LEN; i < col; i++){
-          os << setw(7) << t[offset + i]; if(i != col - 1) os << ", ";
+          os << setw(8) << t[offset + i]; if(i != col - 1) os << ", ";
         }
       }
     }
     else{
       int num_cnt = 0;
       for(int i = 0; i < col; i++){
-        os << setw(7) << t[offset + i];
+        os << setw(8) << t[offset + i];
         if(i != col - 1) os << ", ";
         if(++num_cnt == MAX_NUM_LINE){
           if(number > 1)    os << "\n    ";
