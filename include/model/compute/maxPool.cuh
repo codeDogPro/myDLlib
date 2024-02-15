@@ -37,6 +37,11 @@ public:
     }
   }
 
+  std::shared_ptr<Tensor<T>>
+  operator()(const std::shared_ptr<Tensor<T>> input){
+    return forward(input);
+  }
+
 private:
   std::shared_ptr<Tensor<T>>
   forward_cuda(const std::shared_ptr<Tensor<T>> input){

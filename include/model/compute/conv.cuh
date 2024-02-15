@@ -54,6 +54,11 @@ public:
     }
   }
 
+  std::shared_ptr<Tensor<T>>
+  operator()(const std::shared_ptr<Tensor<T>> input){
+    return forward(input);
+  }
+
   void to(Device device){
     M_weight.to(device);
     M_bias.to(device);

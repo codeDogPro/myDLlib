@@ -8,13 +8,14 @@ template<typename T=f32>
 class ResidualBlock : public Function<T>{
 public:
   explicit
-  ResidualBlock(int input_ch, int output_ch) {
+  ResidualBlock(int input_ch, int output_ch, Device device=Device::CPU) {
     same_shape = (input_ch == output_ch);
-    input_layer = new Conv2D(1, input_ch, output_ch);
-    output_layer = new Conv2D(1, output_ch, output_ch);
+    input_layer = new Conv2D<T>(1, input_ch, output_ch, 1, 0, device);
+    output_layer = new Conv2D<T>(1, output_ch, output_ch, 1, 0, device);
     if(!same_shape){
-      pad_layer = new Conv2D(1, input_ch, output_ch);
+      pad_layer = new Conv2D<T>(1, input_ch, output_ch, 1, 0, device);
     }
+    m_device  = device;
   }
 
   virtual ~ResidualBlock(){
@@ -40,11 +41,24 @@ public:
     }
   }
 
+  std::shared_ptr<Tensor<T>>
+  operator()(const std::shared_ptr<Tensor<T>> input){
+    return forward(input);
+  }
+
+  void to(Device device){
+    input_layer->to(device);
+    output_layer->to(device);
+    pad_layer->to(device);
+    m_device = device;
+  }
+
 private:
   Conv2D<T> *input_layer;
   Conv2D<T> *output_layer;
   Conv2D<T> *pad_layer;
   bool same_shape;
+  Device m_device;
 };
 
 
@@ -52,13 +66,13 @@ template<typename T=f32>
 class ResidualBlock_bottle : public Function<T>{
 public:
   explicit
-  ResidualBlock_bottle(int input_ch, int neck_ch, int output_ch) {
+  ResidualBlock_bottle(int input_ch, int neck_ch, int output_ch, Device device=Device::CPU) {
     same_shape = (input_ch == output_ch);
-    input_layer = new Conv2D(1, input_ch, neck_ch);
-    neck_layer = new Conv2D(3, neck_ch, neck_ch, 1, 1);
-    output_layer = new Conv2D(1, neck_ch, output_ch);
+    input_layer = new Conv2D<T>(1, input_ch, neck_ch, 1, 0, device);
+    neck_layer = new Conv2D<T>(3, neck_ch, neck_ch, 1, 1, device);
+    output_layer = new Conv2D<T>(1, neck_ch, output_ch, 1, 0, device);
     if(!same_shape){
-      pad_layer = new Conv2D(1, input_ch, output_ch);
+      pad_layer = new Conv2D<T>(1, input_ch, output_ch, 1, 0, device);
     }
   }
 
@@ -87,11 +101,25 @@ public:
     }
   }
 
+  std::shared_ptr<Tensor<T>>
+  operator()(const std::shared_ptr<Tensor<T>> input){
+    return forward(input);
+  }
+
+  void to(Device device){
+    input_layer->to(device);
+    neck_layer->to(device);
+    output_layer->to(device);
+    pad_layer->to(device);
+    m_device = device;
+  }
+
 private:
   Conv2D<T> *input_layer;
   Conv2D<T> *neck_layer;
   Conv2D<T> *output_layer;
   Conv2D<T> *pad_layer;
   bool same_shape;
+  Device m_device;
 };
 }
