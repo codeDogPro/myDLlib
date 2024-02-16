@@ -1,12 +1,13 @@
 #pragma once
 
+// for opencv
+#include <opencv2/core.hpp>
+
 #include <basic/tensor_macro.cuh>
 #include <data/tensor.cuh>
 
 // for simd
 #include <immintrin.h>
-// for opencv
-#include <opencv2/core.hpp>
 
 namespace dl{
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "parallel/parallel.cuh"
 #include <basic/function.cuh>
 #include <basic/tensor_macro.cuh>
 
@@ -49,6 +50,7 @@ private:
     int ch = input->channel(), num = input->number();
     int orow = res_row(irow), ocol = res_col(icol);
     auto output = std::make_shared<Tensor<T>>(orow, ocol, ch, num, Device::CUDA, 0);
+    //TODO: implement it
     // xxxxx cuda kernel
     return output; 
   }
@@ -131,7 +133,6 @@ private:
 
     auto _input = input->data_gpu(), _output = output->data_gpu();
     dim3 grid_size((square + 127)/128, num * ch), block_size(128);
-    // printf("grid_x: %d grid_y:%d\n", grid_size.x, grid_size.y);
     globalAvgPool2D_cuda<<<grid_size, block_size>>> (_input, _output, square);
     __div_square<<<16, 128>>>(_output, square, ch * num);
     cudaDeviceSynchronize();
@@ -140,9 +141,15 @@ private:
 
   std::shared_ptr<Tensor<T>>
   forward_cpu(const std::shared_ptr<Tensor<T>> input){
+    int row = input->row(), col = input->col();
     int ch = input->channel(), num = input->number();
-    // TODO: implement it
     auto output = std::make_shared<Tensor<T>>(1, 1, ch, num, Device::CPU, 0);
+    for(int i = 0; i < num; i++){
+      int offset = i * row * col * ch;
+      parallelizer.parallel_channel(
+        globalAvgPool2D_cpu<T>, output, offset, input);
+    }
+    parallelizer.sync();
     return output;
   }
 

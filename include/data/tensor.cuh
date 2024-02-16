@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cuda_device_runtime_api.h>
 #include <data/rand_init.cuh>
 #include <parallel/parallel.cuh>
 #include <parallel/tensor_cpu.cuh>

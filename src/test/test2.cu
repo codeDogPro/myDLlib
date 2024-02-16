@@ -244,7 +244,8 @@ void init_test(){
 
 template<typename T>
 void globalAvgPool2D_test(){
-  auto input = std::make_shared<Tensor<T>>(4*67, 4*67, 3, 2, Device::CUDA);
+  // auto input = std::make_shared<Tensor<T>>(4*67, 4*67, 3, 2, Device::CUDA);
+  auto input = std::make_shared<Tensor<T>>(4*67, 4*67, 3, 2, Device::CPU);
   // std::cout << *input;
   // input->to(Device::CUDA);
   globalAvgPool2D<T> gavgpool;
