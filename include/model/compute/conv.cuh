@@ -15,8 +15,8 @@ public:
   explicit 
   Conv2D (int kernel_size, int input_ch, int output_ch, 
           int stride=1, int padding=0, Device device=Device::CPU)
-  : M_weight(kernel_size, kernel_size, input_ch, output_ch, -1, device),
-    M_bias(output_ch, 1, 1, 1, -1, device)
+  : M_weight(kernel_size, kernel_size, input_ch, output_ch, device),
+    M_bias(output_ch, 1, 1, 1, device)
   {
     M_stride     = stride;
     M_padding    = padding;

@@ -36,6 +36,11 @@ public:
     return output;
   }
 
+  std::shared_ptr<Tensor<Tp>> 
+  operator()(const std::shared_ptr<Tensor<Tp>> input){
+    return forward(input);
+  }
+
 private:
   void _add_fn(){ }
 

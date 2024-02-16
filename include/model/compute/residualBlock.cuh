@@ -1,5 +1,6 @@
 #pragma once
 
+#include <basic/tensor_macro.cuh>
 #include "conv.cuh"
 
 namespace dl{

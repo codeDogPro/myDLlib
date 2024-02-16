@@ -1,8 +1,4 @@
-#include "basic/tensor_macro.cuh"
 #include <dl.cuh>
-#include <iterator>
-#include <memory>
-#include <type_traits>
 
 using namespace dl;
 
@@ -11,8 +7,8 @@ template<typename T>
 void resnet50_test(){
   auto input = std::make_shared<Tensor<T>>(224, 224, 3, 1);
   std::cout << "input:\n" << *input;
-  int size = 4;
-  auto conv7x7 = new Conv2D<T>(7, 3, 16 * size, 2, 3);
+  const int size = 4;
+  auto conv7x7 = new Conv2D<T>(7, 3, 16 * size, 2, 3, Device::CPU);
   auto maxPool_1 = new MaxPool2D<T>(3, 1, 2), maxPool_2 = new MaxPool2D<T>(3, 1, 2);
   auto maxPool_3 = new MaxPool2D<T>(3, 1, 2), maxPool_4 = new MaxPool2D<T>(3, 1, 2);
   auto relu1 = new Relu<T>(), relu2 = new Relu<T>();
@@ -102,20 +98,26 @@ void resnet50_test(){
     new ResidualBlock_bottle<T>(512 * size, 128 * size, 512 * size),
     new ResidualBlock_bottle<T>(512 * size, 128 * size, 512 * size)
   );
+
+  auto globalAvgPool = new globalAvgPool2D<T>();
+  auto flatten = new Flatten<T>();
+  auto fc = new Linear<T>(2048, 10);
+  auto softmax = new Softmax<T>(0);
   
   Sequential<T> resnet50(
     conv7x7, relu1,
     group1_1, group1_2, group1_3, maxPool_1, relu2,
     group2_1, group2_2, group2_3, group2_4, maxPool_2, relu3,
     group3_1, group3_2, group3_3, group3_4, group3_5, group3_6, maxPool_3, relu4,
-    group4_1, group4_2, group4_3, maxPool_4, relu5
+    group4_1, group4_2, group4_3, maxPool_4, relu5,
+    globalAvgPool, flatten, fc, softmax
   );
 
   {
-    Timer timer_compute;
-    auto output = resnet50.forward(input);
+    // Timer timer_compute;
+    auto output = resnet50(input);
+    std::cout << "output:\n" << *output << std::endl;
   }
-  // std::cout << "output:\n" << *output << std::endl;
 }
 
 void print_test(){
@@ -238,7 +240,8 @@ void operator_cuda_test(){
 void init_test(){
   auto input = std::make_shared<Tensor<f32>>(4, 4, 3, 2);
   std::cout << *input;
-  auto input_cuda = std::make_shared<Tensor<f32>>(4, 4, 3, 2, Device::CUDA);
+  auto input_cuda 
+    = std::make_shared<Tensor<f32>>(4, 4, 3, 2, Device::CUDA);
   std::cout << *input_cuda;
 }
 
@@ -256,14 +259,14 @@ void globalAvgPool2D_test(){
 }
 
 int main(){
-  // print_test();            // pass
-  // resnet50_test<f32>();    // pass
-  // calculator_benchmark(100); // gpu 2.1x faster than cpu(with parallel and simd)
-  // calculator_test();       // pass
-  // activation_test<f32>();  // pass 
-  // softmax_cuda_test<f32>();
-  // softmax_benchmark<f32>(27); // gpu 2.0x faster than cpu (why so slow?)
-  // operator_cuda_test<f32>(); // pass 2/12
-  // init_test();             // pass 
-  globalAvgPool2D_test<f32>();
+  // print_test();                  // pass
+  resnet50_test<f32>();          // pass
+  // calculator_benchmark(100);     // gpu 2.1x faster than cpu(with parallel and simd)
+  // calculator_test();             // pass
+  // activation_test<f32>();        // pass 
+  // softmax_cuda_test<f32>();      
+  // softmax_benchmark<f32>(27);    // gpu 2.0x faster than cpu (why so slow?)
+  // operator_cuda_test<f32>();     // pass 2/12
+  // init_test();                   // pass 
+  // globalAvgPool2D_test<f32>();   // pass
 }
