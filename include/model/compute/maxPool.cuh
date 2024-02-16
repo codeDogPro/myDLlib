@@ -43,7 +43,7 @@ private:
     int irow = input->row(), icol = input->col();
     int ch = input->channel(), num = input->number();
     int orow = res_row(irow), ocol = res_col(icol);
-    auto output = std::make_shared<Tensor<T>>(orow, ocol, ch, num, 0, Device::CUDA);
+    auto output = std::make_shared<Tensor<T>>(orow, ocol, ch, num, Device::CUDA, 0);
     // xxxxx cuda kernel
     return output; 
   }
@@ -62,7 +62,7 @@ private:
     int row = input->row(), col = input->col();
     int ch = input->channel(), num = input->number();
     auto pad_input = std::make_shared<Tensor<T>>
-    (row + 2 * M_padding, col + 2 * M_padding, ch, num, 0);
+    (row + 2 * M_padding, col + 2 * M_padding, ch, num, Device::CPU, 0);
     for(int i = 0; i < num; i++){
       int offset = i * num;
       parallelizer.parallel_channel(padding_cpu<T>,
@@ -77,7 +77,7 @@ private:
     int irow = input->row(), icol = input->col();
     int ch = input->channel(), num = input->number();
     int orow = res_row(irow), ocol = res_col(icol);
-    auto output = std::make_shared<Tensor<T>>(orow, ocol, ch, num, 0);
+    auto output = std::make_shared<Tensor<T>>(orow, ocol, ch, num, Device::CPU, 0);
     for(int i = 0; i < num; i++){
       int offset = i * irow * icol * ch;
       parallelizer.parallel_channel(

@@ -21,7 +21,7 @@ public:
 private:
   std::shared_ptr<Tensor<T>> 
   forward_cpu(const std::shared_ptr<Tensor<T>> input){
-    auto output = std::make_shared<Tensor<T>>(input->get_cshape(), 0);
+    auto output = std::make_shared<Tensor<T>>(input->get_cshape(), Device::CPU, 0);
     int row = input->row(), col = input->col(), channel = input->channel();
     int number = input->number(), volume = row * col * channel;
     if(channel > 1){
@@ -43,8 +43,7 @@ private:
 
   std::shared_ptr<Tensor<T>> 
   forward_cuda(const std::shared_ptr<Tensor<T>> input){
-    auto output = std::make_shared<Tensor<T>>(
-      input->get_cshape(), 0, Device::CUDA);
+    auto output = std::make_shared<Tensor<T>>(input->get_cshape(), Device::CUDA, 0);
 
     int gride_size = 64, block_size = 128;
     int size = output->size();

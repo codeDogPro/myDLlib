@@ -61,7 +61,7 @@ public:
       orow = irow, ocol = icol, ochannel = ichannel;
       onumber = inumber;
     }
-    auto output = std::make_shared<Tensor<T>>(input->get_cshape(), 0);
+    auto output = std::make_shared<Tensor<T>>(input->get_cshape(), Device::CPU, 0);
     *output = *input;
     output->reshape(orow, ocol, ochannel, onumber);
     return output;

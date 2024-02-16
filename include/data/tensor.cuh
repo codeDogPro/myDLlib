@@ -23,9 +23,7 @@ public:
   ~Tensor() = default;
 
   explicit
-  Tensor(int row, int col, int ch=1, int num=1, T val=T(-1),
-         Device device=Device::CPU)
-  {
+  Tensor(int row, int col, int ch=1, int num=1, Device device=Device::CPU, T val=-1) {
     assert(row != 0 && col != 0 && ch != 0 && num != 0);
 
     if(device == Device::CPU){
@@ -42,8 +40,8 @@ public:
   }
 
   explicit
-  Tensor(const std::vector<int>& shape, T val=-1, Device device=Device::CPU)
-  { assert(shape.size() != 0);
+  Tensor(const std::vector<int>& shape, Device device=Device::CPU, T val=-1) {
+    assert(shape.size() != 0);
 
     int size = std::reduce(shape.begin(), shape.end(), 1, std::multiplies<T>{});
     if(device == Device::CPU) {
@@ -295,32 +293,32 @@ private:
   std::shared_ptr<Tensor<T>> 
   Tensor<T>::operator+(const Tensor<T>& rhs) { 
     return (this->m_device == Device::CPU) ?
-      tensor_calculator(*this, rhs, Calculator::ADD) :
-      tensor_calculator_cuda(*this, rhs, Calculator::ADD);
+      tensor_calculator(*this, rhs, Calculator::ADD) 
+    : tensor_calculator_cuda(*this, rhs, Calculator::ADD);
   }
 
   template<typename T>
   std::shared_ptr<Tensor<T>> 
   Tensor<T>::operator-(const Tensor<T>& rhs) { 
     return (this->m_device == Device::CPU) ?
-      tensor_calculator(*this, rhs, Calculator::SUB) :
-      tensor_calculator_cuda(*this, rhs, Calculator::SUB);
+      tensor_calculator(*this, rhs, Calculator::SUB) 
+    : tensor_calculator_cuda(*this, rhs, Calculator::SUB);
   }
 
   template<typename T>
   std::shared_ptr<Tensor<T>> 
   Tensor<T>::operator*(const Tensor<T>& rhs) { 
     return (this->m_device == Device::CPU) ? 
-      tensor_calculator(*this, rhs, Calculator::MUL) :
-      tensor_calculator_cuda(*this, rhs, Calculator::MUL);
+      tensor_calculator(*this, rhs, Calculator::MUL) 
+    : tensor_calculator_cuda(*this, rhs, Calculator::MUL);
   }
 
   template<typename T>
   std::shared_ptr<Tensor<T>> 
   Tensor<T>::operator/(const Tensor<T>& rhs) { 
     return (this->m_device == Device::CPU) ?
-      tensor_calculator(*this, rhs, Calculator::DIV) :
-      tensor_calculator_cuda(*this, rhs, Calculator::DIV);
+      tensor_calculator(*this, rhs, Calculator::DIV) 
+    : tensor_calculator_cuda(*this, rhs, Calculator::DIV);
   }
 
   template<typename T>
@@ -407,32 +405,32 @@ private:
   std::shared_ptr<Tensor<T>>
   Tensor<T>::sum(int axis, bool keepdim){ 
     return (this->m_device == Device::CPU) ?
-      tensor_operator(Axis(axis), Operator::SUM, keepdim) : 
-      tensor_operator_cuda(Axis(axis), Operator::SUM, keepdim);
+      tensor_operator(Axis(axis), Operator::SUM, keepdim) 
+    : tensor_operator_cuda(Axis(axis), Operator::SUM, keepdim);
   }
 
   template<typename T>
   std::shared_ptr<Tensor<T>>
   Tensor<T>::mean(int axis, bool keepdim){
     return (this->m_device == Device::CPU) ?
-      tensor_operator(Axis(axis), Operator::MEAN, keepdim) : 
-      tensor_operator_cuda(Axis(axis), Operator::MEAN, keepdim);
+      tensor_operator(Axis(axis), Operator::MEAN, keepdim) 
+    : tensor_operator_cuda(Axis(axis), Operator::MEAN, keepdim);
   }
 
   template<typename T>
   std::shared_ptr<Tensor<T>>
   Tensor<T>::max(int axis, bool keepdim){
     return (this->m_device == Device::CPU) ?
-      tensor_operator(Axis(axis), Operator::MAX, keepdim) : 
-      tensor_operator_cuda(Axis(axis), Operator::MAX, keepdim);
+      tensor_operator(Axis(axis), Operator::MAX, keepdim) 
+    : tensor_operator_cuda(Axis(axis), Operator::MAX, keepdim);
   }
 
   template<typename T>
   std::shared_ptr<Tensor<T>>
   Tensor<T>::min(int axis, bool keepdim){ 
     return (this->m_device == Device::CPU) ?
-      tensor_operator(Axis(axis), Operator::MIN, keepdim) : 
-      tensor_operator_cuda(Axis(axis), Operator::MIN, keepdim);
+      tensor_operator(Axis(axis), Operator::MIN, keepdim) 
+    : tensor_operator_cuda(Axis(axis), Operator::MIN, keepdim);
   }
 
   template<typename T>
@@ -467,7 +465,7 @@ private:
     int channel = lhs.channel(), number = lhs.number();
     int orow = std::max(lrow, rrow);
 
-    auto output = std::make_shared<Tensor<T>>(orow, col, channel, number, 0);
+    auto output = std::make_shared<Tensor<T>>(orow, col, channel, number, Device::CPU, 0);
     int volume = orow * col * channel;
     const T *_lhs, *_rhs;
     if(lrow == rrow){
@@ -591,10 +589,10 @@ private:
     std::shared_ptr<Tensor<T>> output;
     if(axis == Axis::COL){
       if(keepdim == true){
-        output = std::make_shared<Tensor<T>>(row, 1, channel, number, 0);
+        output = std::make_shared<Tensor<T>>(row, 1, channel, number, Device::CPU, 0);
       }
       else{
-        output = std::make_shared<Tensor<T>>(1, row, channel, number, 0);
+        output = std::make_shared<Tensor<T>>(1, row, channel, number, Device::CPU, 0);
       }
       for(int i = 0; i < number; i++){
         int offset = i * volume;
@@ -615,7 +613,7 @@ private:
       }
     }
     else if(axis == Axis::ROW){
-      output = std::make_shared<Tensor<T>>(1, col, channel, number, 0);
+      output = std::make_shared<Tensor<T>>(1, col, channel, number, Device::CPU, 0);
       for(int i = 0; i < number; i++){
         int offset = i * volume;
         switch(mode){
@@ -636,10 +634,10 @@ private:
     }
     else if(axis == Axis::CHANNEL){
       if(keepdim == true){
-        output = std::make_shared<Tensor<T>>(row, col, number, 1, 0);
+        output = std::make_shared<Tensor<T>>(row, col, number, 1, Device::CPU, 0);
       }
       else{
-        output = std::make_shared<Tensor<T>>(row, col, 1, number, 0);
+        output = std::make_shared<Tensor<T>>(row, col, 1, number, Device::CPU, 0);
       }
       for(int i = 0; i < number; i++){
         int offset = i * volume;
@@ -674,7 +672,7 @@ private:
     int orow = std::max(lrow, rrow);
 
     auto output = std::make_shared<Tensor<T>>
-      (orow, col, channel, number, 0, Device::CUDA);
+      (orow, col, channel, number, Device::CUDA, 0);
     int size = output->size();
     int block_size = 128, grid_size = 64;
 
@@ -743,10 +741,10 @@ private:
 
     if(axis == Axis::COL){
       if(keepdim == true){
-        output = std::make_shared<Tensor<T>>(row, 1, ch, num, 0, Device::CUDA);
+        output = std::make_shared<Tensor<T>>(row, 1, ch, num, Device::CUDA, 0);
       }
       else{
-        output = std::make_shared<Tensor<T>>(1, row, ch, num, 0, Device::CUDA);
+        output = std::make_shared<Tensor<T>>(1, row, ch, num, Device::CUDA, 0);
       }
       auto _input = this->data_gpu(), _output = output->data_gpu();
       constexpr int tile_x = 32, tile_y = 32;

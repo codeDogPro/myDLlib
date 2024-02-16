@@ -13,7 +13,7 @@ namespace dl{
   matMul_cpu(const std::shared_ptr<Tensor<T>> a, const std::shared_ptr<Tensor<T>> b){
     int arow = a->row(), bcol = b->col(), ch = a->channel(), num = a->number();
 
-    auto output = std::make_shared<Tensor<T>>(arow, bcol, ch, num, 0);
+    auto output = std::make_shared<Tensor<T>>(arow, bcol, ch, num, Device::CPU, 0);
     if(num == 1 && ch == 1){
       parallelizer.parallel_row(matMul_row_cpu<T>, output,
         0, a, b);
@@ -34,7 +34,7 @@ namespace dl{
     int arow = a->row(), acol = a->col(), bcol = b->col();
     int ch = a->channel(), num = a->number();
 
-    auto output = std::make_shared<Tensor<T>>(arow, bcol, ch, num, 0, Device::CUDA);
+    auto output = std::make_shared<Tensor<T>>(arow, bcol, ch, num, Device::CUDA, 0);
     auto _a = a->data_gpu(), _b = b->data_gpu(), _output = output->data_gpu();
     dim3 grid_size(arow / TILE_Y, acol / TILE_X, ch * num);
     dim3 block_size(TILE_Y, TILE_X);
@@ -74,7 +74,7 @@ namespace dl{
   template<typename T=f32>
   std::shared_ptr<Tensor<T>>
   matTranspose_cpu(const std::shared_ptr<Tensor<T>> input){
-    auto output = std::make_shared<Tensor<T>>(input->get_cshape(), 0);
+    auto output = std::make_shared<Tensor<T>>(input->get_cshape(), Device::CPU, 0);
     int row = input->row(), col = input->col(), channel = input->channel();
     int number = input->number(), volume = row * col * channel;
     for(int i = 0; i < number; i++){
@@ -92,7 +92,7 @@ namespace dl{
     int row = input->row(), col = input->col();
     int ch = input->channel(), num = input->number();
 
-    auto output = std::make_shared<Tensor<T>>(input->get_cshape(), 0, Device::CUDA);
+    auto output = std::make_shared<Tensor<T>>(input->get_cshape(), Device::CUDA, 0);
     auto _output = output->data_gpu(), _input = input->data_gpu();
     dim3 grid_size(col / TILE_X, row / TILE_Y, ch * num);
     dim3 block_size(TILE_Y, TILE_X);

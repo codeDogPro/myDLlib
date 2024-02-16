@@ -80,7 +80,7 @@ private:
     int number = input->number();
     if(M_padding){
       auto pad_input = std::make_shared<Tensor<T>>
-      (row + 2 * M_padding, col + 2 * M_padding, channel, number, 0);
+      (row + 2 * M_padding, col + 2 * M_padding, channel, number, Device::CPU, 0);
       int ivolume = row * col * channel;
       for(int i = 0; i < number; i++){
         int offset = i * ivolume;
@@ -102,7 +102,7 @@ private:
     int irow = input->row(), icol = input->col(), ichannel = input->channel();
     int number = input->number(), ivolume = irow * icol * ichannel;
     int output_ch = M_weight.number();
-    auto output = std::make_shared<Tensor<T>>(o_row, o_col, output_ch, number, 0);
+    auto output = std::make_shared<Tensor<T>>(o_row, o_col, output_ch, number, Device::CPU, 0);
     for(int i = 0; i < number; i++){
       int offset = i * ivolume;
       if(M_kernelSize == 1){

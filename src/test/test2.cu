@@ -126,8 +126,8 @@ void print_test(){
 }
 
 void calculator_benchmark(int n){
-  Tensor<f32> a(320, 302, 80, 8, 3.1);  
-  Tensor<f32> b(1, 302, 80, 8, 1.2);
+  Tensor<f32> a(320, 302, 80, 8, Device::CPU, 3.1);  
+  Tensor<f32> b(1, 302, 80, 8, Device::CPU, 1.2);
   // std::cout << a << b;
   {
     Timer t;
@@ -156,8 +156,8 @@ void calculator_benchmark(int n){
 }
 
 void calculator_test(){
-  Tensor<f32> a(320, 302, 8, 4, 3.1);  
-  Tensor<f32> b(1, 302, 8, 4, 1.2);
+  Tensor<f32> a(320, 302, 8, 4, Device::CPU, 3.1);  
+  Tensor<f32> b(1, 302, 8, 4, Device::CPU, 1.2);
   std::cout << a << b;
   a.to(Device::CUDA);
   b.to(Device::CUDA);
@@ -226,7 +226,7 @@ void softmax_benchmark(int n){
 
 template<typename T>
 void operator_cuda_test(){
-  auto input = std::make_shared<Tensor<T>>(64, 4 * 64, 3, 2, 2.1f);
+  auto input = std::make_shared<Tensor<T>>(64, 4 * 64, 3, 2, Device::CPU, 2.1f);
   std::cout << "input:\n" << *input;
   input->to(Device::CUDA);
   auto sum0 = input->sum(0, true);
@@ -238,22 +238,19 @@ void operator_cuda_test(){
 void init_test(){
   auto input = std::make_shared<Tensor<f32>>(4, 4, 3, 2);
   std::cout << *input;
-  auto input_cuda = std::make_shared<Tensor<f32>>(4, 4, 3, 2, -1, Device::CUDA);
+  auto input_cuda = std::make_shared<Tensor<f32>>(4, 4, 3, 2, Device::CUDA);
   std::cout << *input_cuda;
 }
 
 template<typename T>
 void globalAvgPool2D_test(){
-  auto input = std::make_shared<Tensor<T>>(4*64, 4*64, 3, 2, 0.1, Device::CUDA);
+  auto input = std::make_shared<Tensor<T>>(4*67, 4*67, 3, 2, Device::CUDA);
   // std::cout << *input;
   // input->to(Device::CUDA);
   globalAvgPool2D<T> gavgpool;
   auto output = gavgpool(input);
   std::cout << "output:\n" << *output;
-  // input->to(Device::CPU);
   auto mean = input->mean(0)->mean(0);
-  auto sum = input->sum(0)->sum(0);
-  std::cout << "sum:\n" << *sum;
   std::cout << "mean:\n" << *mean;
 }
 

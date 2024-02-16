@@ -33,7 +33,7 @@ public:
 private:
   std::shared_ptr<Tensor<T>> 
   forward_cpu(const std::shared_ptr<Tensor<T>> input){
-    auto output = std::make_shared<Tensor<T>>(input->get_cshape(), 0);
+    auto output = std::make_shared<Tensor<T>>(input->get_cshape(), Device::CPU, 0);
     int row = input->row(), col = input->col(), channel = input->channel();
     int number = input->number(), volume = row * col * channel;
 
@@ -77,7 +77,7 @@ private:
 
   std::shared_ptr<Tensor<T>> 
   forward_cuda(const std::shared_ptr<Tensor<T>> input){
-    auto output = std::make_shared<Tensor<T>>(input->get_cshape(), 0, Device::CUDA);
+    auto output = std::make_shared<Tensor<T>>(input->get_cshape(), Device::CUDA, 0);
     int row = input->row(), col = input->col(), ch = input->channel();
     int num = input->number(), size = input->size();
 
@@ -87,11 +87,10 @@ private:
     cudaDeviceSynchronize();
 
     if(M_axis == Axis::COL){
-      auto exp_sum = std::make_shared<Tensor<T>>(row, 1, ch, num, 0, Device::CUDA);
+      auto exp_sum = std::make_shared<Tensor<T>>(row, 1, ch, num, Device::CUDA, 0);
       auto _output = output->data_gpu(), _exp_sum = exp_sum->data_gpu();
       int grid_y = (size / col + TILE_Y - 1) / TILE_Y;
       int grid_x = (col + TILE_X - 1) / TILE_X;
-      // printf("grid_y: %d grid_x:%d\n", grid_y, grid_x);
       dim3 grid_size(grid_x, grid_y), block_size(TILE_X, TILE_Y);
       reduce4D_axis0_cuda<<<grid_size, block_size>>>
         (_exp, _exp_sum, size, col);
