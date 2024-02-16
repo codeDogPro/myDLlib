@@ -16,10 +16,7 @@ public:
 
   virtual std::shared_ptr<Tensor<T>>
   forward(const std::shared_ptr<Tensor<T>> input) override{
-    auto mat = M_weight * (*input);
-    mat = mat->sum();
-    auto output = *mat + M_bias; 
-    return output;
+    return (input->device() == Device::CPU) ? forward_cpu(input) : forward_cuda(input);
   }
 
   std::shared_ptr<Tensor<T>>
@@ -34,6 +31,20 @@ public:
   }
 
 private:
+  std::shared_ptr<Tensor<T>>
+  forward_cuda(const std::shared_ptr<Tensor<T>> input) {
+    // TODO: implement it
+    return nullptr;
+  }
+
+  std::shared_ptr<Tensor<T>>
+  forward_cpu(const std::shared_ptr<Tensor<T>> input) {
+    auto mat = M_weight * (*input);
+    mat = mat->sum();
+    auto output = *mat + M_bias; 
+    return output;
+  }
+
   Tensor<T> M_weight, M_bias;
   Device m_device;
 };

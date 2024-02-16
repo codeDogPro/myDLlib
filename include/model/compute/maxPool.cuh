@@ -29,12 +29,7 @@ public:
 
   virtual std::shared_ptr<Tensor<T>>
   forward(const std::shared_ptr<Tensor<T>> input){
-    if(input->device() == Device::CPU){
-      return forward_cpu(input);
-    }
-    else{
-      return forward_cuda(input);
-    }
+    return (input->device() == Device::CPU) ? forward_cpu(input) : forward_cuda(input);
   }
 
   std::shared_ptr<Tensor<T>>

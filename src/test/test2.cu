@@ -6,6 +6,7 @@
 
 using namespace dl;
 
+
 template<typename T>
 void resnet50_test(){
   auto input = std::make_shared<Tensor<T>>(224, 224, 3, 1);
@@ -238,7 +239,22 @@ void init_test(){
   auto input = std::make_shared<Tensor<f32>>(4, 4, 3, 2);
   std::cout << *input;
   auto input_cuda = std::make_shared<Tensor<f32>>(4, 4, 3, 2, -1, Device::CUDA);
-  std::cout << *input << *input_cuda;
+  std::cout << *input_cuda;
+}
+
+template<typename T>
+void globalAvgPool2D_test(){
+  auto input = std::make_shared<Tensor<T>>(4*64, 4*64, 3, 2, 0.1, Device::CUDA);
+  // std::cout << *input;
+  // input->to(Device::CUDA);
+  globalAvgPool2D<T> gavgpool;
+  auto output = gavgpool(input);
+  std::cout << "output:\n" << *output;
+  // input->to(Device::CPU);
+  auto mean = input->mean(0)->mean(0);
+  auto sum = input->sum(0)->sum(0);
+  std::cout << "sum:\n" << *sum;
+  std::cout << "mean:\n" << *mean;
 }
 
 int main(){
@@ -250,5 +266,6 @@ int main(){
   // softmax_cuda_test<f32>();
   // softmax_benchmark<f32>(27); // gpu 2.0x faster than cpu (why so slow?)
   // operator_cuda_test<f32>(); // pass 2/12
-  init_test();
+  // init_test();             // pass 
+  globalAvgPool2D_test<f32>();
 }

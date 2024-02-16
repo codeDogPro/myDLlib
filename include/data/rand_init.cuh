@@ -34,7 +34,21 @@ namespace dl{
       std::normal_distribution<float> random(0.0f, 1.0f);
       for(T &x : data){ 
         x = random(_engine);
+        if(x > 0 && x <  0.01) x += 0.01;
+        if(x < 0 && x > -0.01) x -= 0.01;
       }
+    }
+  }
+
+  template<typename T>
+  __global__ void
+  add_bias(thrust::device_ptr<T> data, int n){
+    int begin = blockIdx.x * blockDim.x + threadIdx.x;
+    int stride = blockDim.x * gridDim.x;
+    for(int i = begin; i < n; i += stride){
+      T x = data[i];
+      if(x > 0 && x <  0.01) data[i] = x + 0.01;
+      if(x < 0 && x > -0.01) data[i] = x - 0.01;
     }
   }
 
@@ -52,9 +66,11 @@ namespace dl{
     }
     else if(name.compare("float") == 0){
       curandGenerateNormal(gen, (f32 *)ptr, data.size(), 0.0f, 1.0f);
+      add_bias<T><<<64, 128>>>(data.data(), data.size());
     }
     else if(name.compare("double") == 0){
       curandGenerateNormalDouble(gen, (f64 *)ptr, data.size(), 0.0f, 1.0f);
+      add_bias<T><<<64, 128>>>(data.data(), data.size());
     }
   }
 }

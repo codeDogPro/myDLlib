@@ -101,6 +101,8 @@ private:
   int M_padding;
   };
 
+
+
   template<typename T=f32>
   class globalAvgPool2D : public Function<T> {
 public:
@@ -109,12 +111,7 @@ public:
 
   virtual std::shared_ptr<Tensor<T>>
   forward(const std::shared_ptr<Tensor<T>> input){
-    if(input->device() == Device::CPU){
-      return forward_cpu(input);
-    }
-    else{
-      return forward_cuda(input);
-    }
+    return (input->device() == Device::CPU) ? forward_cpu(input) : forward_cuda(input);
   }
 
   std::shared_ptr<Tensor<T>>
@@ -133,6 +130,7 @@ private:
 
     auto _input = input->data_gpu(), _output = output->data_gpu();
     dim3 grid_size((square + 127)/128, num * ch), block_size(128);
+    printf("grid_x: %d grid_y:%d\n", grid_size.x, grid_size.y);
     globalAvgPool2D_cuda<<<grid_size, block_size>>>
       (_input, _output, size, square);
     return output; 
@@ -143,6 +141,7 @@ private:
     int ch = input->channel(), num = input->number();
     // TODO: implement it
     auto output = std::make_shared<Tensor<T>>(1, 1, ch, num, 0);
+    return output;
   }
 
   };

@@ -294,37 +294,33 @@ private:
   template<typename T>
   std::shared_ptr<Tensor<T>> 
   Tensor<T>::operator+(const Tensor<T>& rhs) { 
-    if(this->m_device == Device::CPU)
-      return tensor_calculator(*this, rhs, Calculator::ADD);
-    else
-      return tensor_calculator_cuda(*this, rhs, Calculator::ADD);
+    return (this->m_device == Device::CPU) ?
+      tensor_calculator(*this, rhs, Calculator::ADD) :
+      tensor_calculator_cuda(*this, rhs, Calculator::ADD);
   }
 
   template<typename T>
   std::shared_ptr<Tensor<T>> 
   Tensor<T>::operator-(const Tensor<T>& rhs) { 
-    if(this->m_device == Device::CPU)
-      return tensor_calculator(*this, rhs, Calculator::SUB);
-    else
-      return tensor_calculator_cuda(*this, rhs, Calculator::SUB);
+    return (this->m_device == Device::CPU) ?
+      tensor_calculator(*this, rhs, Calculator::SUB) :
+      tensor_calculator_cuda(*this, rhs, Calculator::SUB);
   }
 
   template<typename T>
   std::shared_ptr<Tensor<T>> 
   Tensor<T>::operator*(const Tensor<T>& rhs) { 
-    if(this->m_device == Device::CPU)
-      return tensor_calculator(*this, rhs, Calculator::MUL);
-    else
-      return tensor_calculator_cuda(*this, rhs, Calculator::MUL);
+    return (this->m_device == Device::CPU) ? 
+      tensor_calculator(*this, rhs, Calculator::MUL) :
+      tensor_calculator_cuda(*this, rhs, Calculator::MUL);
   }
 
   template<typename T>
   std::shared_ptr<Tensor<T>> 
   Tensor<T>::operator/(const Tensor<T>& rhs) { 
-    if(this->m_device == Device::CPU)
-      return tensor_calculator(*this, rhs, Calculator::DIV);
-    else
-      return tensor_calculator_cuda(*this, rhs, Calculator::DIV);
+    return (this->m_device == Device::CPU) ?
+      tensor_calculator(*this, rhs, Calculator::DIV) :
+      tensor_calculator_cuda(*this, rhs, Calculator::DIV);
   }
 
   template<typename T>
@@ -410,25 +406,33 @@ private:
   template<typename T>
   std::shared_ptr<Tensor<T>>
   Tensor<T>::sum(int axis, bool keepdim){ 
-    return tensor_operator(Axis(axis), Operator::SUM, keepdim);
+    return (this->m_device == Device::CPU) ?
+      tensor_operator(Axis(axis), Operator::SUM, keepdim) : 
+      tensor_operator_cuda(Axis(axis), Operator::SUM, keepdim);
   }
 
   template<typename T>
   std::shared_ptr<Tensor<T>>
   Tensor<T>::mean(int axis, bool keepdim){
-    return tensor_operator(Axis(axis), Operator::MEAN, keepdim);
+    return (this->m_device == Device::CPU) ?
+      tensor_operator(Axis(axis), Operator::MEAN, keepdim) : 
+      tensor_operator_cuda(Axis(axis), Operator::MEAN, keepdim);
   }
 
   template<typename T>
   std::shared_ptr<Tensor<T>>
   Tensor<T>::max(int axis, bool keepdim){
-    return tensor_operator(Axis(axis), Operator::MAX, keepdim);
+    return (this->m_device == Device::CPU) ?
+      tensor_operator(Axis(axis), Operator::MAX, keepdim) : 
+      tensor_operator_cuda(Axis(axis), Operator::MAX, keepdim);
   }
 
   template<typename T>
   std::shared_ptr<Tensor<T>>
   Tensor<T>::min(int axis, bool keepdim){ 
-    return tensor_operator(Axis(axis), Operator::MIN, keepdim);
+    return (this->m_device == Device::CPU) ?
+      tensor_operator(Axis(axis), Operator::MIN, keepdim) : 
+      tensor_operator_cuda(Axis(axis), Operator::MIN, keepdim);
   }
 
   template<typename T>
@@ -736,6 +740,7 @@ private:
     int row = this->row(), col = this->col(), ch = this->channel();
     int num = this->number(), size = this->size();
     std::shared_ptr<Tensor<T>> output;
+
     if(axis == Axis::COL){
       if(keepdim == true){
         output = std::make_shared<Tensor<T>>(row, 1, ch, num, 0, Device::CUDA);
@@ -761,14 +766,18 @@ private:
           mean_axis0_cuda<<<64, 128>>>
             (_output, _output, size, col);
           break;
-        case Operator::MAX:
-        case Operator::MIN:
+        case Operator::MAX: break;
+          // TODO: implement it
+        case Operator::MIN: break;
+          // TODO: implement it
         default: exit(-1);
       }
     }
     else if(axis == Axis::ROW){
+      // TODO: implement it
     }
     else if(axis == Axis::CHANNEL){
+      // TODO: implement it
     }
     cudaDeviceSynchronize();
     return output;
