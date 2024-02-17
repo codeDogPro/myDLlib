@@ -2,7 +2,8 @@
 
 #include <basic/function.cuh>
 
-#include <cuda_device_runtime_api.h>
+#include <parallel/basic_cpu.cuh>
+#include <parallel/basic_cuda.cuh>
 #include <parallel/conv_cpu.cuh>
 #include <parallel/conv_cuda.cuh>
 
@@ -78,8 +79,13 @@ private:
       int row = pad_input->row(), col = pad_input->col();
       auto output = std::make_shared<Tensor<T>>
         (res_row(row), res_col(col), ch, num, Device::CUDA, 0);
-      // conv_cuda<<<>>> 
+      auto _input = pad_input->data_gpu(), _output = output->data_gpu();
       // TODO: implement cuda conv
+      dim3 grid_size(1), block_size(1);
+      for(int i = 0; i < M_weight.number(); i++){
+        conv2D_cuda<<<grid_size, block_size>>>
+          (_input, _output); 
+      }
       return output;
     }
     else{         // no padding

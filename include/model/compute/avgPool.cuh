@@ -1,13 +1,10 @@
 #pragma once
 
-#include "parallel/parallel.cuh"
 #include <basic/function.cuh>
 #include <basic/tensor_macro.cuh>
 
-#include <cuda_device_runtime_api.h>
-#include <parallel/conv_cpu.cuh>
-#include <parallel/conv_cuda.cuh>
-
+#include <parallel/basic_cpu.cuh>
+#include <parallel/basic_cuda.cuh>
 #include <parallel/pooling_cpu.cuh>
 #include <parallel/pooling_cuda.cuh>
 

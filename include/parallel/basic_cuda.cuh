@@ -13,7 +13,7 @@ namespace dl{
     int by = blockIdx.y, bx = blockIdx.x;
     int ty = threadIdx.y, tx = threadIdx.x;
     int idx_x = bx * TILE_X + tx;
-    int idx = by * col * TILE_Y + ty * col + idx_x;
+    int idx = by*col*TILE_Y + ty*col + idx_x;
 
     sums[ty][tx] = (idx_x < col && idx < n) ? input[idx] : static_cast<T>(0);
     __syncthreads();
@@ -31,4 +31,17 @@ namespace dl{
     }
   }
 
+  template<typename T>
+  __global__ void
+  padding_cuda(thrust::device_ptr<T> input, thrust::device_ptr<T> output,
+               int n, int icol, int irow, int npad){
+    int idx = blockIdx.x * blockDim.x + threadIdx.x; 
+    int isquare = irow * icol;
+    /*上下的横行*/                        /* npad-1个完整行         一个非完整行*/
+    int offset = (2*(idx/isquare) + 1) * ((npad-1)*(icol+2*npad) + (icol+npad))
+    /*左右的竖列*/ + (idx/isquare + idx/icol + 1)*2*npad;     
+    if(idx < n){
+      output[offset + idx] = input[idx];
+    }
+  }
 }
