@@ -12,12 +12,12 @@ namespace dl{
   bool padding_cpu
   (int task_begin, int task_num, int shape, int ioffset,
    std::shared_ptr<Tensor<T>> output, const std::shared_ptr<Tensor<T>> input, 
-   int npaddle){
+   int npad){
     int irow = input->row(), icol = input->col(), ichannel = input->channel();
     int orow = output->row(), ocol = output->col();
     int input_i = ioffset + task_begin * irow * icol;
     int ooffset = ioffset / (irow * icol) * orow * ocol;
-    int output_i = ooffset + npaddle * (ocol + 1) + task_begin * orow * ocol;
+    int output_i = ooffset + npad * (ocol + 1) + task_begin * orow * ocol;
     if(icol >= 8){
       if(icol % 8 == 0){
         int icol_align = icol - icol % 8;
@@ -33,9 +33,9 @@ namespace dl{
             for(int col_cnt = icol_align; col_cnt < icol; col_cnt ++){
               (*output)[output_i++] = (*input)[input_i++];
             }
-            output_i += 2 * npaddle;
+            output_i += 2 * npad;
           }
-          output_i += 2 * npaddle * ocol;
+          output_i += 2 * npad * ocol;
         }
       }
       else{ // not align to 32B
@@ -52,9 +52,9 @@ namespace dl{
             for(int col_cnt = icol_align; col_cnt < icol; col_cnt ++){
               (*output)[output_i++] = (*input)[input_i++];
             }
-            output_i += 2 * npaddle;
+            output_i += 2 * npad;
           }
-          output_i += 2 * npaddle * ocol;
+          output_i += 2 * npad * ocol;
         }
       }
     } 
@@ -64,9 +64,9 @@ namespace dl{
           for(int col_cnt = 0; col_cnt < icol; col_cnt++){
             (*output)[output_i++] = (*input)[input_i++];
           }
-          output_i += 2 * npaddle;
+          output_i += 2 * npad;
         }
-        output_i += 2 * npaddle * ocol;
+        output_i += 2 * npad * ocol;
       }
     }
     return true;

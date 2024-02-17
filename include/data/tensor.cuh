@@ -798,7 +798,7 @@ private:
         for(int i = 0; i < col; i++){
           os << setw(8) << t[offset + i];
           if(i != col - 1) os << ", ";
-          if(++num_cnt == MAX_NUM_LINE){
+          if(++num_cnt == MAX_NUM_LINE && i != col - 1){
             if(number > 1)    os << "\n    ";
             else {
               if(channel > 1) os << "\n   ";
@@ -823,7 +823,7 @@ private:
       for(int i = 0; i < col; i++){
         os << setw(8) << t[offset + i];
         if(i != col - 1) os << ", ";
-        if(++num_cnt == MAX_NUM_LINE){
+        if(++num_cnt == MAX_NUM_LINE && i != col - 1){
           if(number > 1)    os << "\n    ";
           else {
             if(channel > 1) os << "\n   ";

@@ -1,3 +1,4 @@
+#include "basic/tensor_macro.cuh"
 #include <dl.cuh>
 
 using namespace dl;
@@ -258,9 +259,18 @@ void globalAvgPool2D_test(){
   std::cout << "mean:\n" << *mean;
 }
 
+template<typename T>
+void conv_cuda_test(){
+  auto input = std::make_shared<Tensor<T>>(6, 6, 3, 2, Device::CPU);
+  std::cout << *input;
+  input->to(Device::CUDA);
+  Conv2D<T> conv(3, 3, 8, 1, 2, Device::CUDA);
+  auto output = conv(input);
+}
+
 int main(){
   // print_test();                  // pass
-  resnet50_test<f32>();          // pass
+  // resnet50_test<f32>();          // pass
   // calculator_benchmark(100);     // gpu 2.1x faster than cpu(with parallel and simd)
   // calculator_test();             // pass
   // activation_test<f32>();        // pass 
@@ -269,4 +279,5 @@ int main(){
   // operator_cuda_test<f32>();     // pass 2/12
   // init_test();                   // pass 
   // globalAvgPool2D_test<f32>();   // pass
+  conv_cuda_test<f32>();
 }

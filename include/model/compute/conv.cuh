@@ -2,13 +2,15 @@
 
 #include <basic/function.cuh>
 
+#include <cuda_device_runtime_api.h>
 #include <parallel/conv_cpu.cuh>
 #include <parallel/conv_cuda.cuh>
 
 
 namespace dl{
 
-// #define CONV_DEBUG
+// #define CONV_DEBUG_WEIGHT
+#define CONV_DEBUG_PAD
 template<typename T=f32>
 class Conv2D : public Function<T> {
 public:
@@ -22,7 +24,7 @@ public:
     M_padding    = padding;
     M_kernelSize = kernel_size;
     m_device     = device;
-  #ifdef CONV_DEBUG
+  #ifdef CONV_DEBUG_WEIGHT
     std::cout << "weight:\n" << M_weight << std::endl;
     std::cout << "bias:\n" << M_bias << std::endl;
   #endif
@@ -36,7 +38,7 @@ public:
     M_stride     = stride;
     M_padding    = padding;
     M_kernelSize = M_weight.row();
-  #ifdef CONV_DEBUG
+  #ifdef CONV_DEBUG_WEIGHT
     std::cout << "weight:\n" << M_weight << std::endl;
     std::cout << "bias:\n" << M_bias << std::endl;
   #endif
@@ -60,50 +62,83 @@ public:
     m_device = device;
   }
 
-  int nstride() { return M_stride; }
+  int nstride()  { return M_stride; }
   int npadding() { return M_padding; }
 
 protected:
-  int res_row(int row){return (row - M_weight.row() + 2 * M_padding)/M_stride + 1;}
-  int res_col(int col){return (col - M_weight.col() + 2 * M_padding)/M_stride + 1;}
+  int res_row(int row){return (row - M_weight.row() + 2*M_padding)/M_stride + 1;}
+  int res_col(int col){return (col - M_weight.col() + 2*M_padding)/M_stride + 1;}
 
 private:
   std::shared_ptr<Tensor<T>> 
   forward_cuda(const std::shared_ptr<Tensor<T>> input){
-    //TODO: implement it
-    return nullptr;
+    int ch = input->channel(), num = input->number();
+    if(M_padding){ // need to pad
+      auto pad_input = _pad_cuda(input);
+      int row = pad_input->row(), col = pad_input->col();
+      auto output = std::make_shared<Tensor<T>>
+        (res_row(row), res_col(col), ch, num, Device::CUDA, 0);
+      // conv_cuda<<<>>> 
+      // TODO: implement cuda conv
+      return output;
+    }
+    else{         // no padding
+      int row = input->row(), col = input->col();
+      auto output = std::make_shared<Tensor<T>>
+        (res_row(row), res_col(col), ch, num, Device::CUDA, 0);
+      return output;
+    }
+  }
+
+  std::shared_ptr<Tensor<T>> 
+  _pad_cuda(const std::shared_ptr<Tensor<T>> input){
+    int row = input->row(), col = input->col();
+    int ch = input->channel(), num = input->number();
+    int pad_row = row + 2*M_padding, pad_col = col + 2*M_padding;
+    auto output = std::make_shared<Tensor<T>>
+      (pad_row, pad_col, ch, num, Device::CUDA, 0);
+    auto _input = input->data_gpu(), _output = output->data_gpu();
+    const int size = output->size();
+    const int grid_size = (size + 127) / 128, block_size = 128;
+    padding_cuda<<<grid_size, block_size>>>
+      (_input, _output, size, row, col, M_padding);
+    cudaDeviceSynchronize();
+  #ifdef CONV_DEBUG_PAD
+    std::cout << "pad_input:\n" << *output;
+  #endif
+    return output;
   }
 
   std::shared_ptr<Tensor<T>> 
   forward_cpu(const std::shared_ptr<Tensor<T>> input){
-    int row = input->row(), col = input->col(), channel = input->channel();
-    int number = input->number();
+    int row = input->row(), col = input->col();
+    int ch = input->channel(), num = input->number();
     if(M_padding){
       auto pad_input = std::make_shared<Tensor<T>>
-      (row + 2 * M_padding, col + 2 * M_padding, channel, number, Device::CPU, 0);
-      int ivolume = row * col * channel;
-      for(int i = 0; i < number; i++){
+      (row + 2*M_padding, col + 2*M_padding, ch, num, Device::CPU, 0);
+      int ivolume = row * col * ch;
+      for(int i = 0; i < num; i++){
         int offset = i * ivolume;
         parallelizer.parallel_channel(padding_cpu<T>,
          pad_input, offset, input, M_padding);
       }
       parallelizer.sync();
-  #ifdef CONV_DEBUG
+  #ifdef CONV_DEBUG_PAD
       std::cout << "pad_input:\n" << *pad_input << std::endl;
   #endif
-      return conv_cpu(pad_input, res_row(row), res_col(col));
+      return _conv_cpu(pad_input, res_row(row), res_col(col));
     }
 
-    return conv_cpu(input, res_row(row), res_col(col));
+    return _conv_cpu(input, res_row(row), res_col(col));
   }
 
   std::shared_ptr<Tensor<T>> 
-  conv_cpu(const std::shared_ptr<Tensor<T>> input, int o_row, int o_col){
-    int irow = input->row(), icol = input->col(), ichannel = input->channel();
-    int number = input->number(), ivolume = irow * icol * ichannel;
-    int output_ch = M_weight.number();
-    auto output = std::make_shared<Tensor<T>>(o_row, o_col, output_ch, number, Device::CPU, 0);
-    for(int i = 0; i < number; i++){
+  _conv_cpu(const std::shared_ptr<Tensor<T>> input, int orow, int ocol){
+    int irow = input->row(), icol = input->col(), ich = input->channel();
+    int num = input->number(), ivolume = irow * icol * ich;
+    int och = M_weight.number();
+    auto output = std::make_shared<Tensor<T>>(orow, ocol, och, num, Device::CPU, 0);
+    for(int i = 0; i < num; i++){
       int offset = i * ivolume;
       if(M_kernelSize == 1){
         parallelizer.parallel_channel(conv2d_1x1_cpu<T>, output, offset, input, 
