@@ -128,7 +128,7 @@ void print_test(){
   // pass n and ch, row == 1
   // pass n > 1, ch and row == 1, col > 1
   // pass n > 1, ch > 1, row == 1, col > 1
-  auto input = std::make_shared<Tensor<f32>>(1, 5, 1, 3);
+  auto input = std::make_shared<Tensor<f32>>(1, 5, 1, 20);
   // input->to(Device::CUDA);
   // input->to(Device::CPU);
   std::cout << "input:\n" << *input;

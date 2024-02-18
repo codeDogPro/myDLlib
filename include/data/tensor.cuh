@@ -807,8 +807,7 @@ private:
             num_cnt = 0;
           }
         }
-      }
-      else{ // 省略输出模式
+      } else{ // 省略输出模式
         for(int i = 0; i < SHOW_NUMBER_LEN; i++){
           os << setw(8) << t[offset + i] << ", ";
         }
@@ -817,8 +816,7 @@ private:
           os << setw(8) << t[offset + i]; if(i != col - 1) os << ", ";
         }
       }
-    }
-    else{
+    } else{
       int num_cnt = 0;
       for(int i = 0; i < col; i++){
         os << setw(8) << t[offset + i];
@@ -856,8 +854,7 @@ private:
           printf("]");
           if(r != row - 1)         printf(",\n");
         }
-      }
-      else{ // 省略输出模式
+      } else{ // 省略输出模式
         for(int r = 0; r < SHOW_NUMBER_LEN; r++){
           int row_idx = offset + col * r;
           if(num > 1){
@@ -892,8 +889,7 @@ private:
           if(r != row - 1)         printf(",\n");
         }
       }
-    }
-    else{
+    } else{
       for(int r = 0; r < row; r++){
         int row_idx = offset + col * r;
         if(num > 1){
@@ -927,8 +923,7 @@ private:
           printf("]");
           if(ch != channel - 1)      printf(",\n");
         }
-      }
-      else{ // 省略输出模式
+      } else{ // 省略输出模式
         for(int ch = 0; ch < SHOW_NUMBER_LEN; ch++){
           int ch_offset = offset + ch * row * col;
           if(number > 1 && ch != 0)  printf(" ");
@@ -948,8 +943,7 @@ private:
           if(ch != channel - 1)      printf(",\n");
         }
       }
-    }
-    else{
+    } else{
       for(int ch = 0; ch < channel; ch++){
         int ch_offset = offset + ch * row * col;
         if(number > 1 && ch != 0)  printf(" ");
@@ -966,14 +960,43 @@ private:
   void print_NxCxWxH(std::ostream &os, const Tensor<T> &t){
     int row = t.row(), col = t.col(), ch = t.channel(), num = t.number();
     int square = row * col, volume = square * ch;
-    for(int n = 0; n < num; n++){
-      int noffset = volume * n;
-      if(n != 0)           printf(" ");
-
-      printf("[");
-      print_CxWxH(os, t, noffset);
-      if(n != num - 1)     printf("],\n\n");
-      else                 printf("]");
+    if(num > MAX_PRINT_NUMBER){
+      if(t.getFullPrintMode() == true){
+        for(int n = 0; n < num; n++){
+          int noffset = volume * n;
+          if(n != 0)           printf(" ");
+          printf("[");
+          print_CxWxH(os, t, noffset);
+          if(n != num - 1)     printf("],\n\n");
+          else                 printf("]");
+        }
+      } else{  // ignored mode
+        for(int n = 0; n < SHOW_NUMBER_LEN; n++){
+          int noffset = n * volume;
+          if(n != 0)  printf(" ");
+          printf("[");
+          print_CxWxH(os, t, noffset);
+          printf("]");
+          if(n != num - 1)      printf(",\n\n");
+        }
+        printf(" ...,\n\n");
+        for(int n = num - SHOW_NUMBER_LEN; n < num; n++){
+          int noffset = n * volume;
+          printf(" [");
+          print_CxWxH(os, t, noffset);
+          printf("]");
+          if(n != num - 1)      printf(",\n\n");
+        }
+      }
+    } else{
+      for(int n = 0; n < num; n++){
+        int noffset = volume * n;
+        if(n != 0)           printf(" ");
+        printf("[");
+        print_CxWxH(os, t, noffset);
+        if(n != num - 1)     printf("],\n\n");
+        else                 printf("]");
+      }
     }
   }
 
