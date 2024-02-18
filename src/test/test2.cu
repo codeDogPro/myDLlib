@@ -122,7 +122,13 @@ void resnet50_test(){
 }
 
 void print_test(){
-  auto input = std::make_shared<Tensor<f32>>(9, 20, 2, 2);
+  // pass n and ch > 1. 
+  // pass n == 1, ch > 1 and row > 1
+  // pass n and ch == 1, row > 1
+  // pass n and ch, row == 1
+  // pass n > 1, ch and row == 1, col > 1
+  // pass n > 1, ch > 1, row == 1, col > 1
+  auto input = std::make_shared<Tensor<f32>>(1, 5, 1, 3);
   // input->to(Device::CUDA);
   // input->to(Device::CPU);
   std::cout << "input:\n" << *input;
@@ -261,15 +267,16 @@ void globalAvgPool2D_test(){
 
 template<typename T>
 void conv_cuda_test(){
-  auto input = std::make_shared<Tensor<T>>(6, 6, 3, 2, Device::CPU);
-  std::cout << *input;
+  auto input = std::make_shared<Tensor<T>>(6, 6, 1, 1, Device::CPU, 1.0);
+  std::cout << "input:\n" << *input;
   input->to(Device::CUDA);
-  Conv2D<T> conv(3, 3, 8, 1, 2, Device::CUDA);
+  Conv2D<T> conv(3, 1, 2, 1, 0, Device::CUDA);
   auto output = conv(input);
+  std::cout << "output:\n" << *output;
 }
 
 int main(){
-  // print_test();                  // pass
+  print_test();                  // pass
   // resnet50_test<f32>();          // pass
   // calculator_benchmark(100);     // gpu 2.1x faster than cpu(with parallel and simd)
   // calculator_test();             // pass
@@ -279,5 +286,5 @@ int main(){
   // operator_cuda_test<f32>();     // pass 2/12
   // init_test();                   // pass 
   // globalAvgPool2D_test<f32>();   // pass
-  conv_cuda_test<f32>();
+  // conv_cuda_test<f32>();
 }

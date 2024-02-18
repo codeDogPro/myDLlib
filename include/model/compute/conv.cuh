@@ -1,7 +1,9 @@
 #pragma once
 
+#include "basic/tensor_macro.cuh"
 #include <basic/function.cuh>
 
+#include <cuda_device_runtime_api.h>
 #include <parallel/basic_cpu.cuh>
 #include <parallel/basic_cuda.cuh>
 #include <parallel/conv_cpu.cuh>
@@ -10,7 +12,7 @@
 
 namespace dl{
 
-// #define CONV_DEBUG_WEIGHT
+#define CONV_DEBUG_WEIGHT
 #define CONV_DEBUG_PAD
 template<typename T=f32>
 class Conv2D : public Function<T> {
@@ -18,8 +20,8 @@ public:
   explicit 
   Conv2D (int kernel_size, int input_ch, int output_ch, 
           int stride=1, int padding=0, Device device=Device::CPU)
-  : M_weight(kernel_size, kernel_size, input_ch, output_ch, device),
-    M_bias(output_ch, 1, 1, 1, device)
+  : M_weight(kernel_size, kernel_size, input_ch, output_ch, device, 1.0),
+    M_bias(output_ch, 1, 1, 1, device, 0.2f)
   {
     M_stride     = stride;
     M_padding    = padding;
@@ -27,7 +29,7 @@ public:
     m_device     = device;
   #ifdef CONV_DEBUG_WEIGHT
     std::cout << "weight:\n" << M_weight << std::endl;
-    std::cout << "bias:\n" << M_bias << std::endl;
+    // std::cout << "bias:\n" << M_bias;
   #endif
   }
 
@@ -40,8 +42,8 @@ public:
     M_padding    = padding;
     M_kernelSize = M_weight.row();
   #ifdef CONV_DEBUG_WEIGHT
-    std::cout << "weight:\n" << M_weight << std::endl;
-    std::cout << "bias:\n" << M_bias << std::endl;
+    std::cout << "weight:\n" << M_weight;
+    std::cout << "bias:\n" << M_bias;
   #endif
   }
 
@@ -73,26 +75,12 @@ protected:
 private:
   std::shared_ptr<Tensor<T>> 
   forward_cuda(const std::shared_ptr<Tensor<T>> input){
-    int ch = input->channel(), num = input->number();
     if(M_padding){ // need to pad
       auto pad_input = _pad_cuda(input);
-      int row = pad_input->row(), col = pad_input->col();
-      auto output = std::make_shared<Tensor<T>>
-        (res_row(row), res_col(col), ch, num, Device::CUDA, 0);
-      auto _input = pad_input->data_gpu(), _output = output->data_gpu();
-      // TODO: implement cuda conv
-      dim3 grid_size(1), block_size(1);
-      for(int i = 0; i < M_weight.number(); i++){
-        conv2D_cuda<<<grid_size, block_size>>>
-          (_input, _output); 
-      }
-      return output;
+      return _conv_cuda(pad_input);
     }
     else{         // no padding
-      int row = input->row(), col = input->col();
-      auto output = std::make_shared<Tensor<T>>
-        (res_row(row), res_col(col), ch, num, Device::CUDA, 0);
-      return output;
+      return _conv_cuda(input);
     }
   }
 
@@ -112,6 +100,28 @@ private:
   #ifdef CONV_DEBUG_PAD
     std::cout << "pad_input:\n" << *output;
   #endif
+    return output;
+  }
+
+  std::shared_ptr<Tensor<T>> 
+  _conv_cuda(const std::shared_ptr<Tensor<T>> input){
+    int ch = input->channel(), num = input->number();
+    int row = input->row(), col = input->col();
+    auto output = std::make_shared<Tensor<T>>
+      (res_row(row), res_col(col), ch, num, Device::CUDA, 0);
+    auto _input = input->data_gpu(), _output = output->data_gpu();
+    auto _weight = M_weight.data_gpu(), _bias = M_bias.data_gpu();
+    // TODO: 
+    dim3 grid_size((col+TILE_X-1)/TILE_X, (row+TILE_Y-1)/TILE_Y, M_weight.number());
+    dim3 block_size(TILE_X, TILE_Y);
+    for(int n = 0; n < num; n++){
+      int offset = n * row*col*ch;
+      conv2D_cuda<<<grid_size, block_size>>>
+        (_input, _output, _weight, _bias,
+          M_kernelSize, M_stride,
+          row, col, ch, offset); 
+    }
+    cudaDeviceSynchronize();
     return output;
   }
 

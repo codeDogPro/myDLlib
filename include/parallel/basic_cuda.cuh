@@ -31,6 +31,7 @@ namespace dl{
     }
   }
 
+
   template<typename T>
   __global__ void
   padding_cuda(thrust::device_ptr<T> input, thrust::device_ptr<T> output,

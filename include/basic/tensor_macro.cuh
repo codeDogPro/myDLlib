@@ -27,6 +27,8 @@ namespace dl{
   // gpu tiled size
   constexpr int TILE_Y = 32;
   constexpr int TILE_X = 32;
+  // conv kernel weight size in gpu's shared memory
+  constexpr int K_SIZE = 8;
 
   // 循环分块的块大小
   const int BLOCK_SIZE = 64;
@@ -39,7 +41,10 @@ namespace dl{
   const int MAX_PRINT_ROW = 30;
   // if tensor channel greater than it, then use ignored mode
   const int MAX_PRINT_CHANNEL = 20;
-  const int MAX_NUM_LINE = 6;      // max data/line
+  // if tensor number greater than it, then use ignored mode
+  const int MAX_PRINT_NUMBER = 15;
+
+  const int MAX_NUM_LINE = 6;      // max data per line
 
   const int SHOW_NUMBER_LEN = 3;
 

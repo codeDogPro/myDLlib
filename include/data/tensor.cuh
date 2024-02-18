@@ -837,16 +837,19 @@ private:
 
   template<typename T>
   void print_WxH(std::ostream &os, const Tensor<T> &t, int offset){
-    int row = t.row(), col = t.col(), number = t.number();
+    int row = t.row(), col = t.col(), ch = t.channel(), num = t.number();
     if(row > MAX_PRINT_ROW){
       if(t.getFullPrintMode() == true){
         for(int r = 0; r < row; r++){
           int row_idx = offset + col * r;
-          if(number > 1){
+          if(num > 1){
             if(r != 0) printf("   "); 
-          }
-          else{
-            if(r != 0) printf("  "); 
+          } else{
+            if(ch > 1){
+              if(r != 0) printf("  "); 
+            } else {
+              if(r != 0) printf(" "); 
+            } 
           }
           printf("[");
           print_H(os, t, row_idx);
@@ -857,18 +860,33 @@ private:
       else{ // 省略输出模式
         for(int r = 0; r < SHOW_NUMBER_LEN; r++){
           int row_idx = offset + col * r;
-          if(number > 1 && r != 0) printf(" ");
-          if(r != 0)               printf("  ");
+          if(num > 1){
+            if(r != 0) printf("   "); 
+          } else{  // num == 1
+            if(ch > 1){
+              if(r != 0) printf("  "); 
+            } else{ // ch == 1
+              if(r != 0) printf(" "); 
+            } 
+          }
           printf("[");
           print_H(os, t, row_idx);
           printf("],\n");
         }
-        if(number > 1) printf("   ...,\n");
+        if(num > 1) printf("   ...,\n");
         else           printf("  ...,\n");
         for(int r = row - SHOW_NUMBER_LEN; r < row; r++){
           int row_idx = offset + col * r;
-          if(number > 1 && r != 0) printf(" ");
-          printf("  [");
+          if(num > 1){
+            printf("   "); 
+          } else{  // num == 1
+            if(ch > 1){
+              printf("  "); 
+            } else{ // ch == 1
+              printf(" "); 
+            } 
+          }
+          printf("[");
           print_H(os, t, row_idx);
           printf("]");
           if(r != row - 1)         printf(",\n");
@@ -878,11 +896,14 @@ private:
     else{
       for(int r = 0; r < row; r++){
         int row_idx = offset + col * r;
-        if(number > 1){
+        if(num > 1){
           if(r != 0) printf("   "); 
-        }
-        else{
-          if(r != 0) printf("  "); 
+        } else{ // num == 1
+          if(ch > 1){
+            if(r != 0) printf("  "); 
+          } else{ // ch == 1
+            if(r != 0) printf(" "); 
+          } 
         }
         printf("[");
         print_H(os, t, row_idx);
@@ -941,6 +962,21 @@ private:
     }
   }
 
+  template<typename T>
+  void print_NxCxWxH(std::ostream &os, const Tensor<T> &t){
+    int row = t.row(), col = t.col(), ch = t.channel(), num = t.number();
+    int square = row * col, volume = square * ch;
+    for(int n = 0; n < num; n++){
+      int noffset = volume * n;
+      if(n != 0)           printf(" ");
+
+      printf("[");
+      print_CxWxH(os, t, noffset);
+      if(n != num - 1)     printf("],\n\n");
+      else                 printf("]");
+    }
+  }
+
   template<typename U>
   std::ostream &
   operator<<(std::ostream& os, Tensor<U>& t){
@@ -948,36 +984,33 @@ private:
     if(t.device() == Device::CUDA){
       t.to(Device::CPU);
     }
-    int row = t.row(), col = t.col(), channel = t.channel(), number = t.number();
-    int square = row * col, volume = square * channel;
-
-    if(number > 1)   printf("[");
-    for(int n = 0; n < number; n++){
-      int noffset = volume * n;
-      if(n != 0) printf(" ");
-      if(row == 1 && channel == 1){
-        printf("[");
-        print_H(os, t, noffset);
-        if(number == 1)            printf("]\n"); 
-        else if(n != number - 1)   printf("],\n");
-        else if(n == number - 1)   printf("]");
+    int row = t.row(), col = t.col(), ch = t.channel(), num = t.number();
+    int square = row * col, volume = square * ch;
+    if(num > 1) {
+      printf("[");
+      print_NxCxWxH(os, t);
+      printf("]\n");
+    }
+    else{ // num == 1
+      if(ch == 1){
+        if(row == 1){
+          printf("[");
+          print_H(os, t, 0);
+          printf("]\n");
+        }
+        else{  // row > 1
+          printf("[");
+          print_WxH(os, t, 0);
+          printf("]\n");
+        }
       }
-      else if(row > 1 && channel == 1){
+      else{  // ch > 1
         printf("[");
-        print_WxH(os, t, noffset);
-        if(number == 1)            printf("]\n"); 
-        else if(n != number - 1)   printf("],\n");
-        else if(n == number - 1)   printf("]");
-      }
-      else if(channel > 1){
-        printf("[");
-        print_CxWxH(os, t, noffset);
-        if(number == 1)              printf("]\n"); 
-        else if(n != number - 1)     printf("],\n\n");
-        else if(n == number - 1)     printf("]");
+        print_CxWxH(os, t, 0);
+        printf("]\n");
       }
     }
-    if(number > 1) printf("]\n\n");
+    printf("\n\n");
     return os;
   }
 //########################################### END PRINT ###################################################
