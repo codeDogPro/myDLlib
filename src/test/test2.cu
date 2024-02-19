@@ -276,7 +276,7 @@ void conv_cuda_test(){
 }
 
 int main(){
-  print_test();                  // pass
+  // print_test();                  // pass
   // resnet50_test<f32>();          // pass
   // calculator_benchmark(100);     // gpu 2.1x faster than cpu(with parallel and simd)
   // calculator_test();             // pass
@@ -286,5 +286,5 @@ int main(){
   // operator_cuda_test<f32>();     // pass 2/12
   // init_test();                   // pass 
   // globalAvgPool2D_test<f32>();   // pass
-  // conv_cuda_test<f32>();
+  conv_cuda_test<f32>();
 }

@@ -29,7 +29,7 @@ public:
     m_device     = device;
   #ifdef CONV_DEBUG_WEIGHT
     std::cout << "weight:\n" << M_weight << std::endl;
-    // std::cout << "bias:\n" << M_bias;
+    std::cout << "bias:\n" << M_bias << std::endl;
   #endif
   }
 
@@ -42,8 +42,8 @@ public:
     M_padding    = padding;
     M_kernelSize = M_weight.row();
   #ifdef CONV_DEBUG_WEIGHT
-    std::cout << "weight:\n" << M_weight;
-    std::cout << "bias:\n" << M_bias;
+    std::cout << "weight:\n" << M_weight << std::endl;
+    std::cout << "bias:\n" << M_bias << std::endl;
   #endif
   }
 
@@ -105,22 +105,20 @@ private:
 
   std::shared_ptr<Tensor<T>> 
   _conv_cuda(const std::shared_ptr<Tensor<T>> input){
-    int ch = input->channel(), num = input->number();
-    int row = input->row(), col = input->col();
+    int ich = input->channel(), och = M_weight.number();
+    int row = input->row(), col = input->col(), num = input->number();
     auto output = std::make_shared<Tensor<T>>
-      (res_row(row), res_col(col), ch, num, Device::CUDA, 0);
+      (res_row(row), res_col(col), och, num, Device::CUDA, 0);
     auto _input = input->data_gpu(), _output = output->data_gpu();
     auto _weight = M_weight.data_gpu(), _bias = M_bias.data_gpu();
-    // TODO: 
-    dim3 grid_size((col+TILE_X-1)/TILE_X, (row+TILE_Y-1)/TILE_Y, M_weight.number());
+    // TODO: fix bug
+    int grid_x = (col+TILE_X-1)/TILE_X, grid_y = (row+TILE_Y-1)/TILE_Y;
+    dim3 grid_size(grid_x, grid_y, och);
     dim3 block_size(TILE_X, TILE_Y);
-    for(int n = 0; n < num; n++){
-      int offset = n * row*col*ch;
-      conv2D_cuda<<<grid_size, block_size>>>
-        (_input, _output, _weight, _bias,
-          M_kernelSize, M_stride,
-          row, col, ch, offset); 
-    }
+    conv2D_cuda<<<grid_size, block_size>>>
+      (_input, _output, _weight, _bias,
+       M_kernelSize, M_stride,
+       row, col, ich, num); 
     cudaDeviceSynchronize();
     return output;
   }

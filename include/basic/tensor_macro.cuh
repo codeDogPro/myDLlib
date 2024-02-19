@@ -28,7 +28,7 @@ namespace dl{
   constexpr int TILE_Y = 32;
   constexpr int TILE_X = 32;
   // conv kernel weight size in gpu's shared memory
-  constexpr int K_SIZE = 8;
+  constexpr int K_SIZE = 7;
 
   // 循环分块的块大小
   const int BLOCK_SIZE = 64;

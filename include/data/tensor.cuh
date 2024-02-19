@@ -1008,7 +1008,6 @@ private:
       t.to(Device::CPU);
     }
     int row = t.row(), col = t.col(), ch = t.channel(), num = t.number();
-    int square = row * col, volume = square * ch;
     if(num > 1) {
       printf("[");
       print_NxCxWxH(os, t);
