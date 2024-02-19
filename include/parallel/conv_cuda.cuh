@@ -45,7 +45,7 @@ namespace dl {
           if(idx_x + edge <= icol && idx_y + edge <= irow){
             for(int krow = 0; krow < k_size; krow++){   // kernel row idx
               for(int kcol = 0; kcol < k_size; kcol++){ // kernel col idx
-                int in_y = ty + x_stride + krow;
+                int in_y = ty + y_stride + krow;
                 int in_x = tx + x_stride + kcol;
                 if(in_x < TILE_X && in_y < TILE_Y){
                   res += s_weight[krow][kcol] * s_input[in_y][in_x]; 

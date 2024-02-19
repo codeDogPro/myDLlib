@@ -12,8 +12,8 @@
 
 namespace dl{
 
-#define CONV_DEBUG_WEIGHT
-#define CONV_DEBUG_PAD
+// #define CONV_DEBUG_WEIGHT
+// #define CONV_DEBUG_PAD
 template<typename T=f32>
 class Conv2D : public Function<T> {
 public:
