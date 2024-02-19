@@ -109,9 +109,10 @@ private:
     int row = input->row(), col = input->col(), num = input->number();
     auto output = std::make_shared<Tensor<T>>
       (res_row(row), res_col(col), och, num, Device::CUDA, 0);
+
     auto _input = input->data_gpu(), _output = output->data_gpu();
     auto _weight = M_weight.data_gpu(), _bias = M_bias.data_gpu();
-    // TODO: fix bug
+
     int grid_x = (col+TILE_X-1)/TILE_X, grid_y = (row+TILE_Y-1)/TILE_Y;
     dim3 grid_size(grid_x, grid_y, och);
     dim3 block_size(TILE_X, TILE_Y);

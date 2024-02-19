@@ -267,10 +267,14 @@ void globalAvgPool2D_test(){
 
 template<typename T>
 void conv_cuda_test(){
-  auto input = std::make_shared<Tensor<T>>(6, 6, 1, 1, Device::CPU, 1.0);
+  // pass ich=1, och=2, ksz=3, stride=1
+  // pass inum=1, ich=2, och=4, ksz=3, stride=1
+  // pass inum=2, ich=2, och=4, ksz=3, stride=1
+  // pass inum=2, ich=1, och=4, ksz=3, stride=1
+  auto input = std::make_shared<Tensor<T>>(6, 6, 1, 2, Device::CPU, 1.0);
   std::cout << "input:\n" << *input;
   input->to(Device::CUDA);
-  Conv2D<T> conv(3, 1, 2, 1, 0, Device::CUDA);
+  Conv2D<T> conv(3, 1, 4, 1, 0, Device::CUDA);
   auto output = conv(input);
   std::cout << "output:\n" << *output;
 }
