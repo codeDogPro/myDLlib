@@ -21,7 +21,7 @@ public:
   
   #define SEQUENTIAL_DEBUG
   virtual std::shared_ptr<Tensor<Tp>> 
-  forward(const std::shared_ptr<Tensor<Tp>> input){
+  forward(const std::shared_ptr<Tensor<const Tp>> input){
     std::shared_ptr<Tensor<Tp>> _input = input;
     std::shared_ptr<Tensor<Tp>> output;
     for(auto &func : functions){
@@ -37,7 +37,7 @@ public:
   }
 
   std::shared_ptr<Tensor<Tp>> 
-  operator()(const std::shared_ptr<Tensor<Tp>> input){
+  operator()(const std::shared_ptr<Tensor<const Tp>> input){
     return forward(input);
   }
 

@@ -11,7 +11,8 @@ namespace dl{
   template<typename T>
   bool padding_cpu
   (int task_begin, int task_num, int shape, int ioffset,
-   std::shared_ptr<Tensor<T>> output, const std::shared_ptr<Tensor<T>> input, 
+   std::shared_ptr<Tensor<T>> output, 
+   const std::shared_ptr<const Tensor<T>> input, 
    int npad){
     int irow = input->row(), icol = input->col(), ichannel = input->channel();
     int orow = output->row(), ocol = output->col();
@@ -21,7 +22,7 @@ namespace dl{
     if(icol >= 8){
       if(icol % 8 == 0){
         int icol_align = icol - icol % 8;
-        const f32 *input_addr = reinterpret_cast<f32 *>(&(*input)[0]);
+        auto input_addr = reinterpret_cast<const f32 *>(&(*input)[0]);
         f32 *output_addr = reinterpret_cast<f32 *>(&(*output)[0]);
         for(int ch_idx = task_begin; ch_idx < task_begin + task_num; ch_idx++){
           for(int row_cnt = 0; row_cnt < irow; row_cnt++){
@@ -40,7 +41,7 @@ namespace dl{
       }
       else{ // not align to 32B
         int icol_align = icol - icol % 8;
-        const f32 *input_addr = reinterpret_cast<f32 *>(&(*input)[0]);
+        auto input_addr = reinterpret_cast<const f32 *>(&(*input)[0]);
         f32 *output_addr = reinterpret_cast<f32 *>(&(*output)[0]);
         for(int ch_idx = task_begin; ch_idx < task_begin + task_num; ch_idx++){
           for(int row_cnt = 0; row_cnt < irow; row_cnt++){

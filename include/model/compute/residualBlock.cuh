@@ -28,7 +28,7 @@ public:
   }
 
   virtual std::shared_ptr<Tensor<T>> 
-  forward(const std::shared_ptr<Tensor<T>> input){
+  forward(const std::shared_ptr<Tensor<const T>> input){
     auto output1 = input_layer->forward(input);
     auto output2 = output_layer->forward(output1);
     if(same_shape){
@@ -43,7 +43,7 @@ public:
   }
 
   std::shared_ptr<Tensor<T>>
-  operator()(const std::shared_ptr<Tensor<T>> input){
+  operator()(const std::shared_ptr<Tensor<const T>> input){
     return forward(input);
   }
 
@@ -87,7 +87,7 @@ public:
   }
 
   virtual std::shared_ptr<Tensor<T>> 
-  forward(const std::shared_ptr<Tensor<T>> input){
+  forward(const std::shared_ptr<Tensor<const T>> input){
     auto output1 = input_layer->forward(input);
     auto output2 = neck_layer->forward(output1);
     auto output3 = output_layer->forward(output2);
@@ -103,7 +103,7 @@ public:
   }
 
   std::shared_ptr<Tensor<T>>
-  operator()(const std::shared_ptr<Tensor<T>> input){
+  operator()(const std::shared_ptr<Tensor<const T>> input){
     return forward(input);
   }
 

@@ -9,7 +9,7 @@ namespace dl{
   template<typename T>
   bool relu_parallel
   (int task_begin, int task_num, int shape, int offset,
-   std::shared_ptr<Tensor<T>> output, const std::shared_ptr<Tensor<T>> input){ 
+   std::shared_ptr<Tensor<T>> output, const std::shared_ptr<const Tensor<T>> input){ 
     int start = offset + shape * task_begin, end = start + shape * task_num;
     for(int i = start; i < end; i++){
       (*output)[i] = (*input)[i] > static_cast<T>(0) ? (*input)[i] : static_cast<T>(0);
@@ -20,7 +20,7 @@ namespace dl{
   template<typename T>
   bool sigmoid_parallel
   (int task_begin, int task_num, int shape, int offset,
-   std::shared_ptr<Tensor<T>> output, const std::shared_ptr<Tensor<T>> input){ 
+   std::shared_ptr<Tensor<T>> output, const std::shared_ptr<const Tensor<T>> input){ 
     int start = offset + shape * task_begin, end = start + shape * task_num;
     for(int i = start; i < end; i++){
       (*output)[i] = 1 / (1 + std::exp(-(*input)[i])) + eps;
@@ -31,7 +31,7 @@ namespace dl{
   template<typename T>
   bool exp_parallel
   (int task_begin, int task_num, int shape, int offset,
-   std::shared_ptr<Tensor<T>> output, const std::shared_ptr<Tensor<T>> input){ 
+   std::shared_ptr<Tensor<T>> output, const std::shared_ptr<const Tensor<T>> input){ 
     int start = offset + shape * task_begin, end = start + shape * task_num;
     for(int i = start; i < end; i++){
       (*output)[i] = std::exp((*input)[i]);
@@ -42,7 +42,7 @@ namespace dl{
   template<typename T>
   bool softmax_axis0_parallel
   (int task_begin, int task_num, int shape, int offset,
-   std::shared_ptr<Tensor<T>> output, const std::shared_ptr<Tensor<T>> input){ 
+   std::shared_ptr<Tensor<T>> output, const std::shared_ptr<const Tensor<T>> input){ 
     int start = offset + shape * task_begin, end = start + shape * task_num;
     int row = input->row(), col = input->col();
     std::vector<T> sums(task_num * row, T(0));
@@ -62,7 +62,7 @@ namespace dl{
   template<typename T>
   bool softmax_axis1_parallel
   (int task_begin, int task_num, int shape, int offset,
-   std::shared_ptr<Tensor<T>> output, const std::shared_ptr<Tensor<T>> input){ 
+   std::shared_ptr<Tensor<T>> output, const std::shared_ptr<const Tensor<T>> input){ 
     int start = offset + shape * task_begin, end = start + shape * task_num;
     int row = input->row(), col = input->col();
     std::vector<T> sums(task_num * col, T(0));
@@ -82,7 +82,7 @@ namespace dl{
   template<typename T>
   bool softmax_axis2_parallel
   (int task_begin, int task_num, int shape, int offset,
-   std::shared_ptr<Tensor<T>> output, const std::shared_ptr<Tensor<T>> input){ 
+   std::shared_ptr<Tensor<T>> output, const std::shared_ptr<const Tensor<T>> input){ 
     int row = input->row(), col = input->col(), channel = input->channel();
     int start = offset + shape * task_begin;
     std::vector<T> sums(task_num * col, T(0));

@@ -39,7 +39,8 @@ namespace dl{
 
   template <typename T=f32>
   __global__ void 
-  softmax_axis0_cuda(thrust::device_ptr<T> exp, thrust::device_ptr<T> exp_sum, 
+  softmax_axis0_cuda(thrust::device_ptr<const T> exp,
+                     thrust::device_ptr<T> exp_sum, 
                      thrust::device_ptr<T> output, int n, int col) {
     int begin = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = blockDim.x * gridDim.x;
@@ -50,7 +51,8 @@ namespace dl{
 
   template <typename T=f32>
   __global__ void 
-  softmax_axis1_cuda(thrust::device_ptr<const T> input, thrust::device_ptr<T> output,
+  softmax_axis1_cuda(thrust::device_ptr<const T> input,
+                     thrust::device_ptr<T> output,
                      int n, int row, int col, int channel) {
     int begin = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = blockDim.x * gridDim.x;
@@ -61,7 +63,8 @@ namespace dl{
 
   template <typename T=f32>
   __global__ void 
-  softmax_axis2_cuda(thrust::device_ptr<const T> input, thrust::device_ptr<T> output,
+  softmax_axis2_cuda(thrust::device_ptr<const T> input,
+                     thrust::device_ptr<T> output,
                      int n, int row, int col, int channel) {
     int begin = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = blockDim.x * gridDim.x;

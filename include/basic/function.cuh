@@ -12,7 +12,7 @@ namespace dl{
   class Function{
   public:
     virtual std::shared_ptr<Tensor<T>> 
-    forward(const std::shared_ptr<Tensor<T>>) = 0;
+    forward(const std::shared_ptr<const Tensor<T>>) = 0;
     virtual ~Function() = default;
   };
  

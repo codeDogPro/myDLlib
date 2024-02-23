@@ -281,19 +281,28 @@ void conv_cuda_test(){
 }
 
 template<typename T>
-void conv_benchmark(){
-  {
-    Timer t;
-    auto input = std::make_shared<Tensor<T>>(224, 224, 512, 1, Device::CPU);
-    Conv2D<T> conv(3, 512, 1024, 1, 0, Device::CPU);
-    auto output = conv(input);
-  }
+void conv_benchmark(int n){
+  //1-data: input:1x512x224x224  
+  //  conv: 3x3, in=512, out=1024, stride=1
+  //  time took:(68322.3 ms cpu)  (15891.3 ms cuda)
+  //2-data: input:1x256x224x224  
+  //  conv: 3x3, in=256, out=256, stride=1
+  //  time took:(34105.4 ms cpu)  (2884.23 ms cuda)
+
+  // {
+  //   Timer t;
+  //   auto input = std::make_shared<Tensor<T>>(224, 224, 256, 1, Device::CPU);
+  //   Conv2D<T> conv(3, 512, 1024, 1, 0, Device::CPU);
+  //   auto output = conv(input);
+  // }
 
   {
     Timer t;
-    auto input = std::make_shared<Tensor<T>>(224, 224, 512, 1, Device::CUDA);
-    Conv2D<T> conv(3, 512, 1024, 1, 0, Device::CUDA);
-    auto output = conv(input);
+    for(int i = 0; i < n; i++){
+      auto input = std::make_shared<Tensor<T>>(224, 224, 256, 1, Device::CUDA);
+      Conv2D<T> conv(3, 256, 256, 1, 0, Device::CUDA);
+      auto output = conv(input);
+    }
   }
 }
 
@@ -309,5 +318,5 @@ int main(){
   // init_test();                   // pass 
   // globalAvgPool2D_test<f32>();   // pass
   // conv_cuda_test<f32>();         // pass 8/10;
-  conv_benchmark<f32>(); //time took: (68322.3 ms cpu)  (15891.3 ms cuda)
+  conv_benchmark<f32>(10);
 }

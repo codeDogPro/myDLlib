@@ -1,6 +1,10 @@
 #pragma once
 
 #include <basic/function.cuh>
+#include <basic/tensor_macro.cuh>
+
+#include <parallel/matrix_cpu.cuh>
+#include <parallel/matrix_cuda.cuh>
 
 namespace dl{
 
@@ -15,12 +19,12 @@ public:
   virtual ~Linear() = default;
 
   virtual std::shared_ptr<Tensor<T>>
-  forward(const std::shared_ptr<Tensor<T>> input) override{
+  forward(const std::shared_ptr<Tensor<const T>> input) override{
     return (input->device() == Device::CPU) ? forward_cpu(input) : forward_cuda(input);
   }
 
   std::shared_ptr<Tensor<T>>
-  operator()(const std::shared_ptr<Tensor<T>> input){
+  operator()(const std::shared_ptr<Tensor<const T>> input){
     return forward(input);
   }
 
@@ -32,13 +36,13 @@ public:
 
 private:
   std::shared_ptr<Tensor<T>>
-  forward_cuda(const std::shared_ptr<Tensor<T>> input) {
+  forward_cuda(const std::shared_ptr<Tensor<const T>> input) {
     // TODO: implement it
     return nullptr;
   }
 
   std::shared_ptr<Tensor<T>>
-  forward_cpu(const std::shared_ptr<Tensor<T>> input) {
+  forward_cpu(const std::shared_ptr<Tensor<const T>> input) {
     auto mat = M_weight * (*input);
     mat = mat->sum(0, false);
     auto output = *mat + M_bias; 

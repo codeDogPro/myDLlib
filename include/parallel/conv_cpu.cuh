@@ -8,7 +8,7 @@ namespace dl{
   template<typename T=f32>
   bool conv2d_cpu
   (int task_begin, int task_num, int shape, int ioffset,
-   std::shared_ptr<Tensor<T>> output, const std::shared_ptr<Tensor<T>> input,
+   std::shared_ptr<Tensor<T>> output, const std::shared_ptr<const Tensor<T>> input,
     const Tensor<T> &weight, const Tensor<T> &bias, int stride) {
     int irow = input->row(),  icol = input->col(), ichannel = input->channel();
     int krow = weight.row(), kcol = weight.col(), kchannel = weight.channel();
@@ -54,7 +54,7 @@ namespace dl{
   template<typename T=f32>
   bool conv2d_1x1_cpu
   (int task_begin, int task_num, int shape, int ioffset,
-   std::shared_ptr<Tensor<T>> output, const std::shared_ptr<Tensor<T>> input,
+   std::shared_ptr<Tensor<T>> output, const std::shared_ptr<const Tensor<T>> input,
     const Tensor<T> &weight, const Tensor<T> &bias, int stride) {
     int row = input->row(), col = input->col();
     int ichannel = input->channel(), ochannel = output->channel();

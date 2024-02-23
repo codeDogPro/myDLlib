@@ -7,10 +7,10 @@ namespace dl {
   // TODO: 
   template<typename T>
   __global__ void
-  conv2D_cuda(thrust::device_ptr<T> input, thrust::device_ptr<T> output,
+  conv2D_cuda(thrust::device_ptr<const T> input, thrust::device_ptr<T> output,
               thrust::device_ptr<T> weight, thrust::device_ptr<T> bias,
-              int k_size, int stride,
-              int irow, int icol, int ich, int inum){
+              const int k_size, const int stride,
+              const int irow, const int icol, const int ich, const int inum){
     __shared__ T s_input[TILE_Y][TILE_X];
     __shared__ T s_weight[K_SIZE][K_SIZE];
     const int ty = threadIdx.y, tx = threadIdx.x;

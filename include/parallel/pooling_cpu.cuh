@@ -8,8 +8,8 @@ namespace dl{
 template <typename T>
 bool maxPool2D_cpu(int task_begin, int task_num, int shape, int ioffset,
                    std::shared_ptr<Tensor<T>> output,
-                   const std::shared_ptr<Tensor<T>> input, int pool_size,
-                   int stride) {
+                   const std::shared_ptr<const Tensor<T>> input,
+                   int pool_size, int stride) {
   int irow = input->row(), icol = input->col(), channel = input->channel();
   int orow = output->row(), ocol = output->col();
   int isquare = irow * icol, osquare = orow * ocol;
@@ -73,7 +73,7 @@ bool maxPool2D_cpu(int task_begin, int task_num, int shape, int ioffset,
   template <typename T>
   bool globalAvgPool2D_cpu(int task_begin, int task_num, int shape, int ioffset,
                            std::shared_ptr<Tensor<T>> output,
-                           const std::shared_ptr<Tensor<T>> input) {
+                           const std::shared_ptr<const Tensor<T>> input) {
     int square = input->row() * input->col();
     int ooffset = ioffset / square;
     for(int t = task_begin; t < task_begin + task_num; t++){

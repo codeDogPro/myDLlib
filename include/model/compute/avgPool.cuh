@@ -26,7 +26,7 @@ public:
   }
 
   virtual std::shared_ptr<Tensor<T>>
-  forward(const std::shared_ptr<Tensor<T>> input){
+  forward(const std::shared_ptr<Tensor<const T>> input){
     if(input->device() == Device::CPU){
       return forward_cpu(input);
     }
@@ -36,13 +36,13 @@ public:
   }
 
   std::shared_ptr<Tensor<T>>
-  operator()(const std::shared_ptr<Tensor<T>> input){
+  operator()(const std::shared_ptr<Tensor<const T>> input){
     return forward(input);
   }
 
 private:
   std::shared_ptr<Tensor<T>>
-  forward_cuda(const std::shared_ptr<Tensor<T>> input){
+  forward_cuda(const std::shared_ptr<Tensor<const T>> input){
     int irow = input->row(), icol = input->col();
     int ch = input->channel(), num = input->number();
     int orow = res_row(irow), ocol = res_col(icol);
@@ -53,7 +53,7 @@ private:
   }
 
   std::shared_ptr<Tensor<T>>
-  forward_cpu(const std::shared_ptr<Tensor<T>> input){
+  forward_cpu(const std::shared_ptr<Tensor<const T>> input){
     if(M_padding){
       auto pad_input = pad_cpu(input);
       return pool_cpu(pad_input);
@@ -62,7 +62,7 @@ private:
   }
 
   std::shared_ptr<Tensor<T>>
-  pad_cpu(const std::shared_ptr<Tensor<T>> input){
+  pad_cpu(const std::shared_ptr<Tensor<const T>> input){
     int row = input->row(), col = input->col();
     int ch = input->channel(), num = input->number();
     auto pad_input = std::make_shared<Tensor<T>>
@@ -80,7 +80,7 @@ private:
   int res_col(int col){return (col - M_pool_size) / M_stride + 1;}
 
   std::shared_ptr<Tensor<T>>
-  pool_cpu(const std::shared_ptr<Tensor<T>> input){
+  pool_cpu(const std::shared_ptr<Tensor<const T>> input){
     int irow = input->row(), icol = input->col();
     int ch = input->channel(), num = input->number();
     int orow = res_row(irow), ocol = res_col(icol);
@@ -122,7 +122,7 @@ public:
 
 private:
   std::shared_ptr<Tensor<T>>
-  forward_cuda(const std::shared_ptr<Tensor<T>> input){
+  forward_cuda(const std::shared_ptr<Tensor<const T>> input){
     int row = input->row(), col = input->col();
     int size = input->size(), square = row * col;
     int ch = input->channel(), num = input->number();
@@ -137,7 +137,7 @@ private:
   }
 
   std::shared_ptr<Tensor<T>>
-  forward_cpu(const std::shared_ptr<Tensor<T>> input){
+  forward_cpu(const std::shared_ptr<Tensor<const T>> input){
     int row = input->row(), col = input->col();
     int ch = input->channel(), num = input->number();
     auto output = std::make_shared<Tensor<T>>(1, 1, ch, num, Device::CPU, 0);

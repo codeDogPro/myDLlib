@@ -5,36 +5,36 @@
 
 namespace dl{
 
-  template <typename T=f32>
-  __global__ void 
-  reduce4D_axis0_cuda(thrust::device_ptr<T> input, thrust::device_ptr<T> output, 
-                int n, int col){
-    __shared__ T sums[TILE_Y][TILE_X];
-    int by = blockIdx.y, bx = blockIdx.x;
-    int ty = threadIdx.y, tx = threadIdx.x;
-    int idx_x = bx * TILE_X + tx;
-    int idx = by*col*TILE_Y + ty*col + idx_x;
+template <typename T = f32>
+__global__ void 
+reduce4D_axis0_cuda(thrust::device_ptr<const T> input,
+                    thrust::device_ptr<T> output, int n,
+                    int col) {
+  __shared__ T sums[TILE_Y][TILE_X];
+  int by = blockIdx.y, bx = blockIdx.x;
+  int ty = threadIdx.y, tx = threadIdx.x;
+  int idx_x = bx * TILE_X + tx;
+  int idx = by * col * TILE_Y + ty * col + idx_x;
 
-    sums[ty][tx] = (idx_x < col && idx < n) ? input[idx] : static_cast<T>(0);
-    __syncthreads();
+  sums[ty][tx] = (idx_x < col && idx < n) ? input[idx] : static_cast<T>(0);
+  __syncthreads();
 
-    for(int offset = 16; offset > 0; offset >>= 1){
-      if(tx < offset){
-        sums[ty][tx] += sums[ty][tx + offset];
-      }
-      __syncwarp();  // could change to __syncwarp()?
+  for (int offset = 16; offset > 0; offset >>= 1) {
+    if (tx < offset) {
+      sums[ty][tx] += sums[ty][tx + offset];
     }
-
-    int oidx = by * TILE_Y + ty;
-    if(tx == 0 && oidx < (n / col)){
-      atomicAdd(output.get() + oidx, sums[ty][0]);
-    }
+    __syncwarp(); // could change to __syncwarp()?
   }
 
+  int oidx = by * TILE_Y + ty;
+  if (tx == 0 && oidx < (n / col)) {
+    atomicAdd(output.get() + oidx, sums[ty][0]);
+  }
+}
 
   template<typename T>
   __global__ void
-  padding_cuda(thrust::device_ptr<T> input, thrust::device_ptr<T> output,
+  padding_cuda(thrust::device_ptr<const T> input, thrust::device_ptr<T> output,
                int n, int icol, int irow, int npad){
     int idx = blockIdx.x * blockDim.x + threadIdx.x; 
     int isquare = irow * icol;

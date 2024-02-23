@@ -10,7 +10,8 @@
 namespace dl{
   template<typename T=f32>
   std::shared_ptr<Tensor<T>>
-  matMul_cpu(const std::shared_ptr<Tensor<T>> a, const std::shared_ptr<Tensor<T>> b){
+  matMul_cpu(const std::shared_ptr<Tensor<const T>> a,
+             const std::shared_ptr<Tensor<const T>> b){
     int arow = a->row(), bcol = b->col(), ch = a->channel(), num = a->number();
 
     auto output = std::make_shared<Tensor<T>>(arow, bcol, ch, num, Device::CPU, 0);
@@ -30,7 +31,8 @@ namespace dl{
 
   template<typename T=f32>
   std::shared_ptr<Tensor<T>>
-  matMul_cuda(const std::shared_ptr<Tensor<T>> a, const std::shared_ptr<Tensor<T>> b){
+  matMul_cuda(const std::shared_ptr<Tensor<const T>> a, 
+              const std::shared_ptr<Tensor<const T>> b){
     int arow = a->row(), acol = a->col(), bcol = b->col();
     int ch = a->channel(), num = a->number();
 
@@ -50,7 +52,8 @@ namespace dl{
   */
   template<typename T=f32>
   std::shared_ptr<Tensor<T>>
-  matMul(const std::shared_ptr<Tensor<T>> a, const std::shared_ptr<Tensor<T>> b){
+  matMul(const std::shared_ptr<Tensor<const T>> a,
+         const std::shared_ptr<Tensor<const T>> b){
     int acol = a->col(), achannel = a->channel();
     int brow = b->row(), bchannel = b->channel();
     int anumber = a->number(), bnumber = b->number();
@@ -73,7 +76,7 @@ namespace dl{
 
   template<typename T=f32>
   std::shared_ptr<Tensor<T>>
-  matTranspose_cpu(const std::shared_ptr<Tensor<T>> input){
+  matTranspose_cpu(const std::shared_ptr<Tensor<const T>> input){
     auto output = std::make_shared<Tensor<T>>(input->get_cshape(), Device::CPU, 0);
     int row = input->row(), col = input->col(), channel = input->channel();
     int number = input->number(), volume = row * col * channel;
@@ -88,7 +91,7 @@ namespace dl{
 
   template<typename T=f32>
   std::shared_ptr<Tensor<T>>
-  matTranspose_cuda(const std::shared_ptr<Tensor<T>> input){
+  matTranspose_cuda(const std::shared_ptr<Tensor<const T>> input){
     int row = input->row(), col = input->col();
     int ch = input->channel(), num = input->number();
 
@@ -103,7 +106,7 @@ namespace dl{
 
   template<typename T=f32>
   std::shared_ptr<Tensor<T>>
-  matTranspose(const std::shared_ptr<Tensor<T>> input){
+  matTranspose(const std::shared_ptr<Tensor<const T>> input){
     return (input->device()==Device::CPU) ? matTranspose_cpu(input) : matTranspose_cuda(input);
   }
 }
