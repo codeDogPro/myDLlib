@@ -3,8 +3,9 @@
 #include <basic/function.cuh>
 #include <basic/tensor_macro.cuh>
 
-#include <parallel/matrix_cpu.cuh>
-#include <parallel/matrix_cuda.cuh>
+#include <parallel/parallel.cuh>
+#include <parallel/linear_cpu.cuh>
+#include <parallel/linear_cuda.cuh>
 
 namespace dl{
 
@@ -43,9 +44,17 @@ private:
 
   std::shared_ptr<Tensor<T>>
   forward_cpu(const std::shared_ptr<Tensor<const T>> input) {
-    auto mat = M_weight * (*input);
-    mat = mat->sum(0, false);
-    auto output = *mat + M_bias; 
+    int icol = input->col(), ocol = M_bias.col(), num = input->number();
+    auto output = std::make_shared<Tensor<T>>(1, ocol, 1, num, Device::CPU, 0);
+    for(int n = 0; n < num; n++){
+      int offset = n * icol;
+      parallelizer.parallel_col(
+        Linear_cpu<T>, output,  offset,
+        M_weight, input, M_bias);
+    }
+    parallelizer.sync();
+    // auto mat = M_weight * (*input);
+    // mat = mat->sum(0, false);
     return output;
   }
 

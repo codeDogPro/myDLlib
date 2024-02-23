@@ -10,10 +10,11 @@
 
 namespace dl{
 template <typename T>
-bool matMul_channel_cpu(int task_begin, int task_num, int shape, int offset,
-                        std::shared_ptr<Tensor<T>> output,
-                        const std::shared_ptr<const Tensor<T>> a,
-                        const std::shared_ptr<const Tensor<T>> b) {
+bool 
+matMul_channel_cpu(int task_begin, int task_num, int shape, int offset,
+                   std::shared_ptr<Tensor<T>> output,
+                   const std::shared_ptr<const Tensor<T>> a,
+                   const std::shared_ptr<const Tensor<T>> b) {
   int arow = a->row(), acol = a->col(), channel = a->channel();
   int brow = acol, bcol = b->col();
   int asquare = arow * acol, avolume = asquare * channel;
@@ -71,10 +72,11 @@ bool matMul_channel_cpu(int task_begin, int task_num, int shape, int offset,
 }
 
 template <typename T>
-bool matMul_row_cpu(int task_begin, int task_num, int shape, int offset,
-                    std::shared_ptr<Tensor<T>> output,
-                    const std::shared_ptr<Tensor<T>> a,
-                    const std::shared_ptr<const Tensor<T>> b) {
+bool 
+matMul_row_cpu(int task_begin, int task_num, int shape, int offset,
+               std::shared_ptr<Tensor<T>> output,
+               const std::shared_ptr<const Tensor<T>> a,
+               const std::shared_ptr<const Tensor<T>> b) {
   int arow = a->row(), acol = a->col(), channel = a->channel();
   int brow = acol, bcol = b->col();
   int a_idx = task_begin * acol, o_idx = task_begin * bcol;
@@ -120,9 +122,10 @@ bool matMul_row_cpu(int task_begin, int task_num, int shape, int offset,
 
   // channel base
 template <typename T>
-bool matTranspose_cpu(int task_begin, int task_num, int shape, int offset,
-                      std::shared_ptr<Tensor<T>> output,
-                      const std::shared_ptr<const Tensor<T>> input) {
+bool 
+matTranspose_cpu(int task_begin, int task_num, int shape, int offset,
+                 std::shared_ptr<Tensor<T>> output,
+                 const std::shared_ptr<const Tensor<T>> input) {
   int row = input->row(), col = input->col(), channel = input->channel();
   if (row >= BLOCK_SIZE) {
     i32 *output_addr = reinterpret_cast<i32 *>(&(*output)[0]);
