@@ -306,6 +306,27 @@ void conv_benchmark(int n){
   }
 }
 
+template<typename T>
+void linear_test(){
+  Device device = Device::CPU;
+  auto input = std::make_shared<Tensor<T>>(1, 16, 1, 2, device, 2);
+  std::cout << "input:\n" << *input;
+  Linear<T> fc(16, 24);
+  auto output = fc(input);
+  std::cout << "output:\n" << *output;
+}
+
+template<typename T>
+void linear_benchmark(int n){
+  Timer t;
+  for(int i = 0; i < n; i++){
+    Device device = Device::CPU;
+    auto input = std::make_shared<Tensor<T>>(1, 2048, 1, 10, device);
+    Linear<T> fc(2048, 1024);
+    auto output = fc(input);
+  }
+}
+
 int main(){
   // print_test();                  // pass
   // resnet50_test<f32>();          // pass
@@ -318,5 +339,7 @@ int main(){
   // init_test();                   // pass 
   // globalAvgPool2D_test<f32>();   // pass
   // conv_cuda_test<f32>();         // pass 8/10;
-  conv_benchmark<f32>(10);
+  // conv_benchmark<f32>(10);
+  // linear_test<f32>();            // pass cpu
+  linear_benchmark<f32>(100);
 }

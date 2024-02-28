@@ -5,9 +5,9 @@
 
 #include <basic/tensor_macro.cuh>
 #include <data/tensor.cuh>
-
 // for simd
-#include <immintrin.h>
+#include <parallel/avx_lib.cuh>
+
 
 namespace dl{
 

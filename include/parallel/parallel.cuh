@@ -137,10 +137,6 @@ public:
     __sync_rets();
   }
 
-  std::mutex &get_mutex(){
-    return m_mtx;
-  }
-
 private:
   void __sync_rets(){
     for(int i = rets.size() - 1; i >= 0; i--){
@@ -150,7 +146,6 @@ private:
   }
 
 private:
-  std::mutex m_mtx;
   thread_pool _M_pool;
   std::vector<std::future<bool>> rets;
   size_t nthread;

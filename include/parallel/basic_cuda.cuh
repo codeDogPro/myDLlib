@@ -7,9 +7,10 @@ namespace dl{
 
 template <typename T = f32>
 __global__ void 
-reduce4D_axis0_cuda(thrust::device_ptr<const T> input,
-                    thrust::device_ptr<T> output, int n,
-                    int col) {
+reduce4D_axis0_cuda(thrust::device_ptr<T> input,
+                    thrust::device_ptr<T> output,
+                    const int n,
+                    const int col) {
   __shared__ T sums[TILE_Y][TILE_X];
   int by = blockIdx.y, bx = blockIdx.x;
   int ty = threadIdx.y, tx = threadIdx.x;
