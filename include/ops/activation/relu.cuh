@@ -2,16 +2,16 @@
 
 #include <basic/function.cuh>
 
-#include <parallel/activation_cpu.cuh>
-#include <parallel/activation_cuda.cuh>
+#include <ops_impl/cpu/activation.hh>
+#include <ops_impl/cuda/activation.cuh>
 
 namespace dl{
   
 template<typename T=f32>
-class Sigmoid : public Function<T> {
+class Relu : public Function<T> {
 public:
-  explicit Sigmoid() = default;
-  virtual ~Sigmoid() = default;
+  explicit Relu() = default;
+  virtual ~Relu() = default;
 
   virtual std::shared_ptr<Tensor<T>> 
   forward(const std::shared_ptr<Tensor<T>> input){
@@ -29,13 +29,13 @@ private:
       for(int i = 0; i < number; i++){
         int offset = i * volume;
         parallelizer.parallel_channel(
-          sigmoid_parallel<T>, output, offset, input);
+          relu_parallel<T>, output, offset, input);
       }
     }
     else{
       // in linear layer
       parallelizer.parallel_col(
-          sigmoid_parallel<T>, output, 0, input);
+        relu_parallel<T>, output, 0, input);
     }
     parallelizer.sync();
     return output;
@@ -43,15 +43,17 @@ private:
 
   std::shared_ptr<Tensor<T>> 
   forward_cuda(const std::shared_ptr<Tensor<T>> input){
-    auto output = std::make_shared<Tensor<T>>(input->get_cshape(), Device::CUDA, 0);
+    auto output = std::make_shared<Tensor<T>>(
+      input->get_cshape(), Device::CUDA, 0);
 
     int gride_size = 64, block_size = 128;
     int size = output->size();
-    sigmoid_cuda<T><<<gride_size, block_size>>>
+    relu_cuda<T><<<gride_size, block_size>>>
     (input->data_gpu(), output->data_gpu(), size);
 
     return output;
   }
+
 };
 
 }

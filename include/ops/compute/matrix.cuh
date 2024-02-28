@@ -1,11 +1,10 @@
 #pragma once
 
 #include "basic/tensor_macro.cuh"
-#include <cuda_device_runtime_api.h>
 #include <data/tensor.cuh>
 
-#include <parallel/matrix_cpu.cuh>
-#include <parallel/matrix_cuda.cuh>
+#include <ops_impl/cpu/matrix.hh>
+#include <ops_impl/cuda/matrix.cuh>
 
 namespace dl{
   template<typename T=f32>

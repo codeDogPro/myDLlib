@@ -1,5 +1,5 @@
 #pragma once
 
-#include <model/nn.cuh>
+#include <ops/nn.cuh>
 
 #include <basic/timer.cuh>

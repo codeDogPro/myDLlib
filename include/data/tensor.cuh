@@ -2,9 +2,9 @@
 
 #include <data/rand_init.cuh>
 #include <parallel/parallel.cuh>
-#include <parallel/tensor_cpu.cuh>
-#include <parallel/tensor_cuda.cuh>
-#include <parallel/basic_cuda.cuh>
+#include <ops_impl/cpu/tensor.hh>
+#include <ops_impl/cuda/tensor.cuh>
+#include <ops_impl/cuda/basic.cuh>
 
 #include <numeric>
 #include <cstring>

@@ -4,8 +4,8 @@
 #include <basic/tensor_macro.cuh>
 
 #include <parallel/parallel.cuh>
-#include <parallel/linear_cpu.cuh>
-#include <parallel/linear_cuda.cuh>
+#include <ops_impl/cpu/linear.hh>
+#include <ops_impl/cuda/linear.cuh>
 
 namespace dl{
 

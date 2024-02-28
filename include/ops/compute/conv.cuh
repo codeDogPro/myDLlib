@@ -3,11 +3,10 @@
 #include "basic/tensor_macro.cuh"
 #include <basic/function.cuh>
 
-#include <cuda_device_runtime_api.h>
-#include <parallel/basic_cpu.cuh>
-#include <parallel/basic_cuda.cuh>
-#include <parallel/conv_cpu.cuh>
-#include <parallel/conv_cuda.cuh>
+#include <ops_impl/cpu/conv.hh>
+#include <ops_impl/cpu/basic.hh>
+#include <ops_impl/cuda/conv.cuh>
+#include <ops_impl/cuda/basic.cuh>
 
 
 namespace dl{

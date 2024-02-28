@@ -6,7 +6,7 @@
 #include <basic/tensor_macro.cuh>
 #include <data/tensor.cuh>
 // for simd
-#include <parallel/avx_lib.cuh>
+#include <ops_impl/cpu/avx_lib.hh>
 
 
 namespace dl{

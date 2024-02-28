@@ -3,10 +3,10 @@
 #include <basic/function.cuh>
 #include <basic/tensor_macro.cuh>
 
-#include <parallel/basic_cpu.cuh>
-#include <parallel/basic_cuda.cuh>
-#include <parallel/pooling_cpu.cuh>
-#include <parallel/pooling_cuda.cuh>
+#include <ops_impl/cpu/conv.hh>
+#include <ops_impl/cpu/basic.hh>
+#include <ops_impl/cpu/pooling.hh>
+#include <ops_impl/cuda/pooling.cuh>
 
 namespace dl{
  

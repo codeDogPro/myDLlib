@@ -3,9 +3,9 @@
 #include <basic/function.cuh>
 #include <basic/tensor_macro.cuh>
 
-#include <parallel/basic_cuda.cuh>
-#include <parallel/activation_cpu.cuh>
-#include <parallel/activation_cuda.cuh>
+#include <ops_impl/cuda/basic.cuh>
+#include <ops_impl/cpu/activation.hh>
+#include <ops_impl/cuda/activation.cuh>
 
 namespace dl{
 
