@@ -340,8 +340,8 @@ void linear_benchmark(int n){
 template<typename T>
 void matMul_test(){
   Device device = Device::CPU;
-  auto a = std::make_shared<Tensor<T>>(81, 122, 2, 2, device, 3);
-  auto b = std::make_shared<Tensor<T>>(122, 42, 2, 2, device, 2);
+  auto a = std::make_shared<Tensor<T>>(810, 1202, 2, 2, device);
+  auto b = std::make_shared<Tensor<T>>(1202, 822, 2, 2, device);
   std::cout << "a:\n" << *a;
   std::cout << "b:\n" << *b;
   auto output1 = matMul<T>(a, b);
@@ -349,12 +349,39 @@ void matMul_test(){
   a->to(Device::CUDA);
   b->to(Device::CUDA);
   auto output2 = matMul<T>(a, b);
-  // std::cout << "output1:\n" << *output1;
-  // std::cout << "output2:\n" << *output2;
+  std::cout << "output1:\n" << *output1;
+  std::cout << "output2:\n" << *output2;
   if((*output1) == (*output2)){
     printf("right\n");
   }else{
     printf("wrong!\n");
+  }
+}
+
+template<typename T>
+void matMul_benchmark(int n){
+  /*
+  1440*2202 x 2202*1440
+  cpu:  7925.85 ms 
+  cuda: 2525 ms 
+  */
+  Device device = Device::CPU;
+  auto a = std::make_shared<Tensor<T>>(1440, 2202, 2, 2, device);
+  auto b = std::make_shared<Tensor<T>>(2202, 1440, 2, 2, device);
+  {
+    Timer t;
+    for(int i = 0; i < n; i++){
+      auto output = matMul<T>(a, b);
+    }
+  }
+  
+  a->to(Device::CUDA);
+  b->to(Device::CUDA);
+  {
+    Timer t;
+    for(int i = 0; i < n; i++){
+      auto output = matMul<T>(a, b);
+    }
   }
 }
 
@@ -374,4 +401,5 @@ int main(){
   // linear_test<f32>();            // pass cpu
   // linear_benchmark<f32>(100);    // new: 38.694 ms   old: 429.975 ms 
   // matMul_test<f32>();            // pass
+  matMul_benchmark<f32>(10);
 }
