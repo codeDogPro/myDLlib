@@ -334,6 +334,14 @@ void linear_test(){
 
 template<typename T>
 void linear_benchmark(int n){
+ /*
+  * input_cuda_init: 1.02833s
+  * input_cpu_init:  0.0010252s
+  * fc_cuda_init:    0.0064175s
+  * fc_cpu_init:     0.207363s
+  * fc_cuda_infer:   4.60257s   WTF!
+  * fc_cpu_infer:    1.05612s
+  */
   Device cuda = Device::CUDA;
   Device cpu = Device::CPU;
   // CUDA
@@ -425,7 +433,7 @@ int main(){
   // conv_cuda_test<f32>();         // pass 8/10;
   // conv_benchmark<f32>(10);       // 3.87x faster than cpu
   // linear_test<f32>();            // pass 
-  // linear_benchmark<f32>(100);    // cpu new: 38.694 ms old: 429.975 ms 
+  linear_benchmark<f32>(100);    // cpu new: 38.694 ms old: 429.975 ms 
   // matMul_test<f32>();            // pass
   // matMul_benchmark<f32>(10);
 }

@@ -63,7 +63,6 @@ namespace dl {
         if(idx_y < orow && idx_x < ocol){
           atomicAdd(output.get() + oidx, res + bias[blockIdx.z]);
         }
-
         // add number offset to output offset
         ooffset += orow * ocol * gridDim.z;
       }

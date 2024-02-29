@@ -5,9 +5,10 @@
 
 namespace dl{
 
+  //TODO: try to use cpu version's method
   /*
-  a: input
-  b: weight
+  *a: input
+  *b: weight
   */
   template<typename T=f32>
   __global__ void

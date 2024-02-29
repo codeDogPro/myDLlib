@@ -11,12 +11,20 @@ public:
   template<typename... Args>
   Sequential(Args... args){
     _add_fn(args...);
+    memory_clean = false;
   }
 
   virtual ~Sequential(){
-    for(auto &func : functions){
-      delete func;
+    if(memory_clean == false){
+      for(auto &func : functions){
+        delete func;
+      }
     }
+  }
+
+  bool setMemClean(bool mode){
+    memory_clean = mode; 
+    return mode;
   }
   
   #define SEQUENTIAL_DEBUG
@@ -26,6 +34,12 @@ public:
     std::shared_ptr<Tensor<Tp>> output;
     for(auto &func : functions){
       output = func->forward(_input);
+      /*
+       * After using the layer, just free the layer weight in memory_clean mode
+       */
+      if(memory_clean == true){
+        delete func;
+      }
     #ifdef SEQUENTIAL_DEBUG
       output->shape();
       // std::cout << "output:\n" << *output << std::endl;
@@ -50,6 +64,7 @@ private:
     _add_fn(args...);
   }
 
+  bool memory_clean;
   std::vector<Function<Tp> *> functions;
 };
 

@@ -77,8 +77,7 @@ private:
     if(M_padding){ // need to pad
       auto pad_input = _pad_cuda(input);
       return _conv_cuda(pad_input);
-    }
-    else{         // no padding
+    } else{         // no padding
       return _conv_cuda(input);
     }
   }
@@ -143,9 +142,9 @@ private:
       std::cout << "pad_input:\n" << *pad_input << std::endl;
   #endif
       return _conv_cpu(pad_input, res_row(row), res_col(col));
+    } else{
+      return _conv_cpu(input, res_row(row), res_col(col));
     }
-
-    return _conv_cpu(input, res_row(row), res_col(col));
   }
 
   std::shared_ptr<Tensor<T>> 
@@ -159,8 +158,7 @@ private:
       if(M_kernelSize == 1){
         parallelizer.parallel_channel(conv2d_1x1_cpu<T>, output, offset, input, 
           M_weight, M_bias, M_stride);
-      }
-      else{
+      } else{
         parallelizer.parallel_channel(conv2d_cpu<T>, output, offset, input, 
           M_weight, M_bias, M_stride);
       }

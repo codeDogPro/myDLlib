@@ -27,28 +27,59 @@ public:
   }
 
   virtual std::shared_ptr<Tensor<T>>
-  forward(const std::shared_ptr<Tensor<const T>> input){
+  forward(const std::shared_ptr<const Tensor<T>> input){
     return (input->device() == Device::CPU) ? forward_cpu(input) : forward_cuda(input);
   }
 
   std::shared_ptr<Tensor<T>>
-  operator()(const std::shared_ptr<Tensor<const T>> input){
+  operator()(const std::shared_ptr<const Tensor<T>> input){
     return forward(input);
   }
 
 private:
   std::shared_ptr<Tensor<T>>
-  forward_cuda(const std::shared_ptr<Tensor<const T>> input){
+  forward_cuda(const std::shared_ptr<const Tensor<T>> input){
+    if(M_padding){ // need to pad
+      auto pad_input = _pad_cuda(input);
+      return _pool_cuda(pad_input);
+    } else{         // no padding
+      return _pool_cuda(input);
+    }
+  }
+
+  std::shared_ptr<const Tensor<T>> 
+  _pad_cuda(const std::shared_ptr<const Tensor<T>> input){
+    int row = input->row(), col = input->col();
+    int ch = input->channel(), num = input->number();
+    int pad_row = row + 2*M_padding, pad_col = col + 2*M_padding;
+    auto output = std::make_shared<Tensor<T>>
+      (pad_row, pad_col, ch, num, Device::CUDA, 0);
+    thrust::device_ptr<const T> _input = input->data_gpu();
+    thrust::device_ptr<T> _output = output->data_gpu();
+    const int size = output->size();
+    const int grid_size = (size + 127) / 128, block_size = 128;
+    padding_cuda<<<grid_size, block_size>>>
+      (_input, _output, size, row, col, M_padding);
+    cudaDeviceSynchronize();
+  #ifdef CONV_DEBUG_PAD
+    std::cout << "pad_input:\n" << *output;
+  #endif
+    return output;
+  }
+
+  std::shared_ptr<Tensor<T>>
+  _pool_cuda(const std::shared_ptr<const Tensor<T>> input){
     int irow = input->row(), icol = input->col();
     int ch = input->channel(), num = input->number();
     int orow = res_row(irow), ocol = res_col(icol);
     auto output = std::make_shared<Tensor<T>>(orow, ocol, ch, num, Device::CUDA, 0);
+    //TODO: implement it
     // xxxxx cuda kernel
     return output; 
   }
 
   std::shared_ptr<Tensor<T>>
-  forward_cpu(const std::shared_ptr<Tensor<const T>> input){
+  forward_cpu(const std::shared_ptr<const Tensor<T>> input){
     if(M_padding){
       auto pad_input = pad_cpu(input);
       return pool_cpu(pad_input);
@@ -57,7 +88,7 @@ private:
   }
 
   std::shared_ptr<Tensor<T>>
-  pad_cpu(const std::shared_ptr<Tensor<const T>> input){
+  pad_cpu(const std::shared_ptr<const Tensor<T>> input){
     int row = input->row(), col = input->col();
     int ch = input->channel(), num = input->number();
     auto pad_input = std::make_shared<Tensor<T>>
@@ -72,7 +103,7 @@ private:
   }
 
   std::shared_ptr<Tensor<T>>
-  pool_cpu(const std::shared_ptr<Tensor<const T>> input){
+  pool_cpu(const std::shared_ptr<const Tensor<T>> input){
     int irow = input->row(), icol = input->col();
     int ch = input->channel(), num = input->number();
     int orow = res_row(irow), ocol = res_col(icol);
