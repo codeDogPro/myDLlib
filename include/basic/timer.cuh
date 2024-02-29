@@ -31,3 +31,8 @@ public:
 private:
     std::chrono::time_point<std::chrono::high_resolution_clock> m_StartTimePoint, m_EndTimePoint;
 };
+
+
+#include <tbb/tick_count.h>
+#define TICK(x) auto bench_##x = tbb::tick_count::now();
+#define TOCK(x) std::cout << #x ": " << (tbb::tick_count::now() - bench_##x).seconds() << "s" << std::endl;

@@ -313,8 +313,8 @@ void conv_benchmark(int n){
 template<typename T>
 void linear_test(){
   Device cuda = Device::CUDA;
-  auto input = std::make_shared<Tensor<T>>(1, 8, 1, 2, cuda);
-  Linear<T> fc(8, 16, cuda);
+  auto input = std::make_shared<Tensor<T>>(1, 2048, 1, 2, cuda);
+  Linear<T> fc(2048, 1024, cuda);
   auto output1 = fc(input);
 
   Device cpu = Device::CPU;
@@ -323,6 +323,7 @@ void linear_test(){
   auto output2 = fc(input);
   std::cout << "input:\n" << *input;
   std::cout << "cuda:\n" << *output1;
+  output2->setFullPrintMode(true);
   std::cout << "cpu:\n" << *output2;
   if((*output1) == (*output2)){
     printf("right\n");
@@ -333,21 +334,33 @@ void linear_test(){
 
 template<typename T>
 void linear_benchmark(int n){
-  Device device = Device::CPU;
-  auto input = std::make_shared<Tensor<T>>(1, 2048, 1, 1, device);
-  Linear<T> fc(2048, 1024);
-  {
-    Timer t;
-    for(int i = 0; i < n; i++){
-      auto output = fc(input);
-    }
+  Device cuda = Device::CUDA;
+  Device cpu = Device::CPU;
+  // CUDA
+  TICK(input_cuda_init)
+  auto input_cuda = std::make_shared<Tensor<T>>(1, 4096, 1, 10, cuda);
+  TOCK(input_cuda_init)
+  TICK(fc_cuda_init)
+  Linear<T> fc_cuda(4096, 2048, cuda);
+  TOCK(fc_cuda_init)
+  TICK(fc_cuda_infer)
+  for(int i = 0; i < n; i++){
+    auto output1 = fc_cuda(input_cuda);
   }
-  {
-    Timer t;
-    for(int i = 0; i < n; i++){
-      // auto output = fc.forward_cpu_old(input);
-    }
+  TOCK(fc_cuda_infer)
+
+  // CPU
+  TICK(input_cpu_init)
+  auto input_cpu = std::make_shared<Tensor<T>>(1, 4096, 1, 10, cpu);
+  TOCK(input_cpu_init)
+  TICK(fc_cpu_init)
+  Linear<T> fc_cpu(4096, 2048, cpu);
+  TOCK(fc_cpu_init)
+  TICK(fc_cpu_infer)
+  for(int i = 0; i < n; i++){
+    auto output1 = fc_cpu(input_cpu);
   }
+  TOCK(fc_cpu_infer)
 }
 
 template<typename T>
@@ -411,8 +424,8 @@ int main(){
   // globalAvgPool2D_test<f32>();   // pass
   // conv_cuda_test<f32>();         // pass 8/10;
   // conv_benchmark<f32>(10);       // 3.87x faster than cpu
-  linear_test<f32>();            // pass cpu
-  // linear_benchmark<f32>(100);    // new: 38.694 ms   old: 429.975 ms 
+  // linear_test<f32>();            // pass 
+  // linear_benchmark<f32>(100);    // cpu new: 38.694 ms old: 429.975 ms 
   // matMul_test<f32>();            // pass
   // matMul_benchmark<f32>(10);
 }

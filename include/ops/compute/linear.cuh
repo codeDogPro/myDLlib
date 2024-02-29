@@ -9,6 +9,10 @@
 
 namespace dl{
 
+/*
+* The Linear layer's cpu, cuda impl use different weight shape;
+* so the result is also deffrent with same weight value.
+*/
 template<typename T=f32>
 class Linear : public Function<T> {
 public:
