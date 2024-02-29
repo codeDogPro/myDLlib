@@ -47,9 +47,9 @@ private:
 
   std::shared_ptr<const Tensor<T>> 
   _pad_cuda(const std::shared_ptr<const Tensor<T>> input){
-    int row = input->row(), col = input->col();
-    int ch = input->channel(), num = input->number();
-    int pad_row = row + 2*M_padding, pad_col = col + 2*M_padding;
+    const int row = input->row(), col = input->col();
+    const int ch = input->channel(), num = input->number();
+    const int pad_row = row + 2*M_padding, pad_col = col + 2*M_padding;
     auto output = std::make_shared<Tensor<T>>
       (pad_row, pad_col, ch, num, Device::CUDA, 0);
     thrust::device_ptr<const T> _input = input->data_gpu();
@@ -67,12 +67,21 @@ private:
 
   std::shared_ptr<Tensor<T>>
   _pool_cuda(const std::shared_ptr<const Tensor<T>> input){
-    int irow = input->row(), icol = input->col();
-    int ch = input->channel(), num = input->number();
-    int orow = res_row(irow), ocol = res_col(icol);
-    auto output = std::make_shared<Tensor<T>>(orow, ocol, ch, num, Device::CUDA, 0);
-    //TODO: implement it
-    // xxxxx cuda kernel
+    const int ch = input->channel(), num = input->number();
+    const int row = input->row(), col = input->col();
+    auto output = std::make_shared<Tensor<T>>
+      (res_row(row), res_col(col), ch, num, Device::CUDA, 0);
+
+    thrust::device_ptr<const T> _input = input->data_gpu();
+    thrust::device_ptr<T> _output = output->data_gpu();
+
+    const int grid_x = (col+TILE_X-1)/TILE_X, grid_y = (row+TILE_Y-1)/TILE_Y;
+    dim3 grid_size(grid_x, grid_y, ch * num);
+    dim3 block_size(TILE_X, TILE_Y);
+    AvgPool2D_cuda<<<grid_size, block_size>>>
+      (_input, _output,
+       M_pool_size, M_stride, row, col); 
+    cudaDeviceSynchronize();
     return output; 
   }
 
@@ -87,12 +96,12 @@ private:
 
   std::shared_ptr<Tensor<T>>
   pad_cpu(const std::shared_ptr<const Tensor<T>> input){
-    int row = input->row(), col = input->col();
-    int ch = input->channel(), num = input->number();
+    const int row = input->row(), col = input->col();
+    const int ch = input->channel(), num = input->number();
     auto pad_input = std::make_shared<Tensor<T>>
     (row + 2 * M_padding, col + 2 * M_padding, ch, num, Device::CPU, 0);
     for(int i = 0; i < num; i++){
-      int offset = i * num;
+      const int offset = i * num;
       parallelizer.parallel_channel(padding_cpu<T>,
         pad_input, offset, input, M_padding);
     }
@@ -105,12 +114,12 @@ private:
 
   std::shared_ptr<Tensor<T>>
   pool_cpu(const std::shared_ptr<const Tensor<T>> input){
-    int irow = input->row(), icol = input->col();
-    int ch = input->channel(), num = input->number();
-    int orow = res_row(irow), ocol = res_col(icol);
+    const int irow = input->row(), icol = input->col();
+    const int ch = input->channel(), num = input->number();
+    const int orow = res_row(irow), ocol = res_col(icol);
     auto output = std::make_shared<Tensor<T>>(orow, ocol, ch, num, Device::CPU, 0);
     for(int i = 0; i < num; i++){
-      int offset = i * irow * icol * ch;
+      const int offset = i * irow * icol * ch;
       parallelizer.parallel_channel(
         avgPool2D_cpu<T>, output, offset,
         input, M_pool_size, M_stride);
@@ -134,25 +143,25 @@ public:
   virtual ~globalAvgPool2D() = default;
 
   virtual std::shared_ptr<Tensor<T>>
-  forward(const std::shared_ptr<Tensor<T>> input){
+  forward(const std::shared_ptr<const Tensor<T>> input){
     return (input->device() == Device::CPU) ? forward_cpu(input) : forward_cuda(input);
   }
 
   std::shared_ptr<Tensor<T>>
-  operator()(const std::shared_ptr<Tensor<T>> input){
+  operator()(const std::shared_ptr<const Tensor<T>> input){
     return forward(input);
   }
 
-
 private:
   std::shared_ptr<Tensor<T>>
-  forward_cuda(const std::shared_ptr<Tensor<const T>> input){
+  forward_cuda(const std::shared_ptr<const Tensor<T>> input){
     int row = input->row(), col = input->col();
     int size = input->size(), square = row * col;
     int ch = input->channel(), num = input->number();
     auto output = std::make_shared<Tensor<T>>(1, 1, ch, num, Device::CUDA, 0);
 
-    auto _input = input->data_gpu(), _output = output->data_gpu();
+    thrust::device_ptr<const T> _input = input->data_gpu();
+    thrust::device_ptr<T> _output = output->data_gpu();
     dim3 grid_size((square + 127)/128, num * ch), block_size(128);
     globalAvgPool2D_cuda<<<grid_size, block_size>>> (_input, _output, square);
     __div_square<<<16, 128>>>(_output, square, ch * num);
@@ -161,7 +170,7 @@ private:
   }
 
   std::shared_ptr<Tensor<T>>
-  forward_cpu(const std::shared_ptr<Tensor<const T>> input){
+  forward_cpu(const std::shared_ptr<const Tensor<T>> input){
     int row = input->row(), col = input->col();
     int ch = input->channel(), num = input->number();
     auto output = std::make_shared<Tensor<T>>(1, 1, ch, num, Device::CPU, 0);

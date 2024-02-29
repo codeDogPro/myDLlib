@@ -419,6 +419,28 @@ void matMul_benchmark(int n){
   }
 }
 
+template<typename T>
+void pooling_test(){
+  Device cuda = Device::CUDA;
+  Device cpu = Device::CPU;
+  auto input = std::make_shared<Tensor<T>>(224, 224, 4, 2, cuda);
+  // std::cout << "input:\n" << *input;
+  MaxPool2D maxpool(2);
+  auto output_cuda = maxpool(input);
+  // AvgPool2D avgpool(2);
+  // auto output_cuda = avgpool(input);
+  input->to(cpu);
+  // auto output_cpu = avgpool(input);
+  auto output_cpu = maxpool(input);
+  // std::cout << "cuda:\n" << *output_cuda;
+  // std::cout << "cpu:\n" << *output_cpu;
+  if((*output_cuda) == (*output_cpu)){
+    printf("right\n");
+  }else{
+    printf("wrong!\n");
+  }
+}
+
 int main(){
   // print_test();                  // pass
   // resnet50_test<f32>();          // pass
@@ -433,7 +455,8 @@ int main(){
   // conv_cuda_test<f32>();         // pass 8/10;
   // conv_benchmark<f32>(10);       // 3.87x faster than cpu
   // linear_test<f32>();            // pass 
-  linear_benchmark<f32>(100);    // cpu new: 38.694 ms old: 429.975 ms 
+  // linear_benchmark<f32>(100);    // cpu new: 38.694 ms old: 429.975 ms 
   // matMul_test<f32>();            // pass
   // matMul_benchmark<f32>(10);
+  pooling_test<f32>();
 }
