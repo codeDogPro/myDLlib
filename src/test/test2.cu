@@ -312,12 +312,23 @@ void conv_benchmark(int n){
 
 template<typename T>
 void linear_test(){
-  Device device = Device::CUDA;
-  auto input = std::make_shared<Tensor<T>>(1, 8, 1, 2, device, 2);
-  // std::cout << "input:\n" << *input;
-  Linear<T> fc(8, 16);
-  auto output = fc(input);
-  std::cout << "output:\n" << *output;
+  Device cuda = Device::CUDA;
+  auto input = std::make_shared<Tensor<T>>(1, 8, 1, 2, cuda);
+  Linear<T> fc(8, 16, cuda);
+  auto output1 = fc(input);
+
+  Device cpu = Device::CPU;
+  input->to(cpu);
+  fc.to(cpu);
+  auto output2 = fc(input);
+  std::cout << "input:\n" << *input;
+  std::cout << "cuda:\n" << *output1;
+  std::cout << "cpu:\n" << *output2;
+  if((*output1) == (*output2)){
+    printf("right\n");
+  }else{
+    printf("wrong!\n");
+  }
 }
 
 template<typename T>

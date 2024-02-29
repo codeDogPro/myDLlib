@@ -14,19 +14,21 @@ class Linear : public Function<T> {
 public:
   explicit 
   Linear(int input_dim, int output_dim, Device device=Device::CPU) 
-  : M_bias(1, output_dim, 1, 1, device)
-  {
-    if(device == Device::CPU){
-      // for cpu impl, it's not matMul 
-      M_weight = std::move(Tensor<T>(output_dim, input_dim, 1, 1, device));
-    } else{
-      // for cuda impl, it's matMul 
-      M_weight = std::move(Tensor<T>(input_dim, output_dim, 1, 1, device));
+  : M_weight(output_dim, input_dim, 1, 1, device),
+    M_bias(1, output_dim, 1, 1, device) {
+    /*
+      *For cuda impl, it's matMul, so we need to reshape M_weight.
+      *[output_dim, input_dim] -> [input_dim, output_dim]
+    */
+    if(device == Device::CUDA){
+      M_weight.reshape(input_dim, output_dim, 1, 1); 
     }
     // #define LINEAR_DEBUG
     #ifdef LINEAR_DEBUG
       std::cout << "weight:\n"<<M_weight << std::endl;
       std::cout << "bias:\n" << M_bias << std::endl;
+      M_weight.to(Device::CUDA);
+      M_bias.to(Device::CUDA);
     #endif
     } 
   
@@ -43,6 +45,8 @@ public:
   }
 
   void to(Device device){
+    // M_weight need to reshape
+    M_weight.reshape(M_weight.col(), M_weight.row(), 1, 1); 
     M_weight.to(device);
     M_bias.to(device);
     m_device = device;

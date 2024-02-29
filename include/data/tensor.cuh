@@ -87,6 +87,7 @@ public:
       m_device = Device::CPU;
     }
     else{
+      // TODO: bug?
       m_cudaData = std::move(t.get_data_gpu());
       m_device = Device::CUDA;
     }
@@ -229,9 +230,9 @@ public:
 
   bool reshape(const std::vector<int>& shape){ 
     size_t size = std::reduce(shape.begin(), shape.end(), 1, std::multiplies<T>{});
-    if(size != m_hostData.size()){
-      fprintf(stderr, "New size:%ld isn't equal to the data size:%ld\n",
-      size, m_hostData.size());
+    if(size != this->size()){
+      fprintf(stderr, "New size:%ld isn't equal to the data size:%d\n",
+      size, this->size());
       exit(-1);
     }
     m_shape = shape;
@@ -240,9 +241,9 @@ public:
 
   bool reshape(int row, int col, int channel, int number=1){
     size_t size = row * col * channel * number;
-    if(size != m_hostData.size()){
-      fprintf(stderr, "New size:%ld isn't equal to the data size:%ld\n",
-      size, m_hostData.size());
+    if(size != this->size()){
+      fprintf(stderr, "New size:%ld isn't equal to the data size:%d\n",
+      size, this->size());
       exit(-1);
     }
     m_shape[0] = row, m_shape[1] = col, m_shape[2] = channel, m_shape[3] = number;
