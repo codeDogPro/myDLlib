@@ -287,7 +287,8 @@ void conv_benchmark(int n){
   //  time took:(68322.3 ms cpu)  (15891.3 ms cuda)
   //2-data: input:1x256x224x224  
   //  conv: 3x3, in=256, out=256, stride=1
-  //  time took:(34105.4 ms cpu)  (2884.23 ms cuda)
+  //  all  time took:(34105.4 ms cpu)  (2884.23 ms cuda)
+  //  conv time took:(7152.4 ms cpu)  (1845.23 ms cuda)
 
   // {
   //   Timer t;
@@ -295,12 +296,13 @@ void conv_benchmark(int n){
   //   Conv2D<T> conv(3, 512, 1024, 1, 0, Device::CPU);
   //   auto output = conv(input);
   // }
-
+  // auto input = std::make_shared<Tensor<T>>(224, 224, 256, 1, Device::CUDA);
+  // Conv2D<T> conv(3, 256, 256, 1, 0, Device::CUDA);
+  auto input = std::make_shared<Tensor<T>>(224, 224, 256, 1, Device::CPU);
+  Conv2D<T> conv(3, 256, 256, 1, 0, Device::CPU);
   {
     Timer t;
     for(int i = 0; i < n; i++){
-      auto input = std::make_shared<Tensor<T>>(224, 224, 256, 1, Device::CUDA);
-      Conv2D<T> conv(3, 256, 256, 1, 0, Device::CUDA);
       auto output = conv(input);
     }
   }
@@ -308,22 +310,51 @@ void conv_benchmark(int n){
 
 template<typename T>
 void linear_test(){
-  Device device = Device::CPU;
-  auto input = std::make_shared<Tensor<T>>(1, 16, 1, 2, device, 2);
+  Device device = Device::CUDA;
+  auto input = std::make_shared<Tensor<T>>(1, 8, 1, 2, device, 2);
   std::cout << "input:\n" << *input;
-  Linear<T> fc(16, 24);
+  Linear<T> fc(8, 8);
   auto output = fc(input);
   std::cout << "output:\n" << *output;
 }
 
 template<typename T>
 void linear_benchmark(int n){
-  Timer t;
-  for(int i = 0; i < n; i++){
-    Device device = Device::CPU;
-    auto input = std::make_shared<Tensor<T>>(1, 2048, 1, 10, device);
-    Linear<T> fc(2048, 1024);
-    auto output = fc(input);
+  Device device = Device::CPU;
+  auto input = std::make_shared<Tensor<T>>(1, 2048, 1, 1, device);
+  Linear<T> fc(2048, 1024);
+  {
+    Timer t;
+    for(int i = 0; i < n; i++){
+      auto output = fc(input);
+    }
+  }
+  {
+    Timer t;
+    for(int i = 0; i < n; i++){
+      // auto output = fc.forward_cpu_old(input);
+    }
+  }
+}
+
+template<typename T>
+void matMul_test(){
+  Device device = Device::CPU;
+  auto a = std::make_shared<Tensor<T>>(81, 122, 2, 2, device, 3);
+  auto b = std::make_shared<Tensor<T>>(122, 42, 2, 2, device, 2);
+  std::cout << "a:\n" << *a;
+  std::cout << "b:\n" << *b;
+  auto output1 = matMul<T>(a, b);
+  
+  a->to(Device::CUDA);
+  b->to(Device::CUDA);
+  auto output2 = matMul<T>(a, b);
+  // std::cout << "output1:\n" << *output1;
+  // std::cout << "output2:\n" << *output2;
+  if((*output1) == (*output2)){
+    printf("right\n");
+  }else{
+    printf("wrong!\n");
   }
 }
 
@@ -339,7 +370,8 @@ int main(){
   // init_test();                   // pass 
   // globalAvgPool2D_test<f32>();   // pass
   // conv_cuda_test<f32>();         // pass 8/10;
-  // conv_benchmark<f32>(10);
+  // conv_benchmark<f32>(10);       // 3.87x faster than cpu
   // linear_test<f32>();            // pass cpu
-  linear_benchmark<f32>(100);
+  // linear_benchmark<f32>(100);    // new: 38.694 ms   old: 429.975 ms 
+  // matMul_test<f32>();            // pass
 }

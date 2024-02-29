@@ -132,6 +132,30 @@ public:
     return *this;
   }
 
+  bool operator==(Tensor<T> &rhs){
+    if(this == &rhs) return true;
+    Device device_lhs = this->device();
+    Device device_rhs = rhs.device();
+
+    this->to(Device::CPU);
+    rhs.to(Device::CPU);
+    bool flag = true;
+    if(this->size() != rhs.size()){
+      flag = false;
+    } else{
+      int size = this->size();
+      for(int i = 0; i < size; i++){
+        if((*this)[i] != rhs[i]){
+          flag = false;
+          break;
+        }
+      }
+    }
+    this->to(device_lhs);
+    rhs.to(device_rhs);
+    return flag;
+  }
+
   void to(Device device){
     if(device == m_device) return ;
 
@@ -745,12 +769,14 @@ private:
       else{
         output = std::make_shared<Tensor<T>>(1, row, ch, num, Device::CUDA, 0);
       }
-      auto _input = this->data_gpu(), _output = output->data_gpu();
       constexpr int tile_x = 32, tile_y = 32;
-      int grid_y = (size / col + tile_y - 1) / tile_y;
-      int grid_x = (col + tile_x - 1) / tile_x;
+      const int grid_y = (size / col + tile_y - 1) / tile_y;
+      const int grid_x = (col + tile_x - 1) / tile_x;
       // printf("grid_y: %d grid_x:%d\n", grid_y, grid_x);
       dim3 grid_size(grid_x, grid_y), block_size(tile_x, tile_y);
+
+      thrust::device_ptr<const T> _input = this->data_gpu();
+      thrust::device_ptr<T> _output = output->data_gpu();
       switch(mode){
         case Operator::SUM:
           reduce4D_axis0_cuda<<<grid_size, block_size>>>

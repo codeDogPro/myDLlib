@@ -19,7 +19,7 @@ Linear_cpu(int task_begin, int task_num, int shape, int ioffset,
   const int arow = input->row(), col = input->col(), channel = input->channel();
   const int brow = weight.row();
   const int ooffset = ioffset/col * brow;
-  int b_idx = 0; 
+  int b_idx = task_begin * col; 
   int o_idx = ooffset + task_begin;
   int bias_idx = task_begin;
   if (col >= 8) {

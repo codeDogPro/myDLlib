@@ -7,7 +7,7 @@ namespace dl{
 
 template <typename T = f32>
 __global__ void 
-reduce4D_axis0_cuda(thrust::device_ptr<T> input,
+reduce4D_axis0_cuda(thrust::device_ptr<const T> input,
                     thrust::device_ptr<T> output,
                     const int n,
                     const int col) {
@@ -35,8 +35,12 @@ reduce4D_axis0_cuda(thrust::device_ptr<T> input,
 
   template<typename T>
   __global__ void
-  padding_cuda(thrust::device_ptr<const T> input, thrust::device_ptr<T> output,
-               int n, int icol, int irow, int npad){
+  padding_cuda(thrust::device_ptr<const T> input,
+               thrust::device_ptr<T> output,
+               const int n,
+               const int icol,
+               const int irow,
+               const int npad){
     int idx = blockIdx.x * blockDim.x + threadIdx.x; 
     int isquare = irow * icol;
     /*上下的横行*/                        /* npad-1个完整行         一个非完整行*/
