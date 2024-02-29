@@ -30,15 +30,14 @@ namespace dl{
     const int ch = a->channel(), num = a->number();
 
     auto output = std::make_shared<Tensor<T>>(arow, bcol, ch, num, Device::CUDA, 0);
-    const int asize = a->size(), bsize = b->size(), osize = output->size();
-    dim3 grid_size((arow + TILE_Y-1) / TILE_Y,
-                   (acol + TILE_X-1) / TILE_X,
+    dim3 grid_size((acol + TILE_X-1) / TILE_X,
+                   (arow + TILE_Y-1) / TILE_Y,
                    ch * num);
-    dim3 block_size(TILE_Y, TILE_X);
+    dim3 block_size(TILE_X, TILE_Y);
     thrust::device_ptr<const T> _a = a->data_gpu(), _b = b->data_gpu();
     thrust::device_ptr<T> _output = output->data_gpu();
     matMul4D_cuda<<<grid_size, block_size>>>
-      (_a, _b, _output, asize, bsize, osize, acol, arow, bcol);
+      (_a, _b, _output, acol, arow, bcol);
     cudaDeviceSynchronize();
     return output;
   }

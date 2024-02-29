@@ -282,13 +282,15 @@ void conv_cuda_test(){
 
 template<typename T>
 void conv_benchmark(int n){
-  //1-data: input:1x512x224x224  
-  //  conv: 3x3, in=512, out=1024, stride=1
-  //  time took:(68322.3 ms cpu)  (15891.3 ms cuda)
-  //2-data: input:1x256x224x224  
-  //  conv: 3x3, in=256, out=256, stride=1
-  //  all  time took:(34105.4 ms cpu)  (2884.23 ms cuda)
-  //  conv time took:(7152.4 ms cpu)  (1845.23 ms cuda)
+  /*
+  *1-data: input:1x512x224x224  
+  *  conv: 3x3, in=512, out=1024, stride=1
+  *  time took:(68322.3 ms cpu)  (15891.3 ms cuda)
+  *2-data: input:1x256x224x224  
+  *  conv: 3x3, in=256, out=256, stride=1
+  *  all  time took:(34105.4 ms cpu)  (2884.23 ms cuda)
+  *  conv time took:( 7152.4 ms cpu)  (1845.23 ms cuda)
+  */
 
   // {
   //   Timer t;
@@ -312,8 +314,8 @@ template<typename T>
 void linear_test(){
   Device device = Device::CUDA;
   auto input = std::make_shared<Tensor<T>>(1, 8, 1, 2, device, 2);
-  std::cout << "input:\n" << *input;
-  Linear<T> fc(8, 8);
+  // std::cout << "input:\n" << *input;
+  Linear<T> fc(8, 16);
   auto output = fc(input);
   std::cout << "output:\n" << *output;
 }
@@ -342,8 +344,8 @@ void matMul_test(){
   Device device = Device::CPU;
   auto a = std::make_shared<Tensor<T>>(810, 1202, 2, 2, device);
   auto b = std::make_shared<Tensor<T>>(1202, 822, 2, 2, device);
-  std::cout << "a:\n" << *a;
-  std::cout << "b:\n" << *b;
+  // std::cout << "a:\n" << *a;
+  // std::cout << "b:\n" << *b;
   auto output1 = matMul<T>(a, b);
   
   a->to(Device::CUDA);
@@ -361,9 +363,9 @@ void matMul_test(){
 template<typename T>
 void matMul_benchmark(int n){
   /*
-  1440*2202 x 2202*1440
-  cpu:  7925.85 ms 
-  cuda: 2525 ms 
+  *1440*2202 x 2202*1440
+  *cpu:  7925.85 ms 
+  *cuda: 2525 ms 
   */
   Device device = Device::CPU;
   auto a = std::make_shared<Tensor<T>>(1440, 2202, 2, 2, device);
@@ -398,8 +400,8 @@ int main(){
   // globalAvgPool2D_test<f32>();   // pass
   // conv_cuda_test<f32>();         // pass 8/10;
   // conv_benchmark<f32>(10);       // 3.87x faster than cpu
-  // linear_test<f32>();            // pass cpu
+  linear_test<f32>();            // pass cpu
   // linear_benchmark<f32>(100);    // new: 38.694 ms   old: 429.975 ms 
   // matMul_test<f32>();            // pass
-  matMul_benchmark<f32>(10);
+  // matMul_benchmark<f32>(10);
 }

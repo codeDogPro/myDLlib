@@ -83,10 +83,11 @@ public:
   // move copy ctor
   Tensor(Tensor<T>&& t){ 
     if(t.device() == Device::CPU){
-      m_hostData  = std::move(t.get_data());
+      m_hostData = std::move(t.get_data());
       m_device = Device::CPU;
     }
     else{
+      m_cudaData = std::move(t.get_data_gpu());
       m_device = Device::CUDA;
     }
     m_shape = std::move(t.get_shape());

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <basic/tensor_macro.cuh>
-
 #include <thrust/device_ptr.h>
 
 namespace dl{
@@ -11,9 +10,6 @@ namespace dl{
   matMul4D_cuda(thrust::device_ptr<const T> a,
                 thrust::device_ptr<const T> b,
                 thrust::device_ptr<T> output, 
-                const int asize,
-                const int bsize,
-                const int osize,
                 const int acol,
                 const int arow,
                 const int bcol){
