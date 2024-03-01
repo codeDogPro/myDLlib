@@ -11,7 +11,7 @@
 
 namespace dl{
 
-#define CONV_DEBUG_WEIGHT
+// #define CONV_DEBUG_WEIGHT
 // #define CONV_DEBUG_PAD
 template<typename T=f32>
 class Conv2D : public Function<T> {
@@ -115,10 +115,17 @@ private:
     const int grid_x = (icol+TILE_X-1)/TILE_X, grid_y = (irow+TILE_Y-1)/TILE_Y;
     dim3 grid_size(grid_x, grid_y, och);
     dim3 block_size(TILE_X, TILE_Y);
-    Conv2D_cuda<<<grid_size, block_size>>>
-      (_input, _output, _weight, _bias,
-       M_kernelSize, M_stride,
-       irow, icol, ich, num, orow, ocol); 
+
+    if(M_kernelSize == 1){
+      Conv2D_1x1_cuda<<<grid_size, block_size>>>
+        (_input, _output, _weight, _bias,
+         M_stride, irow, icol, ich, num, orow, ocol); 
+    } else{
+      Conv2D_cuda<<<grid_size, block_size>>>
+        (_input, _output, _weight, _bias,
+        M_kernelSize, M_stride,
+        irow, icol, ich, num, orow, ocol); 
+    }
     cudaDeviceSynchronize();
     return output;
   }

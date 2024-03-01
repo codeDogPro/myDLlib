@@ -14,13 +14,13 @@ public:
   virtual ~Relu() = default;
 
   virtual std::shared_ptr<Tensor<T>> 
-  forward(const std::shared_ptr<Tensor<T>> input){
+  forward(const std::shared_ptr<const Tensor<T>> input){
     return (input->device() == Device::CPU) ? forward_cpu(input) : forward_cuda(input);
   }
 
 private:
   std::shared_ptr<Tensor<T>> 
-  forward_cpu(const std::shared_ptr<Tensor<T>> input){
+  forward_cpu(const std::shared_ptr<const Tensor<T>> input){
     auto output = std::make_shared<Tensor<T>>(input->get_cshape(), Device::CPU, 0);
     int row = input->row(), col = input->col(), channel = input->channel();
     int number = input->number(), volume = row * col * channel;
@@ -29,20 +29,20 @@ private:
       for(int i = 0; i < number; i++){
         int offset = i * volume;
         parallelizer.parallel_channel(
-          relu_parallel<T>, output, offset, input);
+          relu_cpu<T>, output, offset, input);
       }
     }
     else{
       // in linear layer
       parallelizer.parallel_col(
-        relu_parallel<T>, output, 0, input);
+        relu_cpu<T>, output, 0, input);
     }
     parallelizer.sync();
     return output;
   }
 
   std::shared_ptr<Tensor<T>> 
-  forward_cuda(const std::shared_ptr<Tensor<T>> input){
+  forward_cuda(const std::shared_ptr<const Tensor<T>> input){
     auto output = std::make_shared<Tensor<T>>(
       input->get_cshape(), Device::CUDA, 0);
 

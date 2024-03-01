@@ -7,7 +7,7 @@ namespace dl{
 
 template <typename T = f32>
 __global__ void 
-reduce4D_axis0_cuda(thrust::device_ptr<const T> input,
+reduce4D_axis0_cuda(thrust::device_ptr<T> input,
                     thrust::device_ptr<T> output,
                     const int n,
                     const int col) {

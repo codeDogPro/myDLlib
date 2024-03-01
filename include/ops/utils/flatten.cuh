@@ -21,7 +21,7 @@ public:
   } 
 
   virtual std::shared_ptr<Tensor<T>>
-  forward(const std::shared_ptr<Tensor<T>> input) override{
+  forward(const std::shared_ptr<const Tensor<T>> input) override{
     int irow = input->row(), icol = input->col();
     int ichannel = input->channel(), inumber = input->number();
     int orow, ocol, ochannel, onumber;
@@ -65,6 +65,11 @@ public:
     *output = *input;
     output->reshape(orow, ocol, ochannel, onumber);
     return output;
+  }
+
+  std::shared_ptr<Tensor<T>> 
+  operator()(const std::shared_ptr<const Tensor<T>> input){
+    return forward(input);
   }
 
 private:

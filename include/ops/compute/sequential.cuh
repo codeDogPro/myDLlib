@@ -5,8 +5,8 @@
 
 namespace dl{
 
-template<typename Tp=f32>
-class Sequential : public Function<Tp> {
+template<typename T=f32>
+class Sequential : public Function<T> {
 public:
   template<typename... Args>
   Sequential(Args... args){
@@ -28,10 +28,10 @@ public:
   }
   
   #define SEQUENTIAL_DEBUG
-  virtual std::shared_ptr<Tensor<Tp>> 
-  forward(const std::shared_ptr<Tensor<const Tp>> input){
-    std::shared_ptr<Tensor<Tp>> _input = input;
-    std::shared_ptr<Tensor<Tp>> output;
+  virtual std::shared_ptr<Tensor<T>> 
+  forward(const std::shared_ptr<const Tensor<T>> input){
+    std::shared_ptr<const Tensor<T>> _input = input;
+    std::shared_ptr<Tensor<T>> output;
     for(auto &func : functions){
       output = func->forward(_input);
       /*
@@ -50,8 +50,8 @@ public:
     return output;
   }
 
-  std::shared_ptr<Tensor<Tp>> 
-  operator()(const std::shared_ptr<Tensor<const Tp>> input){
+  std::shared_ptr<Tensor<T>> 
+  operator()(const std::shared_ptr<const Tensor<T>> input){
     return forward(input);
   }
 
@@ -59,13 +59,13 @@ private:
   void _add_fn(){ }
 
   template<typename... Args>
-  void _add_fn(Function<Tp> *fn, Args... args){
+  void _add_fn(Function<T> *fn, Args... args){
     functions.push_back(fn);
     _add_fn(args...);
   }
 
   bool memory_clean;
-  std::vector<Function<Tp> *> functions;
+  std::vector<Function<T> *> functions;
 };
 
 }

@@ -6,19 +6,22 @@
 
 namespace dl{
 
-  template <typename T=f32>
-  __global__ void 
-  relu_cuda(thrust::device_ptr<const T> input, thrust::device_ptr<T> output, int n) {
-    int begin = blockIdx.x * blockDim.x + threadIdx.x;
-    int stride = blockDim.x * gridDim.x;
-    for(int i = begin; i < n; i += stride){
-      output[i] = (input[i] > static_cast<T>(0)) ? input[i] : static_cast<T>(0);
-    }
+template <typename T = f32>
+__global__ void 
+relu_cuda(thrust::device_ptr<const T> input,
+          thrust::device_ptr<T> output, 
+          const int n) {
+  int begin = blockIdx.x * blockDim.x + threadIdx.x;
+  int stride = blockDim.x * gridDim.x;
+  for (int i = begin; i < n; i += stride) {
+    output[i] = (input[i] > static_cast<T>(0)) ? input[i] : static_cast<T>(0);
   }
+}
 
-  template <typename T=f32>
+  template <typename T = f32>
   __global__ void 
-  sigmoid_cuda(thrust::device_ptr<const T> input, thrust::device_ptr<T> output, int n) {
+  sigmoid_cuda(thrust::device_ptr<const T> input,
+               thrust::device_ptr<T> output, int n) {
     int begin = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = blockDim.x * gridDim.x;
     for(int i = begin; i < n; i += stride){
@@ -26,16 +29,17 @@ namespace dl{
     }
   }
 
-  template <typename T=f32>
+  template <typename T = f32>
   __global__ void 
-  exp_cuda(thrust::device_ptr<const T> input, thrust::device_ptr<T> output, int n){
+  exp_cuda(thrust::device_ptr<const T> input,
+           thrust::device_ptr<T> output, 
+           const int n) {
     int begin = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = blockDim.x * gridDim.x;
     for(int i = begin; i < n; i += stride){
       output[i] = expf(input[i]);
     }
   }
-
 
   template <typename T=f32>
   __global__ void 

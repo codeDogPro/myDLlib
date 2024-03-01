@@ -21,54 +21,54 @@ public:
   virtual ~Softmax() = default;
 
   virtual std::shared_ptr<Tensor<T>> 
-  forward(const std::shared_ptr<Tensor<T>> input){
+  forward(const std::shared_ptr<const Tensor<T>> input){
     return (input->device() == Device::CPU) ? forward_cpu(input) : forward_cuda(input);
   }
 
   std::shared_ptr<Tensor<T>> 
-  operator()(const std::shared_ptr<Tensor<T>> input){
+  operator()(const std::shared_ptr<const Tensor<T>> input){
     return forward(input);
   }
 
 private:
   std::shared_ptr<Tensor<T>> 
-  forward_cpu(const std::shared_ptr<Tensor<T>> input){
+  forward_cpu(const std::shared_ptr<const Tensor<T>> input){
     auto output = std::make_shared<Tensor<T>>(input->get_cshape(), Device::CPU, 0);
-    int row = input->row(), col = input->col(), channel = input->channel();
-    int number = input->number(), volume = row * col * channel;
+    const int row = input->row(), col = input->col(), channel = input->channel();
+    const int number = input->number(), volume = row * col * channel;
 
     // get exp(input) first
     if(channel > 1){
       for(int i = 0; i < number; i++){
-        int offset = i * volume;
+        const int offset = i * volume;
         parallelizer.parallel_channel(
-          exp_parallel<T>, input, offset, input);
+          exp_cpu<T>, output, offset, input);
       }
     }
     else if(channel == 1 && row == 1){
       // in linear output
       for(int i = 0; i < number; i++){
-        int offset = i * volume;
+        const int offset = i * volume;
         parallelizer.parallel_col(
-          exp_parallel<T>, input, offset, input);
+          exp_cpu<T>, output, offset, input);
       }
     }
     parallelizer.sync();
 
     // then get softmax
     for(int i = 0; i < number; i++){
-      int offset = i * volume;
+      const int offset = i * volume;
       if(M_axis == Axis::COL){
         parallelizer.parallel_channel(
-          softmax_axis0_parallel<T>, output, offset, input);
+          softmax_axis0_cpu<T>, output, offset, output->data());
       }
       else if(M_axis == Axis::ROW){
         parallelizer.parallel_channel(
-          softmax_axis1_parallel<T>, output, offset, input);
+          softmax_axis1_cpu<T>, output, offset, output->data());
       }
       else if(M_axis == Axis::CHANNEL){
         parallelizer.parallel_row(
-          softmax_axis2_parallel<T>, output, offset, input);
+          softmax_axis2_cpu<T>, output, offset, output->data());
       }
     }
     parallelizer.sync();
@@ -76,12 +76,13 @@ private:
   }
 
   std::shared_ptr<Tensor<T>> 
-  forward_cuda(const std::shared_ptr<Tensor<T>> input){
+  forward_cuda(const std::shared_ptr<const Tensor<T>> input){
     auto output = std::make_shared<Tensor<T>>(input->get_cshape(), Device::CUDA, 0);
     int row = input->row(), col = input->col(), ch = input->channel();
     int num = input->number(), size = input->size();
 
-    auto _input = input->data_gpu(), _exp = output->data_gpu();;
+    thrust::device_ptr<const T> _input = input->data_gpu();
+    thrust::device_ptr<T>  _exp = output->data_gpu();;
     // calculate exp(input) first
     exp_cuda<T><<<64, 128>>>(_input, _exp, size);
     cudaDeviceSynchronize();

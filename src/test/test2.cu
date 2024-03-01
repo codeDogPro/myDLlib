@@ -6,10 +6,12 @@ using namespace dl;
 
 template<typename T>
 void resnet50_test(){
-  auto input = std::make_shared<Tensor<T>>(224, 224, 3, 1);
-  std::cout << "input:\n" << *input;
+  Device cpu = Device::CPU;
+  Device cuda = Device::CUDA;
+  auto input = std::make_shared<Tensor<T>>(224, 224, 3, 1, cuda);
+  // std::cout << "input:\n" << *input;
   const int size = 4;
-  auto conv7x7 = new Conv2D<T>(7, 3, 16 * size, 2, 3, Device::CPU);
+  auto conv7x7 = new Conv2D<T>(7, 3, 16 * size, 2, 3, cuda);
   auto maxPool_1 = new MaxPool2D<T>(3, 1, 2), maxPool_2 = new MaxPool2D<T>(3, 1, 2);
   auto maxPool_3 = new MaxPool2D<T>(3, 1, 2), maxPool_4 = new MaxPool2D<T>(3, 1, 2);
   auto relu1 = new Relu<T>(), relu2 = new Relu<T>();
@@ -17,92 +19,92 @@ void resnet50_test(){
   auto relu5 = new Relu<T>();
 
   auto group1_1 = new Sequential<T>(
-    new ResidualBlock_bottle<T>(16 * size, 16 * size, 64 * size),
-    new ResidualBlock_bottle<T>(64 * size, 16 * size, 64 * size),
-    new ResidualBlock_bottle<T>(64 * size, 16 * size, 64 * size)
+    new ResidualBlock_bottle<T>(16 * size, 16 * size, 64 * size, cuda),
+    new ResidualBlock_bottle<T>(64 * size, 16 * size, 64 * size, cuda),
+    new ResidualBlock_bottle<T>(64 * size, 16 * size, 64 * size, cuda)
   );
   auto group1_2 = new Sequential<T>(
-    new ResidualBlock_bottle<T>(64 * size, 16 * size, 64 * size),
-    new ResidualBlock_bottle<T>(64 * size, 16 * size, 64 * size),
-    new ResidualBlock_bottle<T>(64 * size, 16 * size, 64 * size)
+    new ResidualBlock_bottle<T>(64 * size, 16 * size, 64 * size, cuda),
+    new ResidualBlock_bottle<T>(64 * size, 16 * size, 64 * size, cuda),
+    new ResidualBlock_bottle<T>(64 * size, 16 * size, 64 * size, cuda)
   );
   auto group1_3 = new Sequential<T>(
-    new ResidualBlock_bottle<T>(64 * size, 16 * size, 64 * size),
-    new ResidualBlock_bottle<T>(64 * size, 16 * size, 64 * size),
-    new ResidualBlock_bottle<T>(64 * size, 16 * size, 64 * size)
+    new ResidualBlock_bottle<T>(64 * size, 16 * size, 64 * size, cuda),
+    new ResidualBlock_bottle<T>(64 * size, 16 * size, 64 * size, cuda),
+    new ResidualBlock_bottle<T>(64 * size, 16 * size, 64 * size, cuda)
   );
 
   auto group2_1 = new Sequential<T>(
-    new ResidualBlock_bottle<T>(64 * size, 32 * size, 128 * size),
-    new ResidualBlock_bottle<T>(128 * size, 32 * size, 128 * size),
-    new ResidualBlock_bottle<T>(128 * size, 32 * size, 128 * size)
+    new ResidualBlock_bottle<T>(64 * size, 32 * size, 128 * size, cuda),
+    new ResidualBlock_bottle<T>(128 * size, 32 * size, 128 * size, cuda),
+    new ResidualBlock_bottle<T>(128 * size, 32 * size, 128 * size, cuda)
   );
   auto group2_2 = new Sequential<T>(
-    new ResidualBlock_bottle<T>(128 * size, 32 * size, 128 * size),
-    new ResidualBlock_bottle<T>(128 * size, 32 * size, 128 * size),
-    new ResidualBlock_bottle<T>(128 * size, 32 * size, 128 * size)
+    new ResidualBlock_bottle<T>(128 * size, 32 * size, 128 * size, cuda),
+    new ResidualBlock_bottle<T>(128 * size, 32 * size, 128 * size, cuda),
+    new ResidualBlock_bottle<T>(128 * size, 32 * size, 128 * size, cuda)
   );
   auto group2_3 = new Sequential<T>(
-    new ResidualBlock_bottle<T>(128 * size, 32 * size, 128 * size),
-    new ResidualBlock_bottle<T>(128 * size, 32 * size, 128 * size),
-    new ResidualBlock_bottle<T>(128 * size, 32 * size, 128 * size)
+    new ResidualBlock_bottle<T>(128 * size, 32 * size, 128 * size, cuda),
+    new ResidualBlock_bottle<T>(128 * size, 32 * size, 128 * size, cuda),
+    new ResidualBlock_bottle<T>(128 * size, 32 * size, 128 * size, cuda)
   );
   auto group2_4 = new Sequential<T>(
-    new ResidualBlock_bottle<T>(128 * size, 32 * size, 128 * size),
-    new ResidualBlock_bottle<T>(128 * size, 32 * size, 128 * size),
-    new ResidualBlock_bottle<T>(128 * size, 32 * size, 128 * size)
+    new ResidualBlock_bottle<T>(128 * size, 32 * size, 128 * size, cuda),
+    new ResidualBlock_bottle<T>(128 * size, 32 * size, 128 * size, cuda),
+    new ResidualBlock_bottle<T>(128 * size, 32 * size, 128 * size, cuda)
   );                                       
                                            
   auto group3_1 = new Sequential<T>(          
-    new ResidualBlock_bottle<T>(128 * size, 64 * size, 256 * size),
-    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size),
-    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size)
+    new ResidualBlock_bottle<T>(128 * size, 64 * size, 256 * size, cuda),
+    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size, cuda),
+    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size, cuda)
   );                                       
   auto group3_2 = new Sequential<T>(          
-    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size),
-    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size),
-    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size)
+    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size, cuda),
+    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size, cuda),
+    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size, cuda)
   );                                       
   auto group3_3 = new Sequential<T>(          
-    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size),
-    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size),
-    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size)
+    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size, cuda),
+    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size, cuda),
+    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size, cuda)
   );                                       
   auto group3_4 = new Sequential<T>(          
-    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size),
-    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size),
-    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size)
+    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size, cuda),
+    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size, cuda),
+    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size, cuda)
   );                                       
   auto group3_5 = new Sequential<T>(          
-    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size),
-    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size),
-    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size)
+    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size, cuda),
+    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size, cuda),
+    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size, cuda)
   );                                       
   auto group3_6 = new Sequential<T>(          
-    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size),
-    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size),
-    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size)
+    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size, cuda),
+    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size, cuda),
+    new ResidualBlock_bottle<T>(256 * size, 64 * size, 256 * size, cuda)
   );
 
   auto group4_1 = new Sequential<T>(
-    new ResidualBlock_bottle<T>(256 * size, 128 * size, 512 * size),
-    new ResidualBlock_bottle<T>(512 * size, 128 * size, 512 * size),
-    new ResidualBlock_bottle<T>(512 * size, 128 * size, 512 * size)
+    new ResidualBlock_bottle<T>(256 * size, 128 * size, 512 * size, cuda),
+    new ResidualBlock_bottle<T>(512 * size, 128 * size, 512 * size, cuda),
+    new ResidualBlock_bottle<T>(512 * size, 128 * size, 512 * size, cuda)
   );                                  
   auto group4_2 = new Sequential<T>(     
-    new ResidualBlock_bottle<T>(512 * size, 128 * size, 512 * size),
-    new ResidualBlock_bottle<T>(512 * size, 128 * size, 512 * size),
-    new ResidualBlock_bottle<T>(512 * size, 128 * size, 512 * size)
+    new ResidualBlock_bottle<T>(512 * size, 128 * size, 512 * size, cuda),
+    new ResidualBlock_bottle<T>(512 * size, 128 * size, 512 * size, cuda),
+    new ResidualBlock_bottle<T>(512 * size, 128 * size, 512 * size, cuda)
   );                                  
   auto group4_3 = new Sequential<T>(     
-    new ResidualBlock_bottle<T>(512 * size, 128 * size, 512 * size),
-    new ResidualBlock_bottle<T>(512 * size, 128 * size, 512 * size),
-    new ResidualBlock_bottle<T>(512 * size, 128 * size, 512 * size)
+    new ResidualBlock_bottle<T>(512 * size, 128 * size, 512 * size, cuda),
+    new ResidualBlock_bottle<T>(512 * size, 128 * size, 512 * size, cuda),
+    new ResidualBlock_bottle<T>(512 * size, 128 * size, 512 * size, cuda)
   );
 
   auto globalAvgPool = new globalAvgPool2D<T>();
   auto flatten = new Flatten<T>();
-  auto fc = new Linear<T>(2048, 10);
+  auto fc = new Linear<T>(2048, 10, cuda);
   auto softmax = new Softmax<T>(0);
   
   Sequential<T> resnet50(
@@ -114,11 +116,10 @@ void resnet50_test(){
     globalAvgPool, flatten, fc, softmax
   );
 
-  {
-    // Timer timer_compute;
-    auto output = resnet50(input);
-    std::cout << "output:\n" << *output << std::endl;
-  }
+  TICK(Infer);
+  auto output = resnet50(input);
+  TOCK(Infer);
+  std::cout << "output:\n" << *output << std::endl;
 }
 
 void print_test(){
@@ -461,7 +462,7 @@ void pooling_test(){
 
 int main(){
   // print_test();                  // pass
-  // resnet50_test<f32>();          // pass
+  resnet50_test<f32>();          // pass
   // calculator_benchmark(100);     // gpu 2.1x faster than cpu(with parallel and simd)
   // calculator_test();             // pass
   // activation_test<f32>();        // pass 
@@ -476,5 +477,5 @@ int main(){
   // linear_benchmark<f32>(100);    // cpu new: 38.694 ms old: 429.975 ms 
   // matMul_test<f32>();            // pass
   // matMul_benchmark<f32>(10);     // 3.4x faster than cpu
-  pooling_test<f32>();           // pass 
+  // pooling_test<f32>();           // pass 
 }
