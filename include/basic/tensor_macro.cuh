@@ -48,7 +48,7 @@ namespace dl{
 
   const int SHOW_NUMBER_LEN = 3;
 
-  const f32 eps = 1e-8;
+  const f32 eps = 1e-6;
 
   #define POOL_SIZE  128
 }

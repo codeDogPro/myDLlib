@@ -11,7 +11,7 @@
 
 namespace dl{
 
-// #define CONV_DEBUG_WEIGHT
+#define CONV_DEBUG_WEIGHT
 // #define CONV_DEBUG_PAD
 template<typename T=f32>
 class Conv2D : public Function<T> {
@@ -19,8 +19,8 @@ public:
   explicit 
   Conv2D (int kernel_size, int input_ch, int output_ch, 
           int stride=1, int padding=0, Device device=Device::CPU)
-  : M_weight(kernel_size, kernel_size, input_ch, output_ch, device, 1.0),
-    M_bias(output_ch, 1, 1, 1, device, 0.2f)
+  : M_weight(kernel_size, kernel_size, input_ch, output_ch, device),
+    M_bias(output_ch, 1, 1, 1, device)
   {
     M_stride     = stride;
     M_padding    = padding;
@@ -67,11 +67,10 @@ public:
   int nstride()  { return M_stride; }
   int npadding() { return M_padding; }
 
-protected:
-  int res_row(int row){return (row - M_weight.row() + 2*M_padding)/M_stride + 1;}
-  int res_col(int col){return (col - M_weight.col() + 2*M_padding)/M_stride + 1;}
-
 private:
+  int res_row(int row){return (row - M_kernelSize + 2*M_padding)/M_stride + 1;}
+  int res_col(int col){return (col - M_kernelSize + 2*M_padding)/M_stride + 1;}
+
   std::shared_ptr<Tensor<T>> 
   forward_cuda(const std::shared_ptr<const Tensor<T>> input){
     if(M_padding){ // need to pad
@@ -105,21 +104,21 @@ private:
   std::shared_ptr<Tensor<T>> 
   _conv_cuda(const std::shared_ptr<const Tensor<T>> input){
     const int ich = input->channel(), och = M_weight.number();
-    const int row = input->row(), col = input->col(), num = input->number();
-    auto output = std::make_shared<Tensor<T>>
-      (res_row(row), res_col(col), och, num, Device::CUDA, 0);
+    const int irow = input->row(), icol = input->col(), num = input->number();
+    const int orow = res_row(irow), ocol = res_col(icol);
+    auto output = std::make_shared<Tensor<T>>(orow, ocol, och, num, Device::CUDA, 0);
 
     thrust::device_ptr<const T> _input = input->data_gpu();
     thrust::device_ptr<T> _output = output->data_gpu();
     auto _weight = M_weight.data_gpu(), _bias = M_bias.data_gpu();
 
-    const int grid_x = (col+TILE_X-1)/TILE_X, grid_y = (row+TILE_Y-1)/TILE_Y;
+    const int grid_x = (icol+TILE_X-1)/TILE_X, grid_y = (irow+TILE_Y-1)/TILE_Y;
     dim3 grid_size(grid_x, grid_y, och);
     dim3 block_size(TILE_X, TILE_Y);
-    conv2D_cuda<<<grid_size, block_size>>>
+    Conv2D_cuda<<<grid_size, block_size>>>
       (_input, _output, _weight, _bias,
        M_kernelSize, M_stride,
-       row, col, ich, num); 
+       irow, icol, ich, num, orow, ocol); 
     cudaDeviceSynchronize();
     return output;
   }

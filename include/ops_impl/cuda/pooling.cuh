@@ -81,8 +81,8 @@ namespace dl{
           } 
         }
         // add result and bias to output 
-        const int oidx_x = (idx_x - k_size)/stride + 1;
-        const int oidx_y = (idx_y - k_size)/stride + 1;
+        const int oidx_x = idx_x / stride;
+        const int oidx_y = idx_y / stride;
         int oidx = blockIdx.z * orow*ocol + oidx_y*ocol + oidx_x;
         if(oidx_y < orow && oidx_x < ocol){
           output[oidx] = res / (k_size*k_size);
@@ -127,8 +127,11 @@ namespace dl{
           } 
         }
         // add result and bias to output 
-        const int oidx_x = (idx_x - k_size)/stride + 1;
-        const int oidx_y = (idx_y - k_size)/stride + 1;
+        /*
+         * only k_size <= stride can work
+        */
+        const int oidx_x = idx_x / stride;
+        const int oidx_y = idx_y / stride;
         int oidx = blockIdx.z*orow*ocol + oidx_y*ocol + oidx_x;
         if(oidx_y < orow && oidx_x < ocol){
           output[oidx] = res;

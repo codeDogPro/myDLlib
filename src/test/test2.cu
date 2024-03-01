@@ -267,17 +267,34 @@ void globalAvgPool2D_test(){
 
 template<typename T>
 void conv_cuda_test(){
-  // pass ich=1, och=2, ksz=3, stride=1
-  // pass inum=1, ich=2, och=4, ksz=3, stride=1
-  // pass inum=2, ich=2, och=4, ksz=3, stride=1
-  // pass inum=2, ich=1, och=4, ksz=3, stride=1
-  // pass inum=2, ich=1, och=4, ksz=3, stride=2
-  auto input = std::make_shared<Tensor<T>>(9, 9, 1, 2, Device::CPU, 1.0);
+  //* pass 6x6     inum=1, ich=1, och=2, ksz=3, stride=1  randomly
+  //* pass 6x6     inum=1, ich=2, och=4, ksz=3, stride=1  randomly
+  //* pass 6x6     inum=2, ich=2, och=4, ksz=3, stride=1  randomly
+  //* pass 6x6     inum=2, ich=1, och=4, ksz=3, stride=1  randomly
+  //* pass 6x6     inum=2, ich=1, och=4, ksz=3, stride=2  randomly
+  //* pass 6x6     inum=2, ich=2, och=4, ksz=3, stride=2  randomly
+  //* pass 32x32   inum=1, ich=1, och=2, ksz=3, stride=2  randomly
+  //  32x32   inum=2, ich=2, och=4, ksz=3, stride=2 
+  //* pass 224x224 inum=2, ich=2, och=4, ksz=3, stride=2   but cpu version has bug
+  //  224x224 inum=1, ich=1, och=2, ksz=3, stride=2   线程块边界有问题
+  Device cuda = Device::CUDA;
+  Device cpu = Device::CPU;
+  Conv2D<T> conv(3, 1, 2, 2, 0, cpu);
+  auto input = std::make_shared<Tensor<T>>(224, 224, 1, 1, cpu);
   std::cout << "input:\n" << *input;
+  auto output_cpu = conv(input);
+  
+  conv.to(cuda);
   input->to(Device::CUDA);
-  Conv2D<T> conv(3, 1, 4, 2, 0, Device::CUDA);
-  auto output = conv(input);
-  std::cout << "output:\n" << *output;
+  auto output_cuda = conv(input);
+  std::cout << "cpu:\n" << *output_cpu;
+  std::cout << "cuda:\n" << *output_cuda;
+
+  if((*output_cuda) == (*output_cpu)){
+    printf("right\n");
+  } else{
+    printf("wrong!\n");
+  }
 }
 
 template<typename T>
@@ -458,6 +475,6 @@ int main(){
   // linear_test<f32>();            // pass 
   // linear_benchmark<f32>(100);    // cpu new: 38.694 ms old: 429.975 ms 
   // matMul_test<f32>();            // pass
-  // matMul_benchmark<f32>(10);
-  pooling_test<f32>();
+  // matMul_benchmark<f32>(10);     // 3.4x faster than cpu
+  pooling_test<f32>();           // pass 
 }

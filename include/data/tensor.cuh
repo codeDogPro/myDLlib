@@ -143,13 +143,32 @@ public:
     rhs.to(Device::CPU);
     bool flag = true;
     if(this->size() != rhs.size()){
+      printf("Size different! a:%d   b:%d\n", this->size(), rhs.size());
       flag = false;
     } else{
       int size = this->size();
-      for(int i = 0; i < size; i++){
-        if((*this)[i] != rhs[i]){
-          flag = false;
-          break;
+      std::string name = type_name<T>();
+      if(name.compare("float") == 0){
+        // puts("In float");
+        for(int i = 0; i < size; i++){
+          if((*this)[i] - rhs[i] > 1e-5){
+            printf("Value different! a[%d]:%f  b[%d]:%f\n",
+              i, (*this)[i], i, rhs[i]);
+            flag = false;
+            break;
+          }
+        }
+      } 
+      else if(name.compare("int") == 0){
+        // puts("In int");
+        for(int i = 0; i < size; i++){
+          if((*this)[i] != rhs[i]){
+            printf("Value different! a[%d]:%d  b[%d]:%d\n",
+              i, static_cast<int>((*this)[i]),
+              i, static_cast<int>(rhs[i]));
+            flag = false;
+            break;
+          }
         }
       }
     }
