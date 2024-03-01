@@ -84,9 +84,9 @@ private:
 
   std::shared_ptr<const Tensor<T>> 
   _pad_cuda(const std::shared_ptr<const Tensor<T>> input){
-    int row = input->row(), col = input->col();
-    int ch = input->channel(), num = input->number();
-    int pad_row = row + 2*M_padding, pad_col = col + 2*M_padding;
+    const int row = input->row(), col = input->col();
+    const int ch = input->channel(), num = input->number();
+    const int pad_row = row + 2*M_padding, pad_col = col + 2*M_padding;
     auto output = std::make_shared<Tensor<T>>
       (pad_row, pad_col, ch, num, Device::CUDA, 0);
     thrust::device_ptr<const T> _input = input->data_gpu();
@@ -104,8 +104,8 @@ private:
 
   std::shared_ptr<Tensor<T>> 
   _conv_cuda(const std::shared_ptr<const Tensor<T>> input){
-    int ich = input->channel(), och = M_weight.number();
-    int row = input->row(), col = input->col(), num = input->number();
+    const int ich = input->channel(), och = M_weight.number();
+    const int row = input->row(), col = input->col(), num = input->number();
     auto output = std::make_shared<Tensor<T>>
       (res_row(row), res_col(col), och, num, Device::CUDA, 0);
 
@@ -113,7 +113,7 @@ private:
     thrust::device_ptr<T> _output = output->data_gpu();
     auto _weight = M_weight.data_gpu(), _bias = M_bias.data_gpu();
 
-    int grid_x = (col+TILE_X-1)/TILE_X, grid_y = (row+TILE_Y-1)/TILE_Y;
+    const int grid_x = (col+TILE_X-1)/TILE_X, grid_y = (row+TILE_Y-1)/TILE_Y;
     dim3 grid_size(grid_x, grid_y, och);
     dim3 block_size(TILE_X, TILE_Y);
     conv2D_cuda<<<grid_size, block_size>>>
@@ -126,14 +126,14 @@ private:
 
   std::shared_ptr<Tensor<T>> 
   forward_cpu(const std::shared_ptr<const Tensor<T>> input){
-    int row = input->row(), col = input->col();
-    int ch = input->channel(), num = input->number();
+    const int row = input->row(), col = input->col();
+    const int ch = input->channel(), num = input->number();
     if(M_padding){
       auto pad_input = std::make_shared<Tensor<T>>
       (row + 2*M_padding, col + 2*M_padding, ch, num, Device::CPU, 0);
-      int ivolume = row * col * ch;
+      const int ivolume = row * col * ch;
       for(int i = 0; i < num; i++){
-        int offset = i * ivolume;
+        const int offset = i * ivolume;
         parallelizer.parallel_channel(padding_cpu<T>,
          pad_input, offset, input, M_padding);
       }
@@ -149,12 +149,12 @@ private:
 
   std::shared_ptr<Tensor<T>> 
   _conv_cpu(const std::shared_ptr<const Tensor<T>> input, int orow, int ocol){
-    int irow = input->row(), icol = input->col(), ich = input->channel();
-    int num = input->number(), ivolume = irow * icol * ich;
-    int och = M_weight.number();
+    const int irow = input->row(), icol = input->col(), ich = input->channel();
+    const int num = input->number(), ivolume = irow * icol * ich;
+    const int och = M_weight.number();
     auto output = std::make_shared<Tensor<T>>(orow, ocol, och, num, Device::CPU, 0);
     for(int i = 0; i < num; i++){
-      int offset = i * ivolume;
+      const int offset = i * ivolume;
       if(M_kernelSize == 1){
         parallelizer.parallel_channel(conv2d_1x1_cpu<T>, output, offset, input, 
           M_weight, M_bias, M_stride);

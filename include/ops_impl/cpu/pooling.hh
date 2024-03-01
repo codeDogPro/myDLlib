@@ -22,14 +22,15 @@ bool maxPool2D_cpu(int task_begin, int task_num, int shape, int ioffset,
     int i_idx = ioffset + ch * isquare, o_idx = ooffset + ch * osquare;
     for (int y_idx = 0; y_idx <= y_end; y_idx += stride) {
       for (int x_idx = 0; x_idx <= x_end; x_idx += stride) {
+        T value = static_cast<T>(-1e8);
         for (int kr = 0; kr < pool_size; kr++) {
           int input_idx = i_idx + kr * icol;
           for (int kc = 0; kc < pool_size; kc++) {
-            (*output)[o_idx] =
-                std::max((*output)[o_idx], (*input)[input_idx + kc]);
+            value = std::max(value, (*input)[input_idx + kc]);
           } // kernel col loop
-        }   // kernel row loop
-        o_idx++, i_idx += stride;
+        } // kernel row loop
+        (*output)[o_idx++] = value; // store value
+        i_idx += stride;
       } // stride x loop
       i_idx += (stride - 1) * icol + icol % stride;
     } // stride y loop
