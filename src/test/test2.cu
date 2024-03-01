@@ -424,15 +424,15 @@ void pooling_test(){
   Device cuda = Device::CUDA;
   Device cpu = Device::CPU;
   MaxPool2D maxpool(2);
-  // AvgPool2D avgpool(2);
-  // auto input = std::make_shared<Tensor<T>>(224, 224, 4, 2, cuda);
-  auto input = std::make_shared<Tensor<T>>(6, 6, 1, 2, cuda);
+  AvgPool2D avgpool(2);
+  auto input = std::make_shared<Tensor<T>>(224, 224, 4, 2, cpu);
+  // auto input = std::make_shared<Tensor<T>>(6, 6, 1, 2, cpu);
   std::cout << "input:\n" << *input;
-  auto output_cpu = maxpool(input);
-  // auto output_cpu = avgpool(input);
+  // auto output_cpu = maxpool(input);
+  auto output_cpu = avgpool(input);
   input->to(cuda);
-  auto output_cuda = maxpool(input);
-  // auto output_cuda = avgpool(input);
+  // auto output_cuda = maxpool(input);
+  auto output_cuda = avgpool(input);
   std::cout << "cuda:\n" << *output_cuda;
   std::cout << "cpu:\n" << *output_cpu;
   if((*output_cuda) == (*output_cpu)){

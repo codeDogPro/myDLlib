@@ -70,19 +70,19 @@ private:
   std::shared_ptr<Tensor<T>>
   _pool_cuda(const std::shared_ptr<const Tensor<T>> input){
     const int ch = input->channel(), num = input->number();
-    const int row = input->row(), col = input->col();
-    auto output = std::make_shared<Tensor<T>>
-      (res_row(row), res_col(col), ch, num, Device::CUDA, 0);
+    const int irow = input->row(), icol = input->col();
+    const int orow = res_row(irow), ocol = res_col(icol);
+    auto output = std::make_shared<Tensor<T>>(orow, ocol, ch, num, Device::CUDA, 0);
 
     thrust::device_ptr<const T> _input = input->data_gpu();
     thrust::device_ptr<T> _output = output->data_gpu();
 
-    const int grid_x = (col+TILE_X-1)/TILE_X, grid_y = (row+TILE_Y-1)/TILE_Y;
+    const int grid_x = (icol+TILE_X-1)/TILE_X, grid_y = (irow+TILE_Y-1)/TILE_Y;
     dim3 grid_size(grid_x, grid_y, ch * num);
     dim3 block_size(TILE_X, TILE_Y);
     MaxPool2D_cuda<<<grid_size, block_size>>>
       (_input, _output,
-       M_pool_size, M_stride, row, col); 
+       M_pool_size, M_stride, irow, icol, orow, ocol); 
     cudaDeviceSynchronize();
     return output; 
   }
@@ -90,14 +90,14 @@ private:
   std::shared_ptr<Tensor<T>>
   forward_cpu(const std::shared_ptr<const Tensor<T>> input){
     if(M_padding){
-      auto pad_input = pad_cpu(input);
-      return pool_cpu(pad_input);
+      auto pad_input = _pad_cpu(input);
+      return _pool_cpu(pad_input);
     }
-    return pool_cpu(input);
+    return _pool_cpu(input);
   }
 
   std::shared_ptr<Tensor<T>>
-  pad_cpu(const std::shared_ptr<const Tensor<T>> input){
+  _pad_cpu(const std::shared_ptr<const Tensor<T>> input){
     const int row = input->row(), col = input->col();
     const int ch = input->channel(), num = input->number();
     auto pad_input = std::make_shared<Tensor<T>>
@@ -112,7 +112,7 @@ private:
   }
 
   std::shared_ptr<Tensor<T>>
-  pool_cpu(const std::shared_ptr<const Tensor<T>> input){
+  _pool_cpu(const std::shared_ptr<const Tensor<T>> input){
     const int irow = input->row(), icol = input->col();
     const int ch = input->channel(), num = input->number();
     const int orow = res_row(irow), ocol = res_col(icol);
@@ -131,7 +131,6 @@ private:
   int res_col(int col){return (col - M_pool_size) / M_stride + 1;}
 
   
-private:
   int M_pool_size;
   int M_stride;
   int M_padding;
