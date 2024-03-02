@@ -105,7 +105,8 @@ private:
   _conv_cuda(const std::shared_ptr<const Tensor<T>> input){
     const int ich = input->channel(), och = M_weight.number();
     const int irow = input->row(), icol = input->col(), num = input->number();
-    const int orow = res_row(irow), ocol = res_col(icol);
+    const int orow = (irow-M_kernelSize)/M_stride + 1;
+    const int ocol = (icol-M_kernelSize)/M_stride + 1;
     auto output = std::make_shared<Tensor<T>>(orow, ocol, och, num, Device::CUDA, 0);
 
     thrust::device_ptr<const T> _input = input->data_gpu();

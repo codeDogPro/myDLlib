@@ -27,16 +27,14 @@ public:
     return mode;
   }
   
-  #define SEQUENTIAL_DEBUG
+  // #define SEQUENTIAL_DEBUG
   virtual std::shared_ptr<Tensor<T>> 
   forward(const std::shared_ptr<const Tensor<T>> input){
     std::shared_ptr<const Tensor<T>> _input = input;
     std::shared_ptr<Tensor<T>> output;
     for(auto &func : functions){
       output = func->forward(_input);
-      /*
-       * After using the layer, just free the layer weight in memory_clean mode
-       */
+      //* After using the layer, just free the layer weight in memory_clean mode
       if(memory_clean == true){
         delete func;
       }

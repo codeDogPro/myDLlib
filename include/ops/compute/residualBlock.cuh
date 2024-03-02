@@ -88,16 +88,22 @@ public:
 
   virtual std::shared_ptr<Tensor<T>> 
   forward(const std::shared_ptr<const Tensor<T>> input){
-    auto output1 = input_layer->forward(input);
-    auto output2 = neck_layer->forward(output1);
-    auto output3 = output_layer->forward(output2);
-    if(same_shape){
+    auto output1 = (*input_layer)(input);
+    // std::cout << "output1:\t"; output1->shape();
+    auto output2 = (*neck_layer)(output1);
+    // std::cout << "output2:\t"; output2->shape();
+    auto output3 = (*output_layer)(output2);
+    // std::cout << "output3:\t"; output3->shape();
+    if(same_shape == true){
       auto output = *output3 + *input;
+      // std::cout << "output:\t"; output->shape();
       return output;
     }
     else{
-      auto pad_input = pad_layer->forward(input);
+      auto pad_input = (*pad_layer)(input);
+      // std::cout << "pad_input:\t"; pad_input->shape();
       auto output = *output3 + *pad_input;
+      // std::cout << "output:\t"; output->shape();
       return output;
     }
   }

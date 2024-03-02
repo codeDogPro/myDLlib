@@ -50,12 +50,11 @@ namespace dl {
           if(flag && idx_x + k_size <= icol && idx_y + k_size <= irow){
             for(int krow = 0; krow < k_size; krow++){   // *kernel row idx
               for(int kcol = 0; kcol < k_size; kcol++){ // *kernel col idx
-                int in_y = ty + krow;
-                int in_x = tx + kcol;
-                if(in_x < TILE_X && in_y < TILE_Y){
-                  res += s_weight[krow][kcol] * s_input[in_y][in_x]; 
+                if(tx + kcol < TILE_X && ty + krow < TILE_Y){
+                  res += s_weight[krow][kcol] * s_input[ty + krow][tx + kcol]; 
                 } else{ // *边界情况
-                  res += s_weight[krow][kcol] * input[ioffset + in_y*icol + in_x];
+                  res += s_weight[krow][kcol] 
+                          * input[ioffset + (idx_y+krow)*icol + idx_x + kcol];
                 }
               } 
             }
@@ -64,7 +63,6 @@ namespace dl {
           koffset += k_size * k_size;
         }
         //* add result and bias to output 
-        // TODO: bug   The k_size > stride will make idx < 0
         const int oidx_x = idx_x / stride;
         const int oidx_y = idx_y / stride;
         const int ooffset = n*orow*ocol*gridDim.z + blockIdx.z*orow*ocol; 
@@ -117,11 +115,7 @@ namespace dl {
           __syncthreads();
 
           if(flag && idx_x < icol && idx_y < irow){
-            if(tx < TILE_X && ty < TILE_Y){
-              res += s_weight * s_input[ty][tx]; 
-            } else{ // *边界情况
-              res += s_weight * input[ioffset + ty*icol + tx];
-            }
+            res += s_weight * s_input[ty][tx]; 
           } 
           ioffset += irow * icol;
         }
