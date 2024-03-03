@@ -1,6 +1,7 @@
 #pragma once
 
 #include <basic/tensor_macro.cuh>
+#include <thrust/detail/cstdint.h>
 #include <thrust/device_ptr.h>
 
 namespace dl {
@@ -38,11 +39,11 @@ namespace dl {
         T res = 0;
         for(int ch = 0; ch < ich; ch++){
           //* load input to shared memory
-          const int iidx = idx_y*icol + idx_x;
+          const uint64_t iidx = idx_y*icol + idx_x;
           s_input[ty][tx] = input[ioffset + iidx];
           //* load weight to shared memory
           if(ty < k_size && tx < k_size){
-            const int kidx = ty*k_size  + tx;
+            const uint64_t kidx = ty*k_size  + tx;
             s_weight[ty][tx] = weight[koffset + kidx];
           }
           __syncthreads();
@@ -65,8 +66,8 @@ namespace dl {
         //* add result and bias to output 
         const int oidx_x = idx_x / stride;
         const int oidx_y = idx_y / stride;
-        const int ooffset = n*orow*ocol*gridDim.z + blockIdx.z*orow*ocol; 
-        const int oidx = ooffset + oidx_y*ocol + oidx_x;
+        const uint64_t ooffset = n*orow*ocol*gridDim.z + blockIdx.z*orow*ocol; 
+        const uint64_t oidx = ooffset + oidx_y*ocol + oidx_x;
         if(flag && oidx_y < orow && oidx_x < ocol){
           // atomicAdd(output.get() + oidx, res + _bias);
           output[oidx] = res + _bias;
@@ -106,7 +107,7 @@ namespace dl {
         T res = 0;
         for(int ch = 0; ch < ich; ch++){
           //* load input to shared memory
-          const int iidx = idx_y*icol + idx_x;
+          const uint64_t iidx = idx_y*icol + idx_x;
           s_input[ty][tx] = input[ioffset + iidx];
           //* load weight to shared memory
           if(ty == 0 && tx == 0){
@@ -122,8 +123,8 @@ namespace dl {
         //* add result and bias to output 
         const int oidx_x = idx_x / stride;
         const int oidx_y = idx_y / stride;
-        const int ooffset = n*orow*ocol*gridDim.z + blockIdx.z*orow*ocol; 
-        const int oidx = ooffset + oidx_y*ocol + oidx_x;
+        const uint64_t ooffset = n*orow*ocol*gridDim.z + blockIdx.z*orow*ocol; 
+        const uint64_t oidx = ooffset + oidx_y*ocol + oidx_x;
         if(flag && oidx_y < orow && oidx_x < ocol){
           output[oidx] = res + _bias;
         }

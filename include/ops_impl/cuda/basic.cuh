@@ -12,10 +12,10 @@ reduce4D_axis0_cuda(thrust::device_ptr<T> input,
                     const int n,
                     const int col) {
   __shared__ T sums[TILE_Y][TILE_X];
-  int by = blockIdx.y, bx = blockIdx.x;
-  int ty = threadIdx.y, tx = threadIdx.x;
-  int idx_x = bx * TILE_X + tx;
-  int idx = by * col * TILE_Y + ty * col + idx_x;
+  const int by = blockIdx.y, bx = blockIdx.x;
+  const int ty = threadIdx.y, tx = threadIdx.x;
+  const int idx_x = bx * TILE_X + tx;
+  uint64_t idx = by * col * TILE_Y + ty * col + idx_x;
 
   sums[ty][tx] = (idx_x < col && idx < n) ? input[idx] : static_cast<T>(0);
   __syncthreads();
@@ -27,7 +27,7 @@ reduce4D_axis0_cuda(thrust::device_ptr<T> input,
     __syncwarp(); // could change to __syncwarp()?
   }
 
-  int oidx = by * TILE_Y + ty;
+  const uint64_t oidx = by * TILE_Y + ty;
   if (tx == 0 && oidx < (n / col)) {
     atomicAdd(output.get() + oidx, sums[ty][0]);
   }
@@ -41,10 +41,10 @@ reduce4D_axis0_cuda(thrust::device_ptr<T> input,
                const int icol,
                const int irow,
                const int npad){
-    int idx = blockIdx.x * blockDim.x + threadIdx.x; 
-    int isquare = irow * icol;
+    const int idx = blockIdx.x * blockDim.x + threadIdx.x; 
+    const int isquare = irow * icol;
     /*上下的横行*/                        /* npad-1个完整行         一个非完整行*/
-    int offset = (2*(idx/isquare) + 1) * ((npad-1)*(icol+2*npad) + (icol+npad))
+    const uint64_t offset = (2*(idx/isquare) + 1) * ((npad-1)*(icol+2*npad) + (icol+npad))
     /*左右的竖列*/ + (idx/isquare + idx/icol + 1)*2*npad;     
     if(idx < n){
       output[offset + idx] = input[idx];

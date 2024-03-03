@@ -289,12 +289,12 @@ public:
   int number()  const { return m_shape[3]; }
 
   void shape(){
-    printf("shape:[");
+    std::cout << "shape:[";
     for(int i = 0; i < m_shape.size(); i++) {
       std::cout << m_shape[i];
       if(i != m_shape.size() - 1) printf(", ");
     }
-    printf("]\n");
+    std::cout << "]" << std::endl;
   }
   
   // only print in cpu

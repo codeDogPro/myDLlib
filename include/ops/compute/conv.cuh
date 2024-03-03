@@ -90,7 +90,7 @@ private:
       (pad_row, pad_col, ch, num, Device::CUDA, 0);
     thrust::device_ptr<const T> _input = input->data_gpu();
     thrust::device_ptr<T> _output = output->data_gpu();
-    const int size = output->size();
+    const int size = input->size();
     const int grid_size = (size + 127) / 128, block_size = 128;
     padding_cuda<<<grid_size, block_size>>>
       (_input, _output, size, row, col, M_padding);

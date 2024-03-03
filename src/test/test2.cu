@@ -6,13 +6,14 @@ using namespace dl;
 
 template<typename T>
 void resnet50_test(){
-  // * 224x224x3x1  3/4 size resnet50: cpu-4.2s  cuda-2.31s
-  // * 224x224x3x5  3/4 size resnet50: 显存不够
+  // * input:224x224x3
+  // *  bs=1:  CUDA Infer: 5.66597s CPU Infer: 7.72452s
+  // *  bs=6:  CUDA Infer: 34.0519s CPU Infer: 50.2053s
+  // *  bs=32: CUDA Infer: 195.654s CPU Infer: 265.865s
   Device device = Device::CUDA;
-  // auto input = std::make_shared<Tensor<T>>(224, 224, 3, 2, device);
-  auto input = std::make_shared<Tensor<T>>(70, 70, 3, 2, device);
+  auto input = std::make_shared<Tensor<T>>(224, 224, 3, 32, device);
   // std::cout << "input:\n" << *input;
-  const int size = 1;
+  const int size = 4;
   auto conv7x7 = new Conv2D<T>(7, 3, 16 * size, 2, 3, device);
   auto maxPool_1 = new MaxPool2D<T>(3, 1, 2), maxPool_2 = new MaxPool2D<T>(3, 1, 2);
   auto maxPool_3 = new MaxPool2D<T>(3, 1, 2), maxPool_4 = new MaxPool2D<T>(3, 1, 2);
