@@ -8,10 +8,11 @@ template<typename T>
 void resnet50_test(){
   // * 224x224x3x1  3/4 size resnet50: cpu-4.2s  cuda-2.31s
   // * 224x224x3x5  3/4 size resnet50: 显存不够
-  Device device = Device::CPU;
-  auto input = std::make_shared<Tensor<T>>(224, 224, 3, 1, device);
+  Device device = Device::CUDA;
+  // auto input = std::make_shared<Tensor<T>>(224, 224, 3, 2, device);
+  auto input = std::make_shared<Tensor<T>>(70, 70, 3, 2, device);
   // std::cout << "input:\n" << *input;
-  const int size = 3;
+  const int size = 1;
   auto conv7x7 = new Conv2D<T>(7, 3, 16 * size, 2, 3, device);
   auto maxPool_1 = new MaxPool2D<T>(3, 1, 2), maxPool_2 = new MaxPool2D<T>(3, 1, 2);
   auto maxPool_3 = new MaxPool2D<T>(3, 1, 2), maxPool_4 = new MaxPool2D<T>(3, 1, 2);

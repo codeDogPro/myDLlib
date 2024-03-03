@@ -103,7 +103,7 @@ private:
     auto pad_input = std::make_shared<Tensor<T>>
     (row + 2 * M_padding, col + 2 * M_padding, ch, num, Device::CPU, 0);
     for(int i = 0; i < num; i++){
-      const int offset = i * num;
+      const int offset = i * row*col*ch;
       parallelizer.parallel_channel(padding_cpu<T>,
         pad_input, offset, input, M_padding);
     }

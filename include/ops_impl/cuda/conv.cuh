@@ -33,8 +33,8 @@ namespace dl {
       //* conv all number and channel
       const T _bias = bias[blockIdx.z];
       for(int n = 0; n < num; n++){
-        int ioffset = n * irow*icol*ich;
-        int koffset = blockIdx.z * k_size*k_size*ich;
+        uint64_t ioffset = n * irow*icol*ich;
+        uint64_t koffset = blockIdx.z * k_size*k_size*ich;
         T res = 0;
         for(int ch = 0; ch < ich; ch++){
           //* load input to shared memory
@@ -101,8 +101,8 @@ namespace dl {
       //* conv all number and channel
       const T _bias = bias[blockIdx.z];
       for(int n = 0; n < num; n++){
-        int ioffset = n * irow*icol*ich;
-        int koffset = blockIdx.z * ich;
+        uint64_t ioffset = n * irow*icol*ich;
+        uint64_t koffset = blockIdx.z * ich;
         T res = 0;
         for(int ch = 0; ch < ich; ch++){
           //* load input to shared memory

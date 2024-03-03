@@ -15,12 +15,12 @@ bool maxPool2D_cpu(int task_begin, int task_num, int shape, int ioffset,
   const int orow = output->row(), ocol = output->col();
   const int isquare = irow * icol, osquare = orow * ocol;
   // when irow and icol can't be div by pool_size, need the vars
-  const int align_irow = irow - irow % stride, align_icol = icol - icol % stride;
-  const int ooffset = ioffset / isquare * osquare;
+  const int align_irow = irow - irow%stride, align_icol = icol - icol%stride;
+  const uint64_t ooffset = (ioffset/isquare) * osquare;
 
   const int x_end = align_icol - pool_size, y_end = align_irow - pool_size;
   for (int ch = task_begin; ch < task_begin + task_num; ch++) {
-    int i_idx = ioffset + ch * isquare, o_idx = ooffset + ch * osquare;
+    uint64_t i_idx = ioffset + ch * isquare, o_idx = ooffset + ch * osquare;
     for (int y_idx = 0; y_idx <= y_end; y_idx += stride) {
       for (int x_idx = 0; x_idx <= x_end; x_idx += stride) {
         T value = static_cast<T>(-1e8);
@@ -49,12 +49,12 @@ bool maxPool2D_cpu(int task_begin, int task_num, int shape, int ioffset,
     const int orow = output->row(), ocol = output->col();
     const int isquare = irow * icol, osquare = orow * ocol;
     // when irow and icol can't be div by pool_size, need the vars
-    const int align_irow = irow - irow % stride, align_icol = icol - icol % stride; 
-    const int ooffset = ioffset / isquare * osquare;
+    const int align_irow = irow - irow%stride, align_icol = icol - icol%stride; 
+    const uint64_t ooffset = (ioffset/isquare) * osquare;
 
     const int x_end = align_icol - pool_size, y_end = align_irow - pool_size;
     for(int ch = task_begin; ch < task_begin + task_num; ch ++){
-      int i_idx = ioffset + ch * isquare, o_idx = ooffset + ch * osquare;
+      uint64_t i_idx = ioffset + ch * isquare, o_idx = ooffset + ch * osquare;
       for(int y_idx = 0; y_idx <= y_end; y_idx += stride){
         for(int x_idx = 0; x_idx <= x_end; x_idx += stride){
           T value = 0;
