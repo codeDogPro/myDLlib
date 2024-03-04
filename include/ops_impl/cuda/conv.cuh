@@ -78,7 +78,7 @@ namespace dl {
 
   template<typename T>
   __global__ void
-  Conv2D_1x1_cuda(thrust::device_ptr<const T> input,
+  Conv2D_k1_cuda(thrust::device_ptr<const T> input,
                   thrust::device_ptr<T> output,
                   thrust::device_ptr<T> weight,
                   thrust::device_ptr<T> bias,
@@ -126,6 +126,53 @@ namespace dl {
         const uint64_t ooffset = n*orow*ocol*gridDim.z + blockIdx.z*orow*ocol; 
         const uint64_t oidx = ooffset + oidx_y*ocol + oidx_x;
         if(flag && oidx_y < orow && oidx_x < ocol){
+          output[oidx] = res + _bias;
+        }
+      }
+    }
+  }
+
+  //* kernel size=1 and stride=1
+  template<typename T>
+  __global__ void
+  Conv2D_k1s1_cuda(thrust::device_ptr<const T> input,
+                  thrust::device_ptr<T> output,
+                  thrust::device_ptr<T> weight,
+                  thrust::device_ptr<T> bias,
+                  const int row, 
+                  const int col, 
+                  const int ich, 
+                  const int num) {
+    __shared__ T s_input[TILE_Y][TILE_X];
+    __shared__ T s_weight;
+    const int ty = threadIdx.y, tx = threadIdx.x;
+    const int idx_x = blockIdx.x * TILE_X + tx;
+    const int idx_y = blockIdx.y * TILE_Y + ty;
+    const int square = row*col;
+    
+    if(idx_x < col && idx_y < row){
+      //* conv all number and channel
+      const T _bias = bias[blockIdx.z];
+      for(int n = 0; n < num; n++){
+        uint64_t ioffset = n * square*ich;
+        uint64_t koffset = blockIdx.z * ich;
+        T res = 0;
+        for(int ch = 0; ch < ich; ch++){
+          //* load input to shared memory
+          const uint64_t iidx = idx_y*col + idx_x;
+          s_input[ty][tx] = input[ioffset + iidx];
+          //* load weight to shared memory
+          if(ty == 0 && tx == 0){
+            s_weight = weight[koffset ++];
+          }
+          __syncthreads();
+          res += s_weight * s_input[ty][tx]; 
+          ioffset += square;
+        }
+        //* add result and bias to output 
+        const uint64_t ooffset = n*square*gridDim.z + blockIdx.z*square; 
+        const uint64_t oidx = ooffset + idx_y*col + idx_x;
+        if(idx_y < row && idx_x < col){
           output[oidx] = res + _bias;
         }
       }

@@ -118,9 +118,15 @@ private:
     dim3 block_size(TILE_X, TILE_Y);
 
     if(M_kernelSize == 1){
-      Conv2D_1x1_cuda<<<grid_size, block_size>>>
-        (_input, _output, _weight, _bias,
-         M_stride, irow, icol, ich, num, orow, ocol); 
+      if(M_stride == 1){
+        Conv2D_k1s1_cuda<<<grid_size, block_size>>>
+          (_input, _output, _weight, _bias,
+           irow, icol, ich, num); 
+      } else{
+        Conv2D_k1_cuda<<<grid_size, block_size>>>
+          (_input, _output, _weight, _bias,
+          M_stride, irow, icol, ich, num, orow, ocol); 
+      }
     } else{
       Conv2D_cuda<<<grid_size, block_size>>>
         (_input, _output, _weight, _bias,
@@ -163,11 +169,20 @@ private:
     for(int i = 0; i < num; i++){
       const int offset = i * ivolume;
       if(M_kernelSize == 1){
-        parallelizer.parallel_channel(conv2d_1x1_cpu<T>, output, offset, input, 
-          M_weight, M_bias, M_stride);
+        if(M_stride == 1){
+          //* 1x1_stride= 1特殊优化
+          parallelizer.parallel_channel(
+            conv2d_k1s1_cpu<T>, output, offset,
+            input, M_weight, M_bias);
+        } else{
+          parallelizer.parallel_channel(
+            conv2d_k1_cpu<T>, output, offset,
+            input, M_weight, M_bias, M_stride);
+        }
       } else{
-        parallelizer.parallel_channel(conv2d_cpu<T>, output, offset, input, 
-          M_weight, M_bias, M_stride);
+        parallelizer.parallel_channel(
+          conv2d_cpu<T>, output, offset,
+          input, M_weight, M_bias, M_stride);
       }
     }
     parallelizer.sync();

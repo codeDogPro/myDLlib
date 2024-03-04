@@ -7,11 +7,11 @@ using namespace dl;
 template<typename T>
 void resnet50_test(){
   // * input:224x224x3
-  // *  bs=1:  CUDA Infer: 5.66597s CPU Infer: 7.72452s
+  // *  bs=1:  CUDA Infer: 4.23122s CPU Infer: 7.72452s
   // *  bs=6:  CUDA Infer: 34.0519s CPU Infer: 50.2053s
   // *  bs=32: CUDA Infer: 195.654s CPU Infer: 265.865s
   Device device = Device::CUDA;
-  auto input = std::make_shared<Tensor<T>>(224, 224, 3, 32, device);
+  auto input = std::make_shared<Tensor<T>>(224, 224, 3, 1, device);
   // std::cout << "input:\n" << *input;
   const int size = 4;
   auto conv7x7 = new Conv2D<T>(7, 3, 16 * size, 2, 3, device);
