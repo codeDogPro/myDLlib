@@ -6,7 +6,6 @@
 
 namespace dl {
 
-  // TODO: have bugs
   template<typename T>
   __global__ void
   Conv2D_cuda(thrust::device_ptr<const T> input,
@@ -23,16 +22,21 @@ namespace dl {
               const int ocol) {
     __shared__ T s_input[TILE_Y][TILE_X];
     __shared__ T s_weight[K_SIZE][K_SIZE];
+    __shared__ T s_bias;
     const int ty = threadIdx.y, tx = threadIdx.x;
     const int idx_x = blockIdx.x * TILE_X + tx;
     const int idx_y = blockIdx.y * TILE_Y + ty;
+
+    //* load bias to shared memory
+    if(ty == 0 && tx == 0){
+      s_bias = bias[blockIdx.z];
+    }
     
     if(idx_x < icol && idx_y < irow){
       //* The flag is used to choose which thread is needed
       const bool flag = (idx_x % stride == 0 && idx_y % stride == 0);
 
       //* conv all number and channel
-      const T _bias = bias[blockIdx.z];
       for(int n = 0; n < num; n++){
         uint64_t ioffset = n * irow*icol*ich;
         uint64_t koffset = blockIdx.z * k_size*k_size*ich;
@@ -70,7 +74,7 @@ namespace dl {
         const uint64_t oidx = ooffset + oidx_y*ocol + oidx_x;
         if(flag && oidx_y < orow && oidx_x < ocol){
           // atomicAdd(output.get() + oidx, res + _bias);
-          output[oidx] = res + _bias;
+          output[oidx] = res + s_bias;
         }
       }
     }
@@ -79,28 +83,33 @@ namespace dl {
   template<typename T>
   __global__ void
   Conv2D_k1_cuda(thrust::device_ptr<const T> input,
-                  thrust::device_ptr<T> output,
-                  thrust::device_ptr<T> weight,
-                  thrust::device_ptr<T> bias,
-                  const int stride,
-                  const int irow, 
-                  const int icol, 
-                  const int ich, 
-                  const int num,
-                  const int orow,
-                  const int ocol) {
+                 thrust::device_ptr<T> output,
+                 thrust::device_ptr<T> weight,
+                 thrust::device_ptr<T> bias,
+                 const int stride,
+                 const int irow, 
+                 const int icol, 
+                 const int ich, 
+                 const int num,
+                 const int orow,
+                 const int ocol) {
     __shared__ T s_input[TILE_Y][TILE_X];
     __shared__ T s_weight;
+    __shared__ T s_bias;
     const int ty = threadIdx.y, tx = threadIdx.x;
     const int idx_x = blockIdx.x * TILE_X + tx;
     const int idx_y = blockIdx.y * TILE_Y + ty;
+    
+    //* load bias to shared memory
+    if(ty == 0 && tx == 0){
+      s_bias = bias[blockIdx.z];
+    }
     
     if(idx_x < icol && idx_y < irow){
       //* The flag is used to choose which thread is needed
       const bool flag = (idx_x % stride == 0 && idx_y % stride == 0);
 
       //* conv all number and channel
-      const T _bias = bias[blockIdx.z];
       for(int n = 0; n < num; n++){
         uint64_t ioffset = n * irow*icol*ich;
         uint64_t koffset = blockIdx.z * ich;
@@ -126,7 +135,7 @@ namespace dl {
         const uint64_t ooffset = n*orow*ocol*gridDim.z + blockIdx.z*orow*ocol; 
         const uint64_t oidx = ooffset + oidx_y*ocol + oidx_x;
         if(flag && oidx_y < orow && oidx_x < ocol){
-          output[oidx] = res + _bias;
+          output[oidx] = res + s_bias;
         }
       }
     }
@@ -145,14 +154,19 @@ namespace dl {
                   const int num) {
     __shared__ T s_input[TILE_Y][TILE_X];
     __shared__ T s_weight;
+    __shared__ T s_bias;
     const int ty = threadIdx.y, tx = threadIdx.x;
     const int idx_x = blockIdx.x * TILE_X + tx;
     const int idx_y = blockIdx.y * TILE_Y + ty;
     const int square = row*col;
+
+    //* load bias to shared memory
+    if(ty == 0 && tx == 0){
+      s_bias = bias[blockIdx.z];
+    }
     
     if(idx_x < col && idx_y < row){
       //* conv all number and channel
-      const T _bias = bias[blockIdx.z];
       for(int n = 0; n < num; n++){
         uint64_t ioffset = n * square*ich;
         uint64_t koffset = blockIdx.z * ich;
@@ -172,9 +186,7 @@ namespace dl {
         //* add result and bias to output 
         const uint64_t ooffset = n*square*gridDim.z + blockIdx.z*square; 
         const uint64_t oidx = ooffset + idx_y*col + idx_x;
-        if(idx_y < row && idx_x < col){
-          output[oidx] = res + _bias;
-        }
+        output[oidx] = res + s_bias;
       }
     }
   }
