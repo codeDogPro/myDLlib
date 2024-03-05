@@ -7,9 +7,9 @@ using namespace dl;
 template<typename T>
 void resnet50_test(){
   // * input:224x224x3
-  // *  bs=1:  CUDA Infer: 4.07468s CPU Infer: 7.72452s
-  // *  bs=6:  CUDA Infer: 34.0519s CPU Infer: 50.2053s
-  // *  bs=32: CUDA Infer: 195.654s CPU Infer: 265.865s
+  // *  bs=1:  CUDA Infer: 3.20259s CPU Infer: 7.72452s
+  // *  bs=6:  CUDA Infer: 19.044s CPU Infer: 50.2053s
+  // *  bs=32: CUDA Infer: 118.356s CPU Infer: 265.865s
   Device device = Device::CUDA;
   auto input = std::make_shared<Tensor<T>>(224, 224, 3, 1, device);
   // std::cout << "input:\n" << *input;

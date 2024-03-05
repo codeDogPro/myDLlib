@@ -127,7 +127,13 @@ private:
           (_input, _output, _weight, _bias,
           M_stride, irow, icol, ich, num, orow, ocol); 
       }
-    } else{
+    } 
+    else if(M_kernelSize == 3 && M_stride == 1){
+      Conv2D_k3s1_cuda<<<grid_size, block_size>>>
+        (_input, _output, _weight, _bias,
+        irow, icol, ich, num, orow, ocol); 
+    }
+    else{
       Conv2D_cuda<<<grid_size, block_size>>>
         (_input, _output, _weight, _bias,
         M_kernelSize, M_stride,

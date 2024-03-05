@@ -41,9 +41,9 @@ namespace dl {
         uint64_t ioffset = n * irow*icol*ich;
         uint64_t koffset = blockIdx.z * k_size*k_size*ich;
         T res = 0;
+        const uint64_t iidx = idx_y*icol + idx_x;
         for(int ch = 0; ch < ich; ch++){
           //* load input to shared memory
-          const uint64_t iidx = idx_y*icol + idx_x;
           s_input[ty][tx] = input[ioffset + iidx];
           //* load weight to shared memory
           if(ty < k_size && tx < k_size){
@@ -82,6 +82,73 @@ namespace dl {
 
   template<typename T>
   __global__ void
+  Conv2D_k3s1_cuda(thrust::device_ptr<const T> input,
+              thrust::device_ptr<T> output,
+              thrust::device_ptr<T> weight,
+              thrust::device_ptr<T> bias,
+              const int irow, 
+              const int icol, 
+              const int ich, 
+              const int num,
+              const int orow,
+              const int ocol) {
+    __shared__ T s_input[TILE_Y][TILE_X];
+    __shared__ T s_weight[K_SIZE][K_SIZE];
+    __shared__ T s_bias;
+    const int ty = threadIdx.y, tx = threadIdx.x;
+    const int idx_x = blockIdx.x * TILE_X + tx;
+    const int idx_y = blockIdx.y * TILE_Y + ty;
+
+    //* load bias to shared memory
+    if(ty == 0 && tx == 0){
+      s_bias = bias[blockIdx.z];
+    }
+    
+    if(idx_x < icol && idx_y < irow){
+      //* conv all number and channel
+      for(int n = 0; n < num; n++){
+        uint64_t ioffset = n * irow*icol*ich;
+        uint64_t koffset = blockIdx.z * 3*3*ich;
+        T res = 0;
+        const uint64_t iidx = idx_y*icol + idx_x;
+        for(int ch = 0; ch < ich; ch++){
+          //* load input to shared memory
+          s_input[ty][tx] = input[ioffset + iidx];
+          //* load weight to shared memory
+          if(ty < 3 && tx < 3){
+            const uint64_t kidx = ty * 3  + tx;
+            s_weight[ty][tx] = weight[koffset + kidx];
+          }
+          __syncthreads();
+
+          if(idx_x + 3 <= icol && idx_y + 3 <= irow){
+            for(int krow = 0; krow < 3; krow++){   // *kernel row idx
+              for(int kcol = 0; kcol < 3; kcol++){ // *kernel col idx
+                if(tx + kcol < TILE_X && ty + krow < TILE_Y){
+                  res += s_weight[krow][kcol] * s_input[ty + krow][tx + kcol]; 
+                } else{ // *边界情况
+                  res += s_weight[krow][kcol] 
+                          * input[ioffset + (idx_y+krow)*icol + idx_x + kcol];
+                }
+              } 
+            }
+          }
+          ioffset += irow * icol;
+          koffset += 9;
+        }
+        //* add result and bias to output 
+        const uint64_t ooffset = n*orow*ocol*gridDim.z + blockIdx.z*orow*ocol; 
+        const uint64_t oidx = ooffset + idx_y*ocol + idx_x;
+        if(idx_y < orow && idx_x < ocol){
+          output[oidx] = res + s_bias;
+        }
+      }
+    }
+  }
+
+
+  template<typename T>
+  __global__ void
   Conv2D_k1_cuda(thrust::device_ptr<const T> input,
                  thrust::device_ptr<T> output,
                  thrust::device_ptr<T> weight,
@@ -114,9 +181,9 @@ namespace dl {
         uint64_t ioffset = n * irow*icol*ich;
         uint64_t koffset = blockIdx.z * ich;
         T res = 0;
+        const uint64_t iidx = idx_y*icol + idx_x;
         for(int ch = 0; ch < ich; ch++){
           //* load input to shared memory
-          const uint64_t iidx = idx_y*icol + idx_x;
           s_input[ty][tx] = input[ioffset + iidx];
           //* load weight to shared memory
           if(ty == 0 && tx == 0){
@@ -171,15 +238,16 @@ namespace dl {
         uint64_t ioffset = n * square*ich;
         uint64_t koffset = blockIdx.z * ich;
         T res = 0;
+        const uint64_t iidx = idx_y*col + idx_x;
         for(int ch = 0; ch < ich; ch++){
           //* load input to shared memory
-          const uint64_t iidx = idx_y*col + idx_x;
           s_input[ty][tx] = input[ioffset + iidx];
           //* load weight to shared memory
           if(ty == 0 && tx == 0){
             s_weight = weight[koffset ++];
           }
           __syncthreads();
+          //* calculate result
           res += s_weight * s_input[ty][tx]; 
           ioffset += square;
         }
