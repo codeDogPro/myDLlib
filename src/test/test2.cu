@@ -8,10 +8,10 @@ template<typename T>
 void resnet50_test(){
   // * input:224x224x3
   // *  bs=1:  CUDA Infer: 3.20259s CPU Infer: 7.72452s
-  // *  bs=6:  CUDA Infer: 19.044s CPU Infer: 50.2053s
+  // *  bs=6:  CUDA Infer: 19.0440s CPU Infer: 50.2053s
   // *  bs=32: CUDA Infer: 118.356s CPU Infer: 265.865s
   Device device = Device::CUDA;
-  auto input = std::make_shared<Tensor<T>>(224, 224, 3, 1, device);
+  auto input = std::make_shared<Tensor<T>>(224, 224, 3, 32, device);
   // std::cout << "input:\n" << *input;
   const int size = 4;
   auto conv7x7 = new Conv2D<T>(7, 3, 16 * size, 2, 3, device);
@@ -284,8 +284,8 @@ void conv_cuda_test(){
   //  224x224 inum=1, ich=1, och=2, ksz=3, stride=2   线程块边界有问题
   Device cuda = Device::CUDA;
   Device cpu = Device::CPU;
-  Conv2D<T> conv(3, 1, 2, 2, 0, cpu);
-  auto input = std::make_shared<Tensor<T>>(224, 224, 1, 1, cpu);
+  Conv2D<T> conv(3, 2, 4, 1, 0, cpu);
+  auto input = std::make_shared<Tensor<T>>(6, 6, 2, 2, cpu);
   std::cout << "input:\n" << *input;
   auto output_cpu = conv(input);
   
@@ -480,6 +480,28 @@ void residual_test(){
   // }
 }
 
+template<typename T>
+void k1s1_cuda_Conv2d_test(){
+  //* input:4x4x1x2    randomly pass
+  Device cuda = Device::CUDA;
+  Device cpu = Device::CPU;
+  auto input = std::make_shared<Tensor<T>>(12, 12, 1, 2, cpu);
+  Conv2D<T> conv(1, 1, 2, 1, 0, cpu);
+  std::cout << "input:\n" << *input;
+  auto output_cpu = conv(input);
+
+  conv.to(cuda);
+  input->to(cuda);
+  auto output_cuda = conv(input);
+  std::cout << "cuda:\n" << *output_cuda;
+  std::cout << "cpu:\n" << *output_cpu;
+  if((*output_cuda) == (*output_cpu)){
+    printf("right\n");
+  }else{
+    printf("wrong!\n");
+  }
+}
+
 int main(){
   // print_test();                  // pass
   // calculator_benchmark(100);     // gpu 2.1x faster than cpu(with parallel and simd)
@@ -498,5 +520,6 @@ int main(){
   // matMul_benchmark<f32>(10);     // 3.4x faster than cpu
   // pooling_test<f32>();           // pass 
   // residual_test<f32>();          // pass
-  resnet50_test<f32>();          // pass
+  // resnet50_test<f32>();          // pass
+  k1s1_cuda_Conv2d_test<f32>();
 }

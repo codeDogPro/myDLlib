@@ -96,12 +96,13 @@ bool conv2d_k1_cpu(int task_begin, int task_num, int shape, int ioffset,
   return true;
 }
 
+
 //* kernel_size=1 stride=1 implementaion
 template <typename T = f32>
 bool conv2d_k1s1_cpu(int task_begin, int task_num, int shape, int ioffset,
-                    std::shared_ptr<Tensor<T>> output,
-                    const std::shared_ptr<const Tensor<T>> input,
-                    const Tensor<T> &weight, const Tensor<T> &bias) {
+                     std::shared_ptr<Tensor<T>> output,
+                     const std::shared_ptr<const Tensor<T>> input,
+                     const Tensor<T> &weight, const Tensor<T> &bias) {
   const int row = input->row(), col = input->col();
   const int ichannel = input->channel(), ochannel = output->channel();
   const int square = row * col, kchannel = weight.channel();
@@ -124,10 +125,10 @@ bool conv2d_k1s1_cpu(int task_begin, int task_num, int shape, int ioffset,
     const f32 *inp_addr = reinterpret_cast<const f32 *>(&(*input)[0]);
     //* kernel number loop(output channel loop)
     for (int ch_o = task_begin; ch_o < task_begin+task_num; ch_o++) {
+      int64_t o_idx = ooffset + ch_o * square;
       //* input channel loop
       for (int ch_i = 0; ch_i < ichannel; ch_i++) {
         const int64_t i_idx = ioffset + ch_i * square;
-        int64_t o_idx = ooffset + ch_o * square;
         const int align_beg = 8 - i_idx%8;
         const int align_end = square - (square-align_beg)%16;
         __m256 reg256_w = _mm256_set1_ps(weight[ch_o*kchannel + ch_i]); 

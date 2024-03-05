@@ -6,6 +6,7 @@
 
 namespace dl {
 
+  // TODO: have bugs(stride)
   template<typename T>
   __global__ void
   Conv2D_cuda(thrust::device_ptr<const T> input,
@@ -38,16 +39,16 @@ namespace dl {
 
       //* conv all number and channel
       for(int n = 0; n < num; n++){
-        uint64_t ioffset = n * irow*icol*ich;
-        uint64_t koffset = blockIdx.z * k_size*k_size*ich;
+        int64_t ioffset = n * irow*icol*ich;
+        int64_t koffset = blockIdx.z * k_size*k_size*ich;
         T res = 0;
-        const uint64_t iidx = idx_y*icol + idx_x;
+        const int64_t iidx = idx_y*icol + idx_x;
         for(int ch = 0; ch < ich; ch++){
           //* load input to shared memory
           s_input[ty][tx] = input[ioffset + iidx];
           //* load weight to shared memory
           if(ty < k_size && tx < k_size){
-            const uint64_t kidx = ty*k_size  + tx;
+            const int64_t kidx = ty*k_size  + tx;
             s_weight[ty][tx] = weight[koffset + kidx];
           }
           __syncthreads();
@@ -70,8 +71,8 @@ namespace dl {
         //* add result and bias to output 
         const int oidx_x = idx_x / stride;
         const int oidx_y = idx_y / stride;
-        const uint64_t ooffset = n*orow*ocol*gridDim.z + blockIdx.z*orow*ocol; 
-        const uint64_t oidx = ooffset + oidx_y*ocol + oidx_x;
+        const int64_t ooffset = n*orow*ocol*gridDim.z + blockIdx.z*orow*ocol; 
+        const int64_t oidx = ooffset + oidx_y*ocol + oidx_x;
         if(flag && oidx_y < orow && oidx_x < ocol){
           // atomicAdd(output.get() + oidx, res + _bias);
           output[oidx] = res + s_bias;
@@ -83,17 +84,17 @@ namespace dl {
   template<typename T>
   __global__ void
   Conv2D_k3s1_cuda(thrust::device_ptr<const T> input,
-              thrust::device_ptr<T> output,
-              thrust::device_ptr<T> weight,
-              thrust::device_ptr<T> bias,
-              const int irow, 
-              const int icol, 
-              const int ich, 
-              const int num,
-              const int orow,
-              const int ocol) {
+                   thrust::device_ptr<T> output,
+                   thrust::device_ptr<T> weight,
+                   thrust::device_ptr<T> bias,
+                   const int irow, 
+                   const int icol, 
+                   const int ich, 
+                   const int num,
+                   const int orow,
+                   const int ocol) {
     __shared__ T s_input[TILE_Y][TILE_X];
-    __shared__ T s_weight[K_SIZE][K_SIZE];
+    __shared__ T s_weight[3][3];
     __shared__ T s_bias;
     const int ty = threadIdx.y, tx = threadIdx.x;
     const int idx_x = blockIdx.x * TILE_X + tx;
@@ -107,16 +108,16 @@ namespace dl {
     if(idx_x < icol && idx_y < irow){
       //* conv all number and channel
       for(int n = 0; n < num; n++){
-        uint64_t ioffset = n * irow*icol*ich;
-        uint64_t koffset = blockIdx.z * 3*3*ich;
+        int ioffset = n * irow*icol*ich;
+        int koffset = blockIdx.z * 9 * ich;
         T res = 0;
-        const uint64_t iidx = idx_y*icol + idx_x;
+        const int iidx = idx_y*icol + idx_x;
         for(int ch = 0; ch < ich; ch++){
           //* load input to shared memory
           s_input[ty][tx] = input[ioffset + iidx];
           //* load weight to shared memory
           if(ty < 3 && tx < 3){
-            const uint64_t kidx = ty * 3  + tx;
+            const int kidx = ty * 3  + tx;
             s_weight[ty][tx] = weight[koffset + kidx];
           }
           __syncthreads();
@@ -137,8 +138,8 @@ namespace dl {
           koffset += 9;
         }
         //* add result and bias to output 
-        const uint64_t ooffset = n*orow*ocol*gridDim.z + blockIdx.z*orow*ocol; 
-        const uint64_t oidx = ooffset + idx_y*ocol + idx_x;
+        const int ooffset = n*orow*ocol*gridDim.z + blockIdx.z*orow*ocol; 
+        const int oidx = ooffset + idx_y*ocol + idx_x;
         if(idx_y < orow && idx_x < ocol){
           output[oidx] = res + s_bias;
         }
@@ -178,10 +179,10 @@ namespace dl {
 
       //* conv all number and channel
       for(int n = 0; n < num; n++){
-        uint64_t ioffset = n * irow*icol*ich;
-        uint64_t koffset = blockIdx.z * ich;
+        int64_t ioffset = n * irow*icol*ich;
+        int64_t koffset = blockIdx.z * ich;
         T res = 0;
-        const uint64_t iidx = idx_y*icol + idx_x;
+        const int64_t iidx = idx_y*icol + idx_x;
         for(int ch = 0; ch < ich; ch++){
           //* load input to shared memory
           s_input[ty][tx] = input[ioffset + iidx];
@@ -199,8 +200,8 @@ namespace dl {
         //* add result and bias to output 
         const int oidx_x = idx_x / stride;
         const int oidx_y = idx_y / stride;
-        const uint64_t ooffset = n*orow*ocol*gridDim.z + blockIdx.z*orow*ocol; 
-        const uint64_t oidx = ooffset + oidx_y*ocol + oidx_x;
+        const int64_t ooffset = n*orow*ocol*gridDim.z + blockIdx.z*orow*ocol; 
+        const int64_t oidx = ooffset + oidx_y*ocol + oidx_x;
         if(flag && oidx_y < orow && oidx_x < ocol){
           output[oidx] = res + s_bias;
         }
@@ -235,10 +236,10 @@ namespace dl {
     if(idx_x < col && idx_y < row){
       //* conv all number and channel
       for(int n = 0; n < num; n++){
-        uint64_t ioffset = n * square*ich;
-        uint64_t koffset = blockIdx.z * ich;
+        int ioffset = n * square*ich;
+        int koffset = blockIdx.z * ich;
         T res = 0;
-        const uint64_t iidx = idx_y*col + idx_x;
+        const int iidx = idx_y*col + idx_x;
         for(int ch = 0; ch < ich; ch++){
           //* load input to shared memory
           s_input[ty][tx] = input[ioffset + iidx];
@@ -252,10 +253,66 @@ namespace dl {
           ioffset += square;
         }
         //* add result and bias to output 
-        const uint64_t ooffset = n*square*gridDim.z + blockIdx.z*square; 
-        const uint64_t oidx = ooffset + idx_y*col + idx_x;
+        const int ooffset = n*square*gridDim.z + blockIdx.z*square; 
+        const int oidx = ooffset + idx_y*col + idx_x;
         output[oidx] = res + s_bias;
       }
     }
   }
+
+  //* kernel size=1 and stride=1
+  template<typename T>
+  __global__ void
+  Conv2D_k1s1_cuda1(thrust::device_ptr<const T> input,
+                  thrust::device_ptr<T> output,
+                  thrust::device_ptr<T> weight,
+                  const int ich, 
+                  const int och,
+                  const int num,
+                  const int square) {
+    extern __shared__ T s_weight[];
+
+    const int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    const int w_idx = idx / square;
+    //* load weight to shared memory
+    if(idx % square == 0 && w_idx < ich * och){
+      // TODO: bug 是当square大于block_size时，多出来的部分的weight会等于0
+      // TODO：得想办法修修
+      s_weight[w_idx] = weight[w_idx];
+    }
+    __syncthreads();
+    
+    const int ivolume = square*ich, ovolume = square*och;
+    int ioffset = 0, ooffset = 0;
+    for(int n = 0; n < num; n++){
+      atomicAdd(output.get() + ooffset + idx%ovolume,
+        input[ioffset + idx%ivolume] * s_weight[w_idx]);
+      ioffset += ivolume, ooffset += ovolume;
+    }
+  }
+
+  template<typename T>
+  __global__ void
+  Conv2D_add_bias(thrust::device_ptr<T> output,
+                  thrust::device_ptr<T> bias,
+                  const int och,
+                  const int num,
+                  const int square) {
+    extern __shared__ T s_bias[];
+    const int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    const int b_idx = idx / square;
+    //* load bias to shared memory
+    if(idx % square == 0 && b_idx < och){
+      s_bias[b_idx] = bias[b_idx];
+    }
+    __syncthreads();
+    
+    const int ovolume = square*och;
+    int offset = 0;
+    for(int n = 0; n < num; n++){
+      atomicAdd(output.get() + offset + idx%ovolume, s_bias[b_idx]);
+      offset += ovolume;
+    }
+  }
+
 } // namespace dl

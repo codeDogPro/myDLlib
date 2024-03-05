@@ -1050,7 +1050,8 @@ private:
   template<typename U>
   std::ostream &
   operator<<(std::ostream& os, Tensor<U>& t){
-    // insure the Tensor's data are in CPU memory
+    // Insure the Tensor's data are in CPU memory
+    Device device = t.device();
     if(t.device() == Device::CUDA){
       t.to(Device::CPU);
     }
@@ -1080,6 +1081,11 @@ private:
       }
     }
     printf("\n\n");
+
+    //* move the data back to device
+    if(device == Device::CUDA){
+      t.to(device);
+    }
     return os;
   }
 //########################################### END PRINT ###################################################

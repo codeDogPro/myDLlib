@@ -74,6 +74,8 @@ public:
     output_layer = new Conv2D<T>(1, neck_ch, output_ch, 1, 0, device);
     if(!same_shape){
       pad_layer = new Conv2D<T>(1, input_ch, output_ch, 1, 0, device);
+      //* 手动同步
+      pad_layer->setSyncMode(false);
     }
   }
 
@@ -88,22 +90,25 @@ public:
 
   virtual std::shared_ptr<Tensor<T>> 
   forward(const std::shared_ptr<const Tensor<T>> input){
-    auto output1 = (*input_layer)(input);
-    // std::cout << "output1:\t"; output1->shape();
-    auto output2 = (*neck_layer)(output1);
-    // std::cout << "output2:\t"; output2->shape();
-    auto output3 = (*output_layer)(output2);
     // std::cout << "output3:\t"; output3->shape();
     if(same_shape == true){
+      auto output1 = (*input_layer)(input);
+      // std::cout << "output1:\t"; output1->shape();
+      auto output2 = (*neck_layer)(output1);
+      // std::cout << "output2:\t"; output2->shape();
+      auto output3 = (*output_layer)(output2);
       auto output = *output3 + *input;
       // std::cout << "output:\t"; output->shape();
       return output;
     }
     else{
-      auto pad_input = (*pad_layer)(input);
-      // std::cout << "pad_input:\t"; pad_input->shape();
+      auto pad_input = (*pad_layer)(input); //* unSync
+
+      auto output1 = (*input_layer)(input);
+      auto output2 = (*neck_layer)(output1);
+      auto output3 = (*output_layer)(output2);
+
       auto output = *output3 + *pad_input;
-      // std::cout << "output:\t"; output->shape();
       return output;
     }
   }
@@ -129,4 +134,5 @@ private:
   bool same_shape;
   Device m_device;
 };
+
 }

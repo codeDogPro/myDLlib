@@ -11,6 +11,7 @@
 
 #include <random>
 #include <ctime>
+#include <cstdlib>
 
 // #define DEBUG_INIT
 #ifdef DEBUG_INIT
@@ -52,16 +53,23 @@ namespace dl{
     }
   }
 
+  bool __isFirst = true;
+
   template<typename T=f32>
   void rand_init_cuda(thrust::device_vector<T> &data){
     auto ptr = data.data().get();
 
     curandGenerator_t gen;
     curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT);
-    curandSetPseudoRandomGeneratorSeed(gen, time(0));
+    if(__isFirst == true){
+      srand(time(0));
+      __isFirst = false;
+    }
+    curandSetPseudoRandomGeneratorSeed(gen, rand());
 
     std::string name = type_name<T>();
     if(name.compare("int") == 0){
+      //TODO: have bug?
       curandGenerate(gen, (ui32 *)ptr, data.size());
     }
     else if(name.compare("float") == 0){
