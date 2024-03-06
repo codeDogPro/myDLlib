@@ -260,7 +260,9 @@ namespace dl {
     }
   }
 
-  //* kernel size=1 and stride=1
+  //* new kernel size=1 and stride=1
+  //* so fucking slow!!! 
+  //* new: avg=47.444ms   old: avg=19.061ms
   template<typename T>
   __global__ void
   Conv2D_k1s1_cuda1(thrust::device_ptr<const T> input,

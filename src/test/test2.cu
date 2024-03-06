@@ -11,7 +11,7 @@ void resnet50_test(){
   // *  bs=6:  CUDA Infer: 19.0440s CPU Infer: 50.2053s
   // *  bs=32: CUDA Infer: 118.356s CPU Infer: 265.865s
   Device device = Device::CUDA;
-  auto input = std::make_shared<Tensor<T>>(224, 224, 3, 32, device);
+  auto input = std::make_shared<Tensor<T>>(224, 224, 3, 1, device);
   // std::cout << "input:\n" << *input;
   const int size = 4;
   auto conv7x7 = new Conv2D<T>(7, 3, 16 * size, 2, 3, device);
@@ -525,6 +525,6 @@ int main(){
   // matMul_benchmark<f32>(10);     // 3.4x faster than cpu
   // pooling_test<f32>();           // pass 
   // residual_test<f32>();          // pass
-  // resnet50_test<f32>();          // pass
-  k1s1_cuda_Conv2d_test<f32>();
+  resnet50_test<f32>();          // pass
+  // k1s1_cuda_Conv2d_test<f32>();  // pass
 }

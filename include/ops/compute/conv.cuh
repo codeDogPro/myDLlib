@@ -11,7 +11,7 @@
 
 namespace dl{
 
-#define CONV_DEBUG_WEIGHT
+// #define CONV_DEBUG_WEIGHT
 // #define CONV_DEBUG_PAD
 template<typename T=f32>
 class Conv2D : public Function<T> {
@@ -123,18 +123,23 @@ private:
 
     if(M_kernelSize == 1){
       if(M_stride == 1){
-        const int square = irow * icol;
-        const int block_size = 128;
-        const int grid_size1 = (irow*icol*ich*och + block_size-1) / block_size;
-        Conv2D_k1s1_cuda1<<<grid_size1, block_size>>>
-          (_input, _output, _weight, 
-           ich, och, num, square); 
-        const int grid_size2 = (irow*icol*och + block_size-1) / block_size;
-        Conv2D_add_bias<<<grid_size2, block_size>>>
-          (_output, _bias, och, num, square);
-        // Conv2D_k1s1_cuda<<<grid_size, block_size>>>
-        //   (_input, _output, _weight, _bias,
-        //    irow, icol, ich, num); 
+        const int grid_x = (icol+TILE_X-1)/TILE_X, grid_y = (irow+TILE_Y-1)/TILE_Y;
+        dim3 grid_size(grid_x, grid_y, och);
+        dim3 block_size(TILE_X, TILE_Y);
+        Conv2D_k1s1_cuda<<<grid_size, block_size>>>
+          (_input, _output, _weight, _bias,
+           irow, icol, ich, num); 
+
+        /** slower version.... */
+        //*const int square = irow * icol;
+        //*const int block_size = 128;
+        //*const int grid_size1 = (irow*icol*ich*och + block_size-1) / block_size;
+        //*Conv2D_k1s1_cuda1<<<grid_size1, block_size>>>
+        //*  (_input, _output, _weight, 
+        //*   ich, och, num, square); 
+        //*const int grid_size2 = (irow*icol*och + block_size-1) / block_size;
+        //*Conv2D_add_bias<<<grid_size2, block_size>>>
+        //*  (_output, _bias, och, num, square);
       } else{
         const int grid_x = (icol+TILE_X-1)/TILE_X, grid_y = (irow+TILE_Y-1)/TILE_Y;
         dim3 grid_size(grid_x, grid_y, och);
