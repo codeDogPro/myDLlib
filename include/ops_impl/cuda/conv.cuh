@@ -213,15 +213,13 @@ namespace dl {
   template<typename T>
   __global__ void
   Conv2D_k1s1_cuda(thrust::device_ptr<const T> input,
-                  thrust::device_ptr<T> output,
-                  thrust::device_ptr<T> weight,
-                  thrust::device_ptr<T> bias,
-                  const int row, 
-                  const int col, 
-                  const int ich, 
-                  const int num) {
-    __shared__ T s_input[TILE_Y][TILE_X];
-    __shared__ T s_weight;
+                   thrust::device_ptr<T> output,
+                   thrust::device_ptr<T> weight,
+                   thrust::device_ptr<T> bias,
+                   const int row, 
+                   const int col, 
+                   const int ich, 
+                   const int num) {
     __shared__ T s_bias;
     const int ty = threadIdx.y, tx = threadIdx.x;
     const int idx_x = blockIdx.x * TILE_X + tx;
@@ -234,35 +232,30 @@ namespace dl {
     }
     
     if(idx_x < col && idx_y < row){
+      const int idx = idx_y*col + idx_x;
+      int ooffset = blockIdx.z*square; 
       //* conv all number and channel
       for(int n = 0; n < num; n++){
         int ioffset = n * square*ich;
         int koffset = blockIdx.z * ich;
         T res = 0;
-        const int iidx = idx_y*col + idx_x;
         for(int ch = 0; ch < ich; ch++){
-          //* load input to shared memory
-          s_input[ty][tx] = input[ioffset + iidx];
-          //* load weight to shared memory
-          if(ty == 0 && tx == 0){
-            s_weight = weight[koffset ++];
-          }
-          __syncthreads();
-          //* calculate result
-          res += s_weight * s_input[ty][tx]; 
+          res += weight[koffset ++] * input[ioffset + idx]; 
           ioffset += square;
         }
         //* add result and bias to output 
-        const int ooffset = n*square*gridDim.z + blockIdx.z*square; 
-        const int oidx = ooffset + idx_y*col + idx_x;
-        output[oidx] = res + s_bias;
+        output[ooffset + idx] = res + s_bias;
+        ooffset += square*gridDim.z;
       }
     }
   }
 
+
+
+
   //* new kernel size=1 and stride=1
   //* so fucking slow!!! 
-  //* new: avg=47.444ms   old: avg=19.061ms
+  //* new: avg=47.444ms   old: avg=12.315ms
   template<typename T>
   __global__ void
   Conv2D_k1s1_cuda1(thrust::device_ptr<const T> input,

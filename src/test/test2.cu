@@ -490,7 +490,7 @@ void k1s1_cuda_Conv2d_test(){
   //* input:224x224x3x8 kernel:3x8 randomly PASS
   Device cuda = Device::CUDA;
   Device cpu = Device::CPU;
-  auto input = std::make_shared<Tensor<T>>(224, 224, 3, 2, cpu);
+  auto input = std::make_shared<Tensor<T>>(33, 33, 3, 2, cpu);
   Conv2D<T> conv(1, 3, 8, 1, 0, cpu);
   std::cout << "input:\n" << *input;
   auto output_cpu = conv(input);
