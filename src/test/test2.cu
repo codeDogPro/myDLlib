@@ -482,11 +482,16 @@ void residual_test(){
 
 template<typename T>
 void k1s1_cuda_Conv2d_test(){
-  //* input:4x4x1x2    randomly pass
+  //* input:4x4x1x2     kernel:1x2 randomly PASS
+  //* input:4x4x3x2     kernel:3x3 randomly PASS
+  //* input:12x12x3x2   kernel:3x3 randomly PASS
+  //* input:12x12x1x2   kernel:1x2 randomly PASS
+  //* input:224x224x1x2 kernel:1x2 randomly PASS
+  //* input:224x224x3x8 kernel:3x8 randomly PASS
   Device cuda = Device::CUDA;
   Device cpu = Device::CPU;
-  auto input = std::make_shared<Tensor<T>>(12, 12, 1, 2, cpu);
-  Conv2D<T> conv(1, 1, 2, 1, 0, cpu);
+  auto input = std::make_shared<Tensor<T>>(224, 224, 3, 2, cpu);
+  Conv2D<T> conv(1, 3, 8, 1, 0, cpu);
   std::cout << "input:\n" << *input;
   auto output_cpu = conv(input);
 

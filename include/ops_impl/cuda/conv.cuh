@@ -270,24 +270,15 @@ namespace dl {
                   const int och,
                   const int num,
                   const int square) {
-    extern __shared__ T s_weight[];
-
     const int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    const int w_idx = idx / square;
-    //* load weight to shared memory
-    if(idx % square == 0 && w_idx < ich * och){
-      // TODO: bug 是当square大于block_size时，多出来的部分的weight会等于0
-      // TODO：得想办法修修
-      s_weight[w_idx] = weight[w_idx];
-    }
-    __syncthreads();
     
     const int ivolume = square*ich, ovolume = square*och;
     int ioffset = 0, ooffset = 0;
+    const int o_idx = (idx/ivolume)*square + idx%square;
     for(int n = 0; n < num; n++){
-      atomicAdd(output.get() + ooffset + idx%ovolume,
-        input[ioffset + idx%ivolume] * s_weight[w_idx]);
-      ioffset += ivolume, ooffset += ovolume;
+      atomicAdd(output.get() + ooffset + o_idx,
+        input[ioffset + idx%ivolume] * weight[idx / square]);
+      ooffset += ovolume, ioffset += ivolume;
     }
   }
 
@@ -298,19 +289,12 @@ namespace dl {
                   const int och,
                   const int num,
                   const int square) {
-    extern __shared__ T s_bias[];
     const int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    const int b_idx = idx / square;
-    //* load bias to shared memory
-    if(idx % square == 0 && b_idx < och){
-      s_bias[b_idx] = bias[b_idx];
-    }
-    __syncthreads();
     
     const int ovolume = square*och;
     int offset = 0;
     for(int n = 0; n < num; n++){
-      atomicAdd(output.get() + offset + idx%ovolume, s_bias[b_idx]);
+      atomicAdd(output.get() + offset + idx%ovolume, bias[idx / square]);
       offset += ovolume;
     }
   }
