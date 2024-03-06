@@ -3,5 +3,7 @@
 *.o
 *.pyc
 .vscode/
+.cache/
 build/
 imgs/
+*.json
