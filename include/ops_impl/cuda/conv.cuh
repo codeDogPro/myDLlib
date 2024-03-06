@@ -161,8 +161,6 @@ namespace dl {
                  const int num,
                  const int orow,
                  const int ocol) {
-    __shared__ T s_input[TILE_Y][TILE_X];
-    __shared__ T s_weight;
     __shared__ T s_bias;
     const int ty = threadIdx.y, tx = threadIdx.x;
     const int idx_x = blockIdx.x * TILE_X + tx;
@@ -184,16 +182,8 @@ namespace dl {
         T res = 0;
         const int64_t iidx = idx_y*icol + idx_x;
         for(int ch = 0; ch < ich; ch++){
-          //* load input to shared memory
-          s_input[ty][tx] = input[ioffset + iidx];
-          //* load weight to shared memory
-          if(ty == 0 && tx == 0){
-            s_weight = weight[koffset ++];
-          }
-          __syncthreads();
-
-          if(flag && idx_x < icol && idx_y < irow){
-            res += s_weight * s_input[ty][tx]; 
+          if(flag){
+            res += weight[koffset ++] * input[ioffset + iidx]; 
           } 
           ioffset += irow * icol;
         }
@@ -208,6 +198,7 @@ namespace dl {
       }
     }
   }
+
 
   //* kernel size=1 and stride=1
   template<typename T>
@@ -249,8 +240,6 @@ namespace dl {
       }
     }
   }
-
-
 
 
   //* new kernel size=1 and stride=1
