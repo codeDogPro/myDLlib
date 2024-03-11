@@ -60,7 +60,6 @@ private:
     const int grid_size = (size + 127) / 128, block_size = 128;
     padding_cuda<<<grid_size, block_size>>>
       (_input, _output, size, row, col, M_padding);
-    // cudaDeviceSynchronize();
   #ifdef CONV_DEBUG_PAD
     std::cout << "pad_input:\n" << *output;
   #endif
@@ -83,7 +82,6 @@ private:
     MaxPool2D_cuda<<<grid_size, block_size>>>
       (_input, _output,
        M_pool_size, M_stride, irow, icol, orow, ocol); 
-    // cudaDeviceSynchronize();
     return output; 
   }
 
