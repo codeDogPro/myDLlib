@@ -85,7 +85,6 @@ private:
     thrust::device_ptr<T>  _exp = output->data_gpu();;
     // calculate exp(input) first
     exp_cuda<T><<<64, 128>>>(_input, _exp, size);
-    cudaDeviceSynchronize();
 
     if(M_axis == Axis::COL){
       auto exp_sum = std::make_shared<Tensor<T>>(row, 1, ch, num, Device::CUDA, 0);
@@ -95,7 +94,6 @@ private:
       dim3 grid_size(grid_x, grid_y), block_size(TILE_X, TILE_Y);
       reduce4D_axis0_cuda<<<grid_size, block_size>>>
         (_exp, _exp_sum, size, col);
-      cudaDeviceSynchronize();
       softmax_axis0_cuda<T><<<64, 128>>>
         (_exp, _exp_sum, _output, size, col);
     }
@@ -109,7 +107,6 @@ private:
       // int grid_size = 64, block_size = 128;
       // softmax_axis2_cuda(_input, _output, size);
     }
-    cudaDeviceSynchronize();
     return output;
   }
 

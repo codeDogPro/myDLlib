@@ -102,7 +102,6 @@ private:
     const int grid_size = (size + 127) / 128, block_size = 128;
     padding_cuda<<<grid_size, block_size>>>
       (_input, _output, size, row, col, M_padding);
-    cudaDeviceSynchronize();
   #ifdef CONV_DEBUG_PAD
     std::cout << "pad_input:\n" << *output;
   #endif
@@ -165,9 +164,6 @@ private:
         (_input, _output, _weight, _bias,
         M_kernelSize, M_stride,
         irow, icol, ich, num, orow, ocol); 
-    }
-    if(autoSync == true){
-      cudaDeviceSynchronize();
     }
     return output;
   }

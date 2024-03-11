@@ -69,7 +69,7 @@ private:
     thrust::device_ptr<T> _output = output->data_gpu();
     Linear_cuda<<<grid_size, block_size>>>
       (_a, _b, _bias, _output, icol,  ocol);
-    cudaDeviceSynchronize();
+    // cudaDeviceSynchronize();
     return output;
   }
 

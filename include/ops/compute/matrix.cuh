@@ -38,7 +38,6 @@ namespace dl{
     thrust::device_ptr<T> _output = output->data_gpu();
     matMul4D_cuda<<<grid_size, block_size>>>
       (_a, _b, _output, acol, arow, bcol);
-    cudaDeviceSynchronize();
     return output;
   }
 
